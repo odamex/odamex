@@ -2359,21 +2359,27 @@ void CL_SendCmd(void)
 			messenger.BestEffort().Write (CLC_SpectateUpdate(player));
 		}
 
-		if (not player.sortedMobjs.empty())
+		if (not player.mobjsToUpdate.empty())
 		{
 			odaproto::clc::SendMobjUpdate onDemandMobjsMsg;
 
-			for (const auto& mobjInfo : player.sortedMobjs)
+			for (auto& mobjPtr : player.mobjsToUpdate)
 			{
-				constexpr int MAX_CHALLENGE_RATE_HZ       = 5;
-				constexpr int MAX_CHALLENGE_INTERVAL_TICS = TICRATE / MAX_CHALLENGE_RATE_HZ;
+				// We use the collection of AActorPtrs because it lets us safely and lazily keep the
+				// mobjs up to date and not have to worry about all the situations that would otherwise
+				// force us to go out of our way to discard the pending requests.
+				if (mobjPtr)
+				{
+					constexpr int MAX_CHALLENGE_RATE_HZ       = 5;
+					constexpr int MAX_CHALLENGE_INTERVAL_TICS = TICRATE / MAX_CHALLENGE_RATE_HZ;
 
-				mobjInfo.actorPtr->credibility.Challenge(MAX_CHALLENGE_INTERVAL_TICS);
-				onDemandMobjsMsg.add_netid(mobjInfo.actorPtr->netid);
+					mobjPtr.get()->credibility.Challenge(MAX_CHALLENGE_INTERVAL_TICS);
+					onDemandMobjsMsg.add_netid(mobjPtr->netid);
+				}
 			}
 			messenger.Reliable().Write(onDemandMobjsMsg);
 
-			player.sortedMobjs.clear();
+			player.mobjsToUpdate.clear();
 		}
 
 		odaproto::clc::PlayerInput& currentNetcmd = localcmds[gametic % MAXSAVETICS];
@@ -2813,7 +2819,7 @@ void CL_SimulateWorld()
 	world_index = world_index + 1 + drift_correction;
 }
 
-/// This function updates the given player's sortedMobjs to contain only the small subset
+/// This function updates the given player's mobjsToUpdate to contain only the small subset
 /// that are highest-priority for immediate on-demand updates from the server.  The intended
 /// use is to bust ghosts that are nearby and/or are likely to create other ghosts.
 ///
@@ -2893,6 +2899,12 @@ void CL_SelectPotentialDesynchedMobjs(player_t& player)
 				player.sortedMobjs.erase(player.sortedMobjs.begin() + MAX_ELEMENTS_TO_REQUEST,
 				                         player.sortedMobjs.end());
 			}
+
+			for (const auto& mobjInfo : player.sortedMobjs)
+			{
+				player.mobjsToUpdate.insert(mobjInfo.actorPtr->ptr());
+			}
+			player.sortedMobjs.clear();
 		}
 	}
 }

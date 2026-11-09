@@ -1234,6 +1234,10 @@ void G_Ticker (void)
 			// rollbacks and forcing suspected-ghost mobjs to be updated.
 
 			player.serverRefreshRequestsAreEnabled = isClientSideOnly and isActuallyConnected;
+
+			// The client populates sortedMobjs in the main mobj thinker routine.
+			// Make sure we start off with a clean slate every tic.  Note: the contained objects
+			// are intentionally trivially-destructible thus the clear operation is constant-time.
 			player.sortedMobjs.clear();
 
 			bool thinkersHaveRun = false;
