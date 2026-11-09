@@ -82,7 +82,9 @@ EXTERN_CVAR(ui_font_messages)
 // C_Font
 //
 // The console's text face. The console lays text out proportionally, so its
-// metrics come from the font rather than from a fixed character cell.
+// metrics come from the font rather than from a fixed character cell. The
+// TrueType face has a drop shadow like the HUD's, which pads each glyph
+// without changing its advance or the line height.
 //
 static const OFont* C_Font()
 {
@@ -92,7 +94,7 @@ static const OFont* C_Font()
 	const int size = 8 * std::max(1u, ConScale);
 	if (ui_font_console.asInt() == FONT_BITMAP)
 		return V_GetBitmapFont("FONT_CON", size);
-	return V_GetFont("FONT_CON", size);
+	return V_GetShadowFont("FONT_CON", size);
 }
 
 //
