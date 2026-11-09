@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -358,5 +356,3 @@ void G_StompDeathSpot(player_t& player, const DeathSpot_s& spot)
 		P_DamageMobj(victim, player.mo, player.mo, telefrag_damage, MOD_TELEFRAG);
 	}
 }
-
-VERSION_CONTROL (g_deathspot_cpp, "$Id$")

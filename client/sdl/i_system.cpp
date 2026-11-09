@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -511,5 +509,3 @@ BEGIN_COMMAND(debug_userfilename)
 END_COMMAND(debug_userfilename)
 
 #endif
-
-VERSION_CONTROL (i_system_cpp, "$Id$")

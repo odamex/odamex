@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -539,5 +537,3 @@ bool EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 		}
 	return false;
 }
-
-VERSION_CONTROL (p_teleport_cpp, "$Id$")

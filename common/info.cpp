@@ -2,8 +2,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -3835,5 +3833,3 @@ void D_BuildSpawnMap() {
 		[](const mobjinfo_t *const& m){ return m->type == MT_HORDESPAWN ? m->type : m->doomednum; }
 	);
 }
-
-VERSION_CONTROL (info_cpp, "$Id$")

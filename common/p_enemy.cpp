@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -4200,5 +4198,3 @@ void A_LineEffect(AActor* mo)
 		}
 	}
 }
-
-VERSION_CONTROL (p_enemy_cpp, "$Id$")

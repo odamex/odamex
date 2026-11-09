@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -252,5 +250,3 @@ bool EV_DoZDoomPillar(DPillar::EPillar type, line_t* line, int tag, fixed_t spee
 	}
 	return rtn;
 }
-
-VERSION_CONTROL (p_pillar_cpp, "$Id$")

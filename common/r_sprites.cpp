@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -402,6 +400,4 @@ void R_InitSprites(std::vector<spriteinfo_t*>& sprites)
 
 	R_InitSpriteDefs (sprites);
 }
-
-VERSION_CONTROL (r_sprites_cpp, "$Id$")
 

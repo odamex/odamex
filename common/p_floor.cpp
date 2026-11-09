@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1958,4 +1956,3 @@ DWaggle* DWaggle::Clone(sector_t* sec) const
 	return ele;
 }
 */
-VERSION_CONTROL (p_floor_cpp, "$Id$")
