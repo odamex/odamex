@@ -314,7 +314,7 @@ void CL_PredictFreecam()
 		freecam->mo->prevz = freecam->mo->z;
 		freecam->mo->prevangle = freecam->mo->angle;
 		freecam->mo->prevpitch = freecam->mo->pitch;
-    freecam->mo->prevviewz = freecam->mo->viewz;
+		freecam->mo->prevviewz = freecam->mo->viewz;
 	}
 
 	P_FreecamThink(*freecam);
