@@ -1242,8 +1242,8 @@ void AActor::RunThink ()
 	{
 		credibility.Update(*this);
 
-		if (    IsMonster()
-		    and not (flags & MF_CORPSE)
+		if ((    (    IsMonster() and not (flags & MF_CORPSE))
+		     or  (not IsMonster() and credibility.Get() == CredibilityEnum::NOT_CREDIBLE))
 		    and credibility.IsEligibleForChallenge()
 		    and credibility.GetMotionAge() > 0)
 		{
