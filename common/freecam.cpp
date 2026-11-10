@@ -49,7 +49,7 @@ void freecam_t::build(mapthing2_t spawn, bool setSpawnPos, bool noclip)
 	mobj->prevangle = mobj->angle;
 	mobj->prevpitch = mobj->pitch;
 
-	// recalc the correct z once we have floorz
+	// recalc starting z once we have floorz
 	if (setSpawnPos)
 	{
 		persist.z = mobj->floorz + VIEWHEIGHT;
@@ -58,7 +58,7 @@ void freecam_t::build(mapthing2_t spawn, bool setSpawnPos, bool noclip)
 	mobj->z = persist.z;
 	mobj->prevz = persist.z;
 
-	this->camera = this->mo = mobj->ptr();
+	this->mo = mobj->ptr();
 
 	if (noclip)
 		this->mo->flags |= MF_NOCLIP;
@@ -66,7 +66,7 @@ void freecam_t::build(mapthing2_t spawn, bool setSpawnPos, bool noclip)
 
 void freecam_t::persistPosition()
 {
-	if (this->mo and this->camera)
+	if (this->mo)
 	{
 		persist.x = this->mo->x;
 		persist.y = this->mo->y;
@@ -78,7 +78,7 @@ void freecam_t::persistPosition()
 
 void freecam_t::moveToPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle)
 {
-	if (this->mo and this->camera)
+	if (this->mo)
 	{
 		this->mo->angle = angle;
 		this->mo->pitch = 0;
@@ -98,7 +98,7 @@ bool freecam_t::needsPosition() const
 
 bool freecam_t::wipedOnLevelChange() const
 {
-	return (this->mo == nullptr and this->camera == nullptr);
+	return (this->mo == nullptr);
 }
 
 freecam_t* freecam_t::getfreecam(byte id)

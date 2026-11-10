@@ -50,7 +50,6 @@ public:
 
 	byte id;
 
-	AActor::AActorPtr camera;
 	AActor::AActorPtr mo;
 
 	struct ticcmd_t cmd;

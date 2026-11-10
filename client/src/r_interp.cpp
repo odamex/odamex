@@ -479,7 +479,7 @@ void OInterpolation::interpolateCamera(fixed_t amount, bool use_localview,
 	{
 		fixed_t x = camera->x;
 		fixed_t y = camera->y;
-		fixed_t z = camera->player ? camera->player->viewz : camera->z;
+		fixed_t z = camera->player ? camera->player->viewz : camera->viewz;
 		fixed_t angle = camera->angle;
 		sector_t* vs = camera->subsector->sector;
 
@@ -526,7 +526,7 @@ void OInterpolation::interpolateCamera(fixed_t amount, bool use_localview,
 					        FixedMul(amount,
 					                 camera->player->viewz - camera->player->prevviewz);
 				else
-					viewz = camera->prevz + FixedMul(amount, z - camera->prevz);
+					viewz = camera->prevviewz + FixedMul(amount, z - camera->prevviewz);
 
 				viewsector = R_PointInSubsector(viewx, viewy)->sector;
 			}

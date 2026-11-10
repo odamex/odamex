@@ -821,7 +821,7 @@ AActor::AActorPtr& CL_GetDisplayCamera()
 	if (playerIsDisplayed())
 		return displayplayer().camera;
 	if (freecamIsActive())
-		return freecam_t::getfreecam(freecam_id)->camera;
+		return freecam_t::getfreecam(freecam_id)->mo;
 
 	return displayplayer().camera;
 }

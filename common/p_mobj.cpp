@@ -609,6 +609,9 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 		z = iz;
 	}
 
+  viewz =     iz == ONCEILINGZ ? z : z + height;
+  prevviewz = iz == ONCEILINGZ ? z : z + height;
+
 	spawnpoint.type = 0;
 	args.fill(0);
 }
