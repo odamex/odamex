@@ -1249,7 +1249,10 @@ void G_Ticker (void)
 					// [SL] 2011-12-14 - Spawn message from server has not arrived
 					// yet.  Fake it and hope it arrives soon.
 					AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
-					mobj->flags &= ~MF_SOLID;
+
+					// Clear all flags that need to be cleared to trigger the "can't hit thing"
+					// case in PIT_CheckThing.
+					mobj->flags &= ~(MF_SOLID | MF_SPECIAL | MF_SHOOTABLE | MF_TOUCHY | MF_PICKUP);
 					mobj->flags2 |= MF2_DONTDRAW;
 					mobj->oflags |= MFO_ISAWAITINGSPAWN;
 					player.mo = player.camera = mobj->ptr();
