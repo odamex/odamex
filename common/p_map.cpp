@@ -472,6 +472,33 @@ bool PIT_StompThing (AActor& thing, const bool StompAlwaysFrags)
 namespace
 {
 	AActor* teleportedThing;
+
+	bool PIT_CheckLine(line_t& ld, bool tmunstuck);
+
+	// This function iterates over the blockmap blocks that intersect with the bounding box
+	// specified by tmbbox, checks against the lines in those blocks via PIT_CheckLine,
+	// and sets the various globals accordingly, including but not limited to
+	//      tmfloorz, tmceilingz, tmdropoffz, BlockingLine
+	bool P_CheckBBoxAgainstMapLines(AActor* thing)
+	{
+		const int xl = (tmbbox[BOXLEFT]   - blockmap.originx()) >> MAPBLOCKSHIFT;
+		const int xh = (tmbbox[BOXRIGHT]  - blockmap.originx()) >> MAPBLOCKSHIFT;
+		const int yl = (tmbbox[BOXBOTTOM] - blockmap.originy()) >> MAPBLOCKSHIFT;
+		const int yh = (tmbbox[BOXTOP]    - blockmap.originy()) >> MAPBLOCKSHIFT;
+
+		// from mbf, allows players to get unstuck if they end up spawned
+		// partially inside a wall or blocking line
+		// i think this is safe to enable always (except for demo playback of course)
+		// but if it turns out to cause issues with vanilla or boom maps,
+		// we should change it to rely on co_mbfphys
+		const bool tmunstuck = (thing->player != nullptr) and not P_IsVoodooDoll(thing) and not demoplayback;
+
+		for (int bx = xl; bx <= xh; bx++)
+			for (int by = yl; by <= yh; by++)
+				if (not P_BlockLinesIterator(bx, by, PIT_CheckLine, tmunstuck))
+					return false;
+		return true;
+	}
 }
 
 void P_ClearJustTeleported()
@@ -553,12 +580,16 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 			if (!P_BlockThingsIterator(bx, by, PIT_StompThing, nullptr, StompAlwaysFrags))
 				return false;
 
+	// Ensure that we get the floorz, dropoffz set correctly for the destination bbox -
+	// things should be able to drop-off if they teleport directly to a precarious ledge.
+	P_CheckBBoxAgainstMapLines(thing);
+
 	// the move is ok,
 	// so link the thing into its new position
 	thing->SetOrigin (x, y, z);
 	thing->floorz = tmfloorz;
 	thing->ceilingz = tmceilingz;
-	thing->dropoffz = tmfloorz;
+	thing->dropoffz = tmdropoffz;
 	thing->floorsector = tmfloorsector;
 
 	teleportedThing = thing;
@@ -1495,22 +1526,8 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 	}
 
 	// check lines
-	xl = (tmbbox[BOXLEFT] - blockmap.originx())>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT] - blockmap.originx())>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - blockmap.originy())>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP] - blockmap.originy())>>MAPBLOCKSHIFT;
-
-	// from mbf, allows players to get unstuck if they end up spawned
-	// partially inside a wall or blocking line
-	// i think this is safe to enable always (except for demo playback of course)
-	// but if it turns out to cause issues with vanilla or boom maps,
-	// we should change it to rely on co_mbfphys
-	const bool tmunstuck = (thing->player != nullptr) && !P_IsVoodooDoll(thing) && !demoplayback;
-
-	for (int bx = xl; bx <= xh; bx++)
-		for (int by = yl; by <= yh; by++)
-			if (!P_BlockLinesIterator(bx, by, PIT_CheckLine, tmunstuck))
-				return false;
+	if (not P_CheckBBoxAgainstMapLines(thing))
+		return false;
 
 	if (P_AllowPassover())
 		return (BlockingMobj = thingblocker) == NULL;
