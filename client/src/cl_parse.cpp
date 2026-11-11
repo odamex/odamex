@@ -3653,10 +3653,10 @@ void RecordProto(const msg_t header, google::protobuf::Message* msg)
 {
 	static int protostic;
 
-	if (protostic != last_received)
+	if (protostic != gametic)
 	{
 		::protos.clear();
-		protostic = last_received;
+		protostic = gametic;
 	}
 
 	Proto proto;

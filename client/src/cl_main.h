@@ -39,8 +39,7 @@ extern netadr_t  serveraddr;
 extern bool      connected;
 extern int       connecttimeout;
 
-extern bool      noservermsgs;
-extern int       last_received;
+extern int   last_received;
 
 extern NetDemo           netdemo;
 extern OdaMessenger      messenger;
@@ -80,6 +79,9 @@ void CL_ResetWorldPrediction();
 void CL_AdvanceWorldPredictionTic(int serverTic);
 void CL_SendUserInfo(buf_t& netBuf);
 bool CL_Connect();
+
+bool CL_PacketLossHaltIsInEffect();
+bool CL_NetworkErrorIsIndicated();
 
 void CL_SendCheat(int cheats);
 void CL_SendGiveCheat(const char* item);

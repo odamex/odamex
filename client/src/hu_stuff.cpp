@@ -567,7 +567,7 @@ void HU_Drawer()
 
 	// [csDoom] draw disconnected wire [Toke] Made this 1337er
 	// denis - moved to hu_stuff and uncommented
-	if (noservermsgs && (gamestate == GS_INTERMISSION || gamestate == GS_LEVEL))
+	if (CL_NetworkErrorIsIndicated() and (gamestate == GS_INTERMISSION or gamestate == GS_LEVEL))
 		screen->DrawPatchCleanNoMove(W_CachePatch("NET"), 50 * CleanXfac, 1 * CleanYfac);
 
 	if (cl_netgraph)

@@ -851,7 +851,7 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 	else
 	{
 		last_received = gametic;
-		noservermsgs = false;
+
 		// Since packets are captured after the header is read, we do not
 		// have to read the packet header
 		//
@@ -859,11 +859,6 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 		// the parse of CLC_NetdemoCap unpacks the PlayerInputs and fills
 		// out the player.cmd.
 		CL_ParseCommands();
-
-		if (gametic - last_received > 65)
-		{
-			noservermsgs = true;
-		}
 	}
 }
 
