@@ -868,7 +868,7 @@ void drawProtos()
 	        hud::Y_TOP,
 	        hud::X_LEFT,
 	        hud::Y_TOP,
-	        ::localcmds[::last_received % MAXSAVETICS].DebugString().c_str(),
+	        ::localcmds[(::gametic - 1) % MAXSAVETICS].DebugString().c_str(),
 	        ProtoRowColor(clc_playerinput),
 	        true);
 

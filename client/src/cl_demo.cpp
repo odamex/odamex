@@ -850,8 +850,6 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 	}
 	else
 	{
-		last_received = gametic;
-		noservermsgs = false;
 		// Since packets are captured after the header is read, we do not
 		// have to read the packet header
 		//
@@ -860,9 +858,17 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 		// out the player.cmd.
 		CL_ParseCommands();
 
-		if (gametic - last_received > 65)
+		// Update the staleness tic latch only if we parsed out anything other
+		// than the client-originated NetdemoCap message.  This ensures that
+		// we accurately reproduce network error indications and prediction
+		// bail-out.
+		const auto& protosVector = CL_GetTicProtos();
+		const bool  realMessagesWereParsed = protosVector.size() > 1
+		                                     or (protosVector.size() == 1
+		                                         and protosVector.front().header != clc_netdemocap);
+		if (realMessagesWereParsed)
 		{
-			noservermsgs = true;
+			last_received = gametic;
 		}
 	}
 }

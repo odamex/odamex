@@ -109,8 +109,7 @@ short version = 0;
 int gameversion = 0;				// GhostlyDeath -- Bigger Game Version
 int gameversiontosend = 0;		// If the server is 0.4, let's fake our client info
 
-bool      noservermsgs;
-int       last_received;
+int last_received;
 
 // [SL] 2012-03-17 - world_index is the gametic on the server that the client
 // is currently simulating.  world_index_accum is a continuous accumulator that
@@ -187,6 +186,19 @@ EXTERN_CVAR(debug_disconnect)
 static argb_t enemycolor, teamcolor;
 
 void P_PlayerLeavesGame(player_t* player);
+
+constexpr int PACKET_LOSS_HALT_THRESHOLD_TICS   = (TICRATE * 2) - 5;  // Just shy of 2 seconds.
+constexpr int NETWORK_ERROR_ICON_THRESHOLD_TICS = TICRATE;            // 1 second.
+
+bool CL_PacketLossHaltIsInEffect()
+{
+	return gametic - last_received > PACKET_LOSS_HALT_THRESHOLD_TICS;
+}
+
+bool CL_NetworkErrorIsIndicated()
+{
+	return gametic - last_received > NETWORK_ERROR_ICON_THRESHOLD_TICS;
+}
 
 //
 // CL_ShadePlayerColor
@@ -401,7 +413,6 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 	}
 
 	serveraddr = {};
-	noservermsgs = false;
 	AM_Stop();
 
 	serverside = clientside = true;
@@ -2129,9 +2140,7 @@ bool CL_Connect()
 	if(validplayer(consoleplayer()))
 		consoleplayer().psprites[ps_weapon].sy = 32*FRACUNIT+0x6000;
 
-	noservermsgs = false;
 	last_received = gametic;
-
 	gamestate = GS_CONNECTED;
 
 	return true;

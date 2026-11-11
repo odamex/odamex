@@ -458,7 +458,7 @@ bool CL_PredictWorld()
 
 	player_t& p = consoleplayer();
 
-	if (!validplayer(p) || !p.mo || noservermsgs || netdemo.isPaused())
+	if (not validplayer(p) or not p.mo or CL_PacketLossHaltIsInEffect() or netdemo.isPaused())
 		return false;
 
 	// tenatively tell the netgraph that our prediction was successful
