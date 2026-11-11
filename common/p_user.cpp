@@ -1412,12 +1412,11 @@ player_t::player_t() :
 	blend_color(argb_t(0, 0, 0, 0)),
 	doreborn(false),
 	QueuePosition(0),
-	requestedNetIdUpdate(0),
 	hazardcount(0),
 	hazardinterval(0),
 	LastMessage(LastMessage_s()),
 	playerInfoIsRequested(false),
-	inventoryCheckRequestsAreEnabled(false),
+	serverRefreshRequestsAreEnabled(false),
 	client{}
 {
 	cmd.clear();

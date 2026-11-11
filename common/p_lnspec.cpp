@@ -404,10 +404,18 @@ bool P_CanActivateSpecials(AActor* mo, line_t* line)
 	if (serverside)
 		return true;
 
-	// Prevent specials from being activated by actors subject to less-than-credible prediction.
-	if (mo and not mo->credibility.IsCredible())
+	// Prevent specials from being activated by less-than-credible monsters or known non-credible items/things/etc.
+	//
+	// Please note that non-moving mobjs/items/things/etc spend 99.999% of their time as semi-credible, thus should
+	// be allowed to do predicted activations.
+	if (mo)
 	{
-		return false;
+		const bool isLessThenCredibleMonster =     mo->IsMonster() and not mo->credibility.IsCredible();
+		const bool isNonCredibleOtherMobj    = not mo->IsMonster() and     mo->credibility.Get() == CredibilityEnum::NOT_CREDIBLE;
+		if (isLessThenCredibleMonster or isNonCredibleOtherMobj)
+		{
+			return false;
+		}
 	}
 
 	if (cl_predictsectors)
