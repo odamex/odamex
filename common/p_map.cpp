@@ -491,7 +491,7 @@ namespace
 		// i think this is safe to enable always (except for demo playback of course)
 		// but if it turns out to cause issues with vanilla or boom maps,
 		// we should change it to rely on co_mbfphys
-		const bool tmunstuck = (thing->player != nullptr) && !P_IsVoodooDoll(thing) && !demoplayback;
+		const bool tmunstuck = (thing->player != nullptr) and not P_IsVoodooDoll(thing) and not demoplayback;
 
 		for (int bx = xl; bx <= xh; bx++)
 			for (int by = yl; by <= yh; by++)
