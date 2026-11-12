@@ -138,7 +138,7 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_t* player);
 bool P_LineSpecialMovesSector(short special);
 
-void SV_UpdateShareKeys(std::optional<uint32_t> optionallySkipPlayerId = std::nullopt);
+void SV_UpdateShareKeys(std::optional<uint32_t> optionalPickupPlayerId = std::nullopt);
 
 std::string SV_BuildKillsDeathsStatusString(const player_t& player);
 std::string V_GetTeamColor(UserInfo userinfo);
@@ -5563,7 +5563,7 @@ void SV_ACSExecuteSpecial(byte special, const AActor* activator, const char* pri
 	}
 }
 
-void SV_UpdateShareKeys(std::optional<uint32_t> optionallySkipPlayerId)
+void SV_UpdateShareKeys(std::optional<uint32_t> optionalPickupPlayerId)
 {
 	static std::vector<uint32_t> s_playerIds;
 
@@ -5572,7 +5572,7 @@ void SV_UpdateShareKeys(std::optional<uint32_t> optionallySkipPlayerId)
 
 	player_t* pickupPlayer = nullptr;
 
-    // First pass, build the 
+	// First pass, build the collection of IDs of players getting the cards.
 	for (auto& player : players)
 	{
 		// Player needs to be valid to get a card.
@@ -5587,39 +5587,42 @@ void SV_UpdateShareKeys(std::optional<uint32_t> optionallySkipPlayerId)
 		if (player.health <= 0)
 			continue;
 
-        // If we have a pickup player, exclude them initially so that we can send them a ShareKeys that
-        // does NOT list them as a cardholder.  This is because we know we're following up this message
-        // with a TouchSpecial that will take them through the soup-to-nuts of the clientside pickup.
-        if (optionallySkipPlayerId and player.id == * optionallySkipPlayerId)
-        {
-            pickupPlayer = &player;
-            continue;
-        }
+		// If we have a pickup player, exclude them initially so that we can send them a ShareKeys that
+		// does NOT list them as a cardholder.  This is because we know we're following up this message
+		// with a TouchSpecial that will take them through the soup-to-nuts of the clientside pickup.
+		if (optionalPickupPlayerId and player.id == * optionalPickupPlayerId)
+		{
+			pickupPlayer = &player;
+			continue;
+		}
 
 		player.cards = keysfound;
 		s_playerIds.push_back(player.id);
 	}
 
-    if (pickupPlayer)
-    {
-        pickupPlayer->client.messenger->Reliable().Write(SVC_ShareKeys(s_playerIds, keysfound));
+	// If we have a pickup player, we also have a collection of IDs that has everyone but them in it.
+	// Send that to them.
+	if (pickupPlayer)
+	{
+		pickupPlayer->client.messenger->Reliable().Write(SVC_ShareKeys(s_playerIds, keysfound));
 
-        // Now add them to the collection of players with the card, we'll be sending that to everyone else.
-        s_playerIds.push_back(pickupPlayer->id);
-    }
+		// Now add them to the collection of players with the card, we'll be sending that to everyone else.
+		s_playerIds.push_back(pickupPlayer->id);
+	}
 
-    const auto msg = SVC_ShareKeys(s_playerIds, keysfound);
-    for (auto& player : players)
-    {
-        if (not player.ingame())
-            continue;
+	// Finally, send the complete picture to everyone else.
+	const auto msg = SVC_ShareKeys(s_playerIds, keysfound);
+	for (auto& player : players)
+	{
+		if (not player.ingame())
+			continue;
 
-        // We already sent the pickupPlayer's message.
-        if (&player == pickupPlayer)
-            continue;
+		// We already sent the pickupPlayer's message.
+		if (&player == pickupPlayer)
+			continue;
 
-        player.client.messenger->Reliable().Write(msg);
-    }
+		player.client.messenger->Reliable().Write(msg);
+	}
 }
 
 void SV_PickupShareableKey(card_t card, const player_t& player)
