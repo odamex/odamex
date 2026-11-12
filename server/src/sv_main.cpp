@@ -3547,7 +3547,7 @@ void SV_SendPlayerStateUpdate(client_t* client, player_t* player)
 
 	if (client != &player->client)
 	{
-		client->messenger->HighPriority().Write( SVC_PlayerState(*player));
+		client->messenger->Reliable().Write( SVC_PlayerState(*player));
 	}
 	else
 	{
@@ -5586,7 +5586,7 @@ void SV_UpdateShareKeys(player_t& player)
 	SV_SendPlayerInfo(player);
 }
 
-void SV_ShareKeys(card_t card, const player_t &player)
+void SV_PickupShareableKey(card_t card, const player_t &player)
 {
 	// Add it to the KeysCheck array
 	keysfound[card] = true;
