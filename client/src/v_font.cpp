@@ -736,6 +736,7 @@ void LargeDoomFont::buildGlyphs()
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
 		const std::vector<OFontVariation>& variations) :
 	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0), mCapTop(0),
+	mCapHeight(0),
 	mHasGradientColors(false), mVariations(variations)
 {
 	load();
@@ -744,6 +745,7 @@ TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemas
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
 		ScaleFunc scale_func, const std::vector<OFontVariation>& variations) :
 	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0), mCapTop(0),
+	mCapHeight(0),
 	mHasGradientColors(false), mVariations(variations)
 {
 	setScale(scale_func);
@@ -753,6 +755,7 @@ TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemas
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
 		argb_t grad_top, argb_t grad_bottom, const std::vector<OFontVariation>& variations) :
 	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0), mCapTop(0),
+	mCapHeight(0),
 	mHasGradientColors(true), mGradTop(grad_top), mGradBottom(grad_bottom),
 	mVariations(variations)
 {
@@ -840,6 +843,7 @@ void TrueTypeFont::buildGlyphs()
 	mHeight = 0;
 	mAscent = 0;
 	mCapTop = 0;
+	mCapHeight = 0;
 	memset(mAdvanceX, 0, sizeof(mAdvanceX));
 	memset(mAdvanceY, 0, sizeof(mAdvanceY));
 
@@ -1134,7 +1138,14 @@ void TrueTypeFont::buildGlyphs()
 		mHeight = mAscent - (face->size->metrics.descender >> 6);
 
 	if (cap_bitmap_top >= 0)
+	{
 		mCapTop = std::max(0, mAscent - cap_bitmap_top);
+		mCapHeight = cap_bitmap_top;
+	}
+	else
+	{
+		mCapHeight = mAscent;
+	}
 
 	FT_Done_Face(face);
 	FT_Done_FreeType(ftlibrary);

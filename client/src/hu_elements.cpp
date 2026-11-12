@@ -39,6 +39,7 @@
 #include "g_levelstate.h"
 #include "hu_drawers.h"
 #include "p_ctf.h"
+#include "v_font.h"
 #include "v_text.h"
 #include "i_video.h"
 #include "cmdlib.h"
@@ -1228,6 +1229,17 @@ void EleBar(const int x, const int y, const int w, const float scale,
 	}
 }
 
+// How far to move a color swatch h units tall, in real pixels, so that it
+// is centered on the capitals of a name drawn at the same y.
+int swatchNudge(const unsigned short h, const float scale)
+{
+	const int x_scale = std::max(1, static_cast<int>(scale * CleanXfac));
+	const int y_scale = std::max(1, static_cast<int>(scale * CleanYfac));
+	const OFont* font = V_GetFaceFont(FACE_SMALL, x_scale);
+
+	return (font->getCapHeight() - (h * y_scale)) / 2;
+}
+
 // Draw a list of player colors in the game.  Lines up with player names.
 void EAPlayerColors(int x, int y,
                     const unsigned short w, const unsigned short h,
@@ -1236,7 +1248,7 @@ void EAPlayerColors(int x, int y,
                     const x_align_t x_origin, const y_align_t y_origin,
                     const short padding, const short limit)
 {
-	const int yoff = (hud::GetLineHeight(scale, FACE_SMALL) - h + 1) / 2;
+	const int nudge = swatchNudge(h, scale);
 
 	byte drawn = 0;
 	for (const auto& player : sortedPlayers())
@@ -1248,8 +1260,8 @@ void EAPlayerColors(int x, int y,
 		if (ingamePlayer(*player))
 		{
 			argb_t playercolor = CL_GetPlayerColor(*player);
-			hud::Clear(x, y + yoff, w, h, scale, x_align, y_align, x_origin, y_origin,
-			           playercolor);
+			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin,
+			           playercolor, nudge);
 
 			y += h + padding;
 			drawn += 1;
@@ -1266,7 +1278,7 @@ void EATeamPlayerColors(int x, int y,
                         const short padding, const short limit,
                         const byte team)
 {
-	const int yoff = (hud::GetLineHeight(scale, FACE_SMALL) - h + 1) / 2;
+	const int nudge = swatchNudge(h, scale);
 
 	byte drawn = 0;
 	for (const auto& player : sortedPlayers())
@@ -1278,8 +1290,8 @@ void EATeamPlayerColors(int x, int y,
 		if (inTeamPlayer(*player, team))
 		{
 			argb_t playercolor = CL_GetPlayerColor(*player);
-			hud::Clear(x, y + yoff, w, h, scale, x_align, y_align, x_origin, y_origin,
-			           playercolor);
+			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin,
+			           playercolor, nudge);
 
 			y += h + padding;
 			drawn += 1;

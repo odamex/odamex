@@ -106,6 +106,10 @@ public:
 	virtual int getCapTop() const
 	{	return 0;	}
 
+	// Height of the capital letters, measured on the letter T.
+	virtual int getCapHeight() const
+	{	return mCharacters['T'] ? mCharacters['T']->mHeight : getHeight();	}
+
 	// True if the font actually built usable glyphs.
 	bool isUsable() const;
 
@@ -275,6 +279,9 @@ public:
 	int getCapTop() const override
 	{	return mCapTop;	}
 
+	int getCapHeight() const override
+	{	return mCapHeight;	}
+
 	// Every line of an outline font occupies the face's line height,
 	// regardless of which characters are on it.
 	int getTextHeight(char c) const override
@@ -297,6 +304,7 @@ private:
 	int				mHeight;
 	int				mAscent;
 	int				mCapTop;
+	int				mCapHeight;
 
 	int				mAdvanceX[256];
 	int				mAdvanceY[256];
