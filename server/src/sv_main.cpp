@@ -85,6 +85,7 @@
 
 #include "clc_message.h"
 #include "svc_message.h"
+#include "msg_pack.h"
 #include "msg_parse.h"
 
 extern void G_DeferedInitNew (const OLumpName& mapname);
@@ -137,7 +138,8 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_t* player);
 bool P_LineSpecialMovesSector(short special);
 
-void SV_UpdateShareKeys();
+void SV_UpdateShareKeys(std::optional<uint32_t> optionallySkipPlayerId = std::nullopt);
+
 std::string SV_BuildKillsDeathsStatusString(const player_t& player);
 std::string V_GetTeamColor(UserInfo userinfo);
 
@@ -5561,35 +5563,66 @@ void SV_ACSExecuteSpecial(byte special, const AActor* activator, const char* pri
 	}
 }
 
-void SV_UpdateShareKeys()
+void SV_UpdateShareKeys(std::optional<uint32_t> optionallySkipPlayerId)
 {
 	static std::vector<uint32_t> s_playerIds;
 
 	s_playerIds.reserve(players.size());
 	s_playerIds.clear();
 
+	player_t* pickupPlayer = nullptr;
+
+    // First pass, build the 
 	for (auto& player : players)
 	{
-		// Player needs to be valid.
+		// Player needs to be valid to get a card.
 		if (!validplayer(player))
 			continue;
 
-		// Disallow to spectators
+		// Spectators don't get cards.
 		if (player.spectator)
 			continue;
 
-		// Don't send to dead players... Yet, since they'll get it upon respawning
+		// Dead players don't get cards... Yet, since they'll get it upon respawning.
 		if (player.health <= 0)
 			continue;
+
+        // If we have a pickup player, exclude them initially so that we can send them a ShareKeys that
+        // does NOT list them as a cardholder.  This is because we know we're following up this message
+        // with a TouchSpecial that will take them through the soup-to-nuts of the clientside pickup.
+        if (optionallySkipPlayerId and player.id == * optionallySkipPlayerId)
+        {
+            pickupPlayer = &player;
+            continue;
+        }
 
 		player.cards = keysfound;
 		s_playerIds.push_back(player.id);
 	}
 
-	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_ShareKeys(s_playerIds, keysfound));
+    if (pickupPlayer)
+    {
+        pickupPlayer->client.messenger->Reliable().Write(SVC_ShareKeys(s_playerIds, keysfound));
+
+        // Now add them to the collection of players with the card, we'll be sending that to everyone else.
+        s_playerIds.push_back(pickupPlayer->id);
+    }
+
+    const auto msg = SVC_ShareKeys(s_playerIds, keysfound);
+    for (auto& player : players)
+    {
+        if (not player.ingame())
+            continue;
+
+        // We already sent the pickupPlayer's message.
+        if (&player == pickupPlayer)
+            continue;
+
+        player.client.messenger->Reliable().Write(msg);
+    }
 }
 
-void SV_PickupShareableKey(card_t card, const player_t &player)
+void SV_PickupShareableKey(card_t card, const player_t& player)
 {
 	// Add it to the KeysCheck array
 	keysfound[card] = true;
@@ -5629,8 +5662,11 @@ void SV_PickupShareableKey(card_t card, const player_t &player)
 		SV_BroadcastPrintFmt("{} found a key!\n", player.userinfo.netname);
 	}
 
-	// Refresh the inventory to everyone
-	SV_UpdateShareKeys();
+	// Refresh the inventory to everyone, but don't let the player who did the pickup do a
+	// premature inventory rollback on themselves.  We want them to get the subsequent
+	// TouchSpecial and do the pickup for real.
+
+	SV_UpdateShareKeys(player.id);
 }
 
 VERSION_CONTROL (sv_main_cpp, "$Id$")
