@@ -1249,7 +1249,7 @@ void EAPlayerColors(int x, int y,
 		{
 			argb_t playercolor = CL_GetPlayerColor(*player);
 			hud::Clear(x, y + yoff, w, h, scale, x_align, y_align, x_origin, y_origin,
-			           playercolor, -1);
+			           playercolor);
 
 			y += h + padding;
 			drawn += 1;
@@ -1279,7 +1279,7 @@ void EATeamPlayerColors(int x, int y,
 		{
 			argb_t playercolor = CL_GetPlayerColor(*player);
 			hud::Clear(x, y + yoff, w, h, scale, x_align, y_align, x_origin, y_origin,
-			           playercolor, -1);
+			           playercolor);
 
 			y += h + padding;
 			drawn += 1;
