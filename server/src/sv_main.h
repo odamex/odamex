@@ -31,7 +31,7 @@
 
 #include <json/json.h>
 
-extern bool keysfound[NUMCARDS];
+extern std::array<bool, NUMCARDS> keysfound;
 
 // The server tracks ping up until 999 msec.  This is the most that we record into
 // the player structure and the point at which we turn off reliable message

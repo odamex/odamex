@@ -108,7 +108,7 @@ bool step_mode = false;
 
 std::set<byte> free_player_ids;
 
-bool keysfound[NUMCARDS];		// Ch0wW : Found keys
+std::array<bool, NUMCARDS> keysfound;   // Ch0wW
 
 // General server settings
 EXTERN_CVAR(sv_motd)
@@ -137,7 +137,7 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_t* player);
 bool P_LineSpecialMovesSector(short special);
 
-void SV_UpdateShareKeys(player_t& player);
+void SV_UpdateShareKeys();
 std::string SV_BuildKillsDeathsStatusString(const player_t& player);
 std::string V_GetTeamColor(UserInfo userinfo);
 
@@ -291,10 +291,8 @@ CVAR_FUNC_IMPL(sv_sharekeys)
 {
 	if (var)
 	{
-		// Refresh it to everyone
-		for (auto& player : players) {
-			SV_UpdateShareKeys(player);
-		}
+		// Refresh all keys to everyone
+		SV_UpdateShareKeys();
 	}
 }
 
@@ -5563,27 +5561,32 @@ void SV_ACSExecuteSpecial(byte special, const AActor* activator, const char* pri
 	}
 }
 
-void SV_UpdateShareKeys(player_t& player)
+void SV_UpdateShareKeys()
 {
-	// Player needs to be valid.
-	if (!validplayer(player))
-		return;
+	static std::vector<uint32_t> s_playerIds;
 
-	// Disallow to spectators
-	if (player.spectator)
-		return;
+	s_playerIds.reserve(players.size());
+	s_playerIds.clear();
 
-	// Don't send to dead players... Yet, since they'll get it upon respawning
-	if (player.health <= 0)
-		return;
+	for (auto& player : players)
+	{
+		// Player needs to be valid.
+		if (!validplayer(player))
+			continue;
 
-	// Update their keys informations
-	for (int i = 0; i < NUMCARDS; i++) {
-		player.cards[i] = keysfound[i];
+		// Disallow to spectators
+		if (player.spectator)
+			continue;
+
+		// Don't send to dead players... Yet, since they'll get it upon respawning
+		if (player.health <= 0)
+			continue;
+
+		player.cards = keysfound;
+		s_playerIds.push_back(player.id);
 	}
 
-	// Refresh that new data to the client
-	SV_SendPlayerInfo(player);
+	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_ShareKeys(s_playerIds, keysfound));
 }
 
 void SV_PickupShareableKey(card_t card, const player_t &player)
@@ -5627,11 +5630,7 @@ void SV_PickupShareableKey(card_t card, const player_t &player)
 	}
 
 	// Refresh the inventory to everyone
-	// ToDo: If we're the player who picked it, don't refresh our own inventory
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		SV_UpdateShareKeys(*it);
-	}
+	SV_UpdateShareKeys();
 }
 
 VERSION_CONTROL (sv_main_cpp, "$Id$")

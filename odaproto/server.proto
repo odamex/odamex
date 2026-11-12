@@ -289,6 +289,13 @@ message PlayerMembers
 	int32 pendingweapon = 17;
 }
 
+// svc_sharekeys
+message ShareKeys
+{
+	repeated uint32 pids  = 1;
+	         uint32 cards = 2;
+}
+
 // svc_teammembers
 message TeamMembers
 {
