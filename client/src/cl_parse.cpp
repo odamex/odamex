@@ -3598,6 +3598,42 @@ void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
 	}
 }
 
+void CL_ShareKeys(const odaproto::svc::ShareKeys* msg)
+{
+	static std::unordered_set<uint32_t, std::identity> s_playerIds;
+
+	s_playerIds.clear();
+	s_playerIds.insert(msg->pids().begin(),
+	                   msg->pids().end());
+
+	std::array<bool, NUMCARDS> cards;
+	UnpackBoolArray(cards, msg->cards());
+
+	for (auto& player : players)
+	{
+		if (s_playerIds.contains(player.id))
+		{
+			// When the local player is getting their key, keep the rollback history accurate.
+			// Remote players just get a simple assignment - we don't rollback their inventories
+			// because we don't predict changes to them.
+			if (player.id == consoleplayer_id)
+			{
+				const int  oldTic                = ThisMessageClientTic();
+				const bool rollbackWasSuccessful = rollerState.ResolveCards(oldTic, cards, player);
+
+				if (not rollbackWasSuccessful)
+				{
+					player.cards = cards;
+				}
+			}
+			else
+			{
+				player.cards = cards;
+			}
+		}
+	}
+}
+
 void CL_NetdemoCap(const odaproto::clc::NetdemoCap* msg)
 {
 	odaproto::clc::PlayerInput& currentInputMessage = localcmds[gametic % MAXSAVETICS];
@@ -3857,6 +3893,8 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_playerpowers, CL_PlayerPowers, odaproto::svc::PlayerPowers);
 		SV_MSG(svc_playerpsprites, CL_PlayerPsprites, odaproto::svc::PlayerPsprites);
 		SV_MSG(svc_configureavatar, CL_ConfigureAvatar, odaproto::svc::ConfigureAvatar);
+		SV_MSG(svc_sharekeys, CL_ShareKeys, odaproto::svc::ShareKeys);
+
 		SV_MSG(clc_netdemocap, CL_NetdemoCap, odaproto::clc::NetdemoCap);
 		SV_MSG(clc_netdemostop, CL_NetDemoStop, odaproto::clc::NetDemoStop);
 		SV_MSG(clc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::clc::NetDemoLoadSnap);
