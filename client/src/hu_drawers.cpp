@@ -338,6 +338,8 @@ void DrawTextMono(int x, int y, const float scale,
 		y -= h >> 1;
 	else if (y_origin == Y_BOTTOM)
 		y -= h;
+	else if (y_origin == Y_TOP)
+		y -= font->getCapTop();	// HUD layouts put the tops of capitals at y
 
 	DrawTextMonoAt(font, x, y, str, color, force_opaque);
 }
@@ -375,6 +377,8 @@ void DrawText(int x, int y, const float scale,
 		y -= h >> 1;
 	else if (y_origin == Y_BOTTOM)
 		y -= h;
+	else if (y_origin == Y_TOP)
+		y -= font->getCapTop();	// HUD layouts put the tops of capitals at y
 
 	y += y_pixel_nudge;
 

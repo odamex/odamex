@@ -735,7 +735,7 @@ void LargeDoomFont::buildGlyphs()
 
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
 		const std::vector<OFontVariation>& variations) :
-	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0),
+	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0), mCapTop(0),
 	mHasGradientColors(false), mVariations(variations)
 {
 	load();
@@ -743,7 +743,7 @@ TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemas
 
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
 		ScaleFunc scale_func, const std::vector<OFontVariation>& variations) :
-	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0),
+	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0), mCapTop(0),
 	mHasGradientColors(false), mVariations(variations)
 {
 	setScale(scale_func);
@@ -752,7 +752,7 @@ TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemas
 
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
 		argb_t grad_top, argb_t grad_bottom, const std::vector<OFontVariation>& variations) :
-	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0),
+	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0), mCapTop(0),
 	mHasGradientColors(true), mGradTop(grad_top), mGradBottom(grad_bottom),
 	mVariations(variations)
 {
@@ -839,6 +839,7 @@ void TrueTypeFont::buildGlyphs()
 
 	mHeight = 0;
 	mAscent = 0;
+	mCapTop = 0;
 	memset(mAdvanceX, 0, sizeof(mAdvanceX));
 	memset(mAdvanceY, 0, sizeof(mAdvanceY));
 
@@ -925,6 +926,9 @@ void TrueTypeFont::buildGlyphs()
 	const palindex_t opaque_fill_fallback =
 			V_BestOpaqueColor(V_GetDefaultPalette()->basecolors, argb_t(0, 0, 0));
 
+	// how far the top of a capital rises above the baseline
+	int cap_bitmap_top = -1;
+
 	for (int charnum = ' '; charnum < '~'; charnum++)
 	{
 		if (FT_Get_Char_Index(face, charnum) == 0)
@@ -950,6 +954,9 @@ void TrueTypeFont::buildGlyphs()
 		const int width = face->glyph->bitmap.width;
 		const int height = face->glyph->bitmap.rows;
 		const int pitch = face->glyph->bitmap.pitch;
+
+		if (charnum == 'T')
+			cap_bitmap_top = face->glyph->bitmap_top;
 
 		mAdvanceX[charnum] = face->glyph->advance.x >> 6;
 		mAdvanceY[charnum] = face->glyph->advance.y >> 6;
@@ -1125,6 +1132,9 @@ void TrueTypeFont::buildGlyphs()
 
 	if (mHeight <= 0)
 		mHeight = mAscent - (face->size->metrics.descender >> 6);
+
+	if (cap_bitmap_top >= 0)
+		mCapTop = std::max(0, mAscent - cap_bitmap_top);
 
 	FT_Done_Face(face);
 	FT_Done_FreeType(ftlibrary);

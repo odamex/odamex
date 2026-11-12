@@ -101,6 +101,11 @@ public:
 	virtual int getAscent() const
 	{	return 0;	}
 
+	// Distance from the top of a line of text down to the top of its
+	// capital letters. Bitmap fonts start their capitals at the top.
+	virtual int getCapTop() const
+	{	return 0;	}
+
 	// True if the font actually built usable glyphs.
 	bool isUsable() const;
 
@@ -267,6 +272,9 @@ public:
 	int getAscent() const override
 	{	return mAscent;	}
 
+	int getCapTop() const override
+	{	return mCapTop;	}
+
 	// Every line of an outline font occupies the face's line height,
 	// regardless of which characters are on it.
 	int getTextHeight(char c) const override
@@ -288,6 +296,7 @@ private:
 
 	int				mHeight;
 	int				mAscent;
+	int				mCapTop;
 
 	int				mAdvanceX[256];
 	int				mAdvanceY[256];
