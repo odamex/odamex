@@ -578,6 +578,17 @@ bool PlayerStateRoller::ResolveArmorpoints(int i_oldTic, int i_armorpoints, play
 	return false;
 }
 
+bool PlayerStateRoller::ResolveCards(int i_oldTic, const std::array<bool, NUMCARDS>& i_cards, player_t& io_player)
+{
+	auto historyIter = ObtainHistory(i_oldTic, io_player);
+	if (historyIter and RollbackCards(*historyIter, i_cards))
+	{
+		ApplyMostRecentToPlayer(io_player);
+		return true;
+	}
+	return false;
+}
+
 namespace
 {
 	template <typename DataType>
