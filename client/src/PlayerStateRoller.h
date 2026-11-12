@@ -101,7 +101,7 @@ class PlayerStateRoller
 		/// Similar to ResolveAmmo:  delta adjustment of armorpoints
 		bool ResolveArmorpoints(int i_oldTic, int i_armorpoints, player_t& io_player);
 
-		/// Similar to ResolveAmmoMax: absolute adjustment of weapon ownership state.
+		/// Similar to ResolveAmmoMax: absolute adjustment of keycards.
 		bool ResolveCards(int i_oldTic, const std::array<bool, NUMCARDS>& i_cards, player_t& io_player);
 
 		/// Generic stream-in operator.
