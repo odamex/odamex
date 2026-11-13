@@ -276,6 +276,19 @@ std::string M_GetScreenshotFileName(const std::string& file, const std::string& 
 std::string M_GetNetDemoFileName(const std::string& file, const std::string& altpath = "");
 
 /**
+ * @brief   Resolve an existing file name into a user netdemo directory.
+ *
+ * @detail  Same thing as M_GetNetDemoFileName, except that it returns an empty
+ *          string if the requested file does not exist.
+ *
+ * @param   file    Filename to resolve.
+ * @param   altpath Optional alternate netdemo directory
+ *
+ * @return  An absolute path pointing to the resolved, existing file.
+ */
+std::string M_FindNetDemoFileName(const std::string& file, const std::string& altpath = "");
+
+/**
  * @brief Attempt to find a file in a directory - case insensitive.
  *
  * @detail This function is OS-specific.

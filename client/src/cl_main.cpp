@@ -1300,7 +1300,7 @@ void CL_NetDemoPlay(const std::string& filename)
 	std::string found = M_FindUserFileName(filename, ".odd");
 	if (found.empty())
 	{
-		found = M_GetNetDemoFileName(filename, cl_netdemodir);
+		found = M_FindNetDemoFileName(filename, cl_netdemodir);
 		if (found.empty())
 		{
 			PrintFmt(PRINT_WARNING, "Could not find demo {}.\n", filename);
