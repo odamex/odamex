@@ -458,6 +458,9 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 	case NQ_SERVER_DROP:
 		PrintFmt("Dropped by server\n");
 		break;
+	case NQ_SERVER_ABORT:
+		PrintFmt("Server terminated unexpectedly\n");
+		break;
 	}
 
 	if (::debug_disconnect)
@@ -571,15 +574,25 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 {
 	if (connected and not simulated_connection)
 	{
-		// The server instructed us to drop, so it's already walking us out the door - we only need to
-		// send the acknowledgements, nothing else.
-		if (reason == NQ_SERVER_DROP)
+		switch (reason)
 		{
-			messenger.SendAll(gametic, serveraddr);
-		}
-		else
-		{
-			CL_GracefulClientInitiatedDisconnect();
+			// The server instructed us to drop, so it's already walking us out the door - we only need to
+			// // send the acknowledgements, nothing else.
+			case NQ_SERVER_DROP:
+				messenger.SendAll(gametic, serveraddr);
+				break;
+
+			// The server is just *gone*.  Just silently go away.
+			case NQ_SERVER_ABORT:
+				break;
+
+			// Now the cases where server and client are operating normally.
+			case NQ_SILENT:             [[ fallthrough ]];
+			case NQ_DISCONNECT:         [[ fallthrough ]];
+			case NQ_ABORT:              [[ fallthrough ]];
+			case NQ_PROTO:
+				CL_GracefulClientInitiatedDisconnect();
+				break;
 		}
 
 		CL_DrainSocket();
@@ -2299,6 +2312,14 @@ MessageResultEnum CL_AcceptNetMessage()
 
 MessageResultEnum CL_ProcessCurrentAvailableMessages()
 {
+	if (        s_canary
+	    and     s_canary->IsConnected()
+	    and not s_canary->IsAlive())
+	{
+		CL_QuitNetGame(NQ_SERVER_ABORT);
+		return MessageResultEnum::ABORT;
+	}
+
 	auto result = CL_AcceptNetMessage();
 	while (result == MessageResultEnum::ACCEPT)
 	{

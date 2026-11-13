@@ -58,6 +58,7 @@ enum netQuitReason_e
 	NQ_ABORT,           // Connection attempt was aborted
 	NQ_PROTO,           // Encountered something unexpected in the protocol
 	NQ_SERVER_DROP,     // Server dropped us on the floor, so just ack and drop our side of the connection.
+	NQ_SERVER_ABORT,    // Server aborted.  We know it won't talk to us anymore, just bail out.
 };
 
 struct PlayerItemDataType;
