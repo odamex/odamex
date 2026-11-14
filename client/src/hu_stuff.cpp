@@ -535,7 +535,7 @@ void HU_Drawer()
 
 	if (gamestate == GS_LEVEL)
 	{
-		bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
+		bool spechud = consoleplayer().spectator and cmdstate.IsSpyingSelf();
 
 		hud::ResetMessageColumn();
 
@@ -547,7 +547,7 @@ void HU_Drawer()
 			{
 				if (spechud)
 					hud::SpectatorHUD();
-				else if (displayplayer().isFreecam)
+				else if (cmdstate.IsFreecam())
 					hud::FreecamHUD();
 				else
 					hud::OdamexHUD();
@@ -577,11 +577,14 @@ void HU_Drawer()
 		mousegraph.draw(hud_mousegraph);
 
 	if (idmypos && gamestate == GS_LEVEL)
+	{
+		const AActor* camera = CL_GetDisplayCamera();
 		PrintFmt(PRINT_HIGH, "ang={};x,y,z=({},{},{})\n",
-			     displayplayer().camera->angle/FRACUNIT,
-			     displayplayer().camera->x/FRACUNIT,
-			     displayplayer().camera->y/FRACUNIT,
-			     displayplayer().camera->z/FRACUNIT);
+			     camera->angle/FRACUNIT,
+			     camera->x/FRACUNIT,
+			     camera->y/FRACUNIT,
+			     camera->z/FRACUNIT);
+	}
 
 	// Draw Netdemo info
 	hud::drawNetdemo();
@@ -592,11 +595,11 @@ void HU_Drawer()
 	if (gamestate == GS_LEVEL)
 		HU_DrawCrosshair();
 
-	if (consoleplayer().camera && !(demoplayback))
+	if (consoleplayer().camera and not demoplayback)
 	{
-		if ((gamestate != GS_INTERMISSION && Actions[ACTION_SHOWSCORES]) ||
-		    (::multiplayer && hud_show_scoreboard_ondeath &&
-		     displayplayer().health <= 0 && !displayplayer().spectator))
+		if ((gamestate != GS_INTERMISSION and Actions[ACTION_SHOWSCORES]) or
+		    (::multiplayer and hud_show_scoreboard_ondeath and
+		     displayplayer().health <= 0 and not displayplayer().spectator and not cmdstate.IsFreecam()))
 		{
 			HU_DrawScores(&displayplayer());
 		}
@@ -1354,7 +1357,7 @@ void Scoreboard(player_t *player)
 
 	// Reset playerID to self if ever happening to spy.
 	if (gamestate == GS_INTERMISSION)
-		displayplayer_id = consoleplayer_id;
+		cmdstate.ResetDisplayPlayer();
 
 	int extraQuadRows = 0;
 

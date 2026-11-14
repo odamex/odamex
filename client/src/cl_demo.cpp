@@ -25,6 +25,7 @@
 
 #include "odamex.h"
 
+#include "cl_main.h"
 #include "cl_parse.h"
 #include "p_ctf.h"
 #include "d_player.h"
@@ -44,7 +45,6 @@
 #include "g_spree.h"
 
 #include "PacketHeaderType.h"
-#include "cl_freecam.h"
 #include "f_wipe.h"
 
 EXTERN_CVAR(sv_maxclients)
@@ -638,8 +638,6 @@ bool NetDemo::stopPlaying()
 	reset();
 	gameaction = ga_fullconsole;
 	gamestate = GS_FULLCONSOLE;
-
-	Freecam::reset();
 
 	return true;
 }
@@ -1611,10 +1609,13 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 
 void NetDemo::readSnapshotData(std::vector<byte>& buf)
 {
-	byte cid = consoleplayer_id;
-	byte did = displayplayer_id;
+	byte cid = cmdstate.GetConsolePlayerId();
+	byte did = cmdstate.GetDisplayPlayerId();
 
-	Freecam::savePosition();
+	for (auto& freecam : freecams)
+	{
+		freecam.persistPosition();
+	}
 
 	P_ClearAllNetIds();
 
@@ -1740,7 +1741,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	G_SerializeSnapshots(arc);
 
 	G_InitNew(mapname);
-	displayplayer_id = consoleplayer_id = 1;
+	cmdstate.SetConsolePlayerId(1);
 	savegamerestore = false;
 
 	// Read the level time AFTER G_InitNew, which would wipe it out otherwise.
@@ -1757,14 +1758,14 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	if (check != 0x1d)
 		fatalError("Bad snapshot");
 
-	consoleplayer_id = cid;
+	cmdstate.SetConsolePlayerId(cid);
 
 	// try to restore display player
 	player_t *disp = &idplayer(did);
-	if ((validplayer(*disp) && disp->ingame() && !disp->spectator) || disp->isFreecam)
-		displayplayer_id = did;
-	else
-		displayplayer_id = cid;
+	if (not cmdstate.IsFreecam() and validplayer(*disp) and disp->ingame() and not disp->spectator)
+		cmdstate.SetDisplayPlayerId(did);
+	else if (not cmdstate.IsFreecam())
+		cmdstate.SetDisplayPlayerId(cid);
 
 	// Link the CTF flag actors to CTFdata[i].actor
 	TThinkerIterator<AActor> flagiterator;

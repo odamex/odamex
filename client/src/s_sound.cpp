@@ -151,6 +151,7 @@ size_t numChannels;
 //
 void S_NoiseDebug()
 {
+	const AActor *camera = CL_GetDisplayCamera();
 	fixed_t ox, oy;
 
 	int y = 32 * CleanYfac;
@@ -174,10 +175,10 @@ void S_NoiseDebug()
 			char temp[16];
 			const fixed_t *origin = Channel[i].pt;
 
-			if (Channel[i].attenuation == ATTN_NONE && listenplayer().camera)
+			if (Channel[i].attenuation == ATTN_NONE and camera)
 			{
-				ox = listenplayer().camera->x;
-				oy = listenplayer().camera->y;
+				ox = camera->x;
+				oy = camera->y;
 			}
 			else if (origin)
 			{
@@ -200,7 +201,7 @@ void S_NoiseDebug()
 			screen->DrawText (color, 170, y, temp);
 			snprintf(temp, 16, "%d", Channel[i].priority);
 			screen->DrawText (color, 200, y, temp);
-			snprintf(temp, 16, "%d", P_AproxDistance2 (listenplayer().camera, ox, oy) / FRACUNIT);
+			snprintf(temp, 16, "%d", P_AproxDistance2 (camera, ox, oy) / FRACUNIT);
 			screen->DrawText (color, 240, y, temp);
 			snprintf(temp, 16, "%d", Channel[i].entchannel);
 			screen->DrawText (color, 280, y, temp);
@@ -582,8 +583,10 @@ int S_CalculateSoundPriority(const fixed_t* pt, int channel, int attenuation)
 	else if (attenuation == ATTN_IDLE || attenuation == ATTN_STATIC)
 		priority -= 50;
 
+	const AActor* camera = CL_GetDisplayCamera();
+
 	// Give extra priority to sounds made by the player we're viewing
-	if (listenplayer().camera && pt == &listenplayer().camera->x)
+	if (camera and pt == &camera->x)
 		priority += 500;
 
 	return priority;
@@ -669,6 +672,8 @@ static void S_StartSound(sound_origin_t origin, int channel,
 	                     int sfx_id, float volume, int attenuation, bool looping,
 	                     float dist_scale = 0.0f)
 {
+	const AActor* camera = CL_GetDisplayCamera();
+
 	if (volume <= 0.0f)
 		return;
 
@@ -717,13 +722,12 @@ static void S_StartSound(sound_origin_t origin, int channel,
 	int sep = NORM_SEP;
 	fixed_t dist = 0;
 
-	if (listenplayer().camera && attenuation != ATTN_NONE)
+	if (camera and attenuation != ATTN_NONE)
 	{
 		volume *= snd_sfxvolume;
 
   		// Check to see if it is audible, and if not, modify the params
-		if (!AdjustSoundParams(listenplayer().camera, x, y, &volume, &sep, &dist,
-		                       dist_scale))
+		if (not AdjustSoundParams(camera, x, y, &volume, &sep, &dist,dist_scale))
 		{
 			return;
 		}
@@ -908,7 +912,7 @@ void S_Sound(int channel, const char *name, float volume, int attenuation)
 
 void S_Sound(const AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
-	if(!co_globalsound && channel == CHAN_ITEM && ent != listenplayer().camera)
+	if(not co_globalsound and channel == CHAN_ITEM and ent != CL_GetDisplayCamera())
 		return;
 
 	S_StartNamedSound(sound_origin_t(ent), channel, name, volume, attenuation, false);

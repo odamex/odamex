@@ -44,10 +44,7 @@ void P_SerializePlayers (FArchive &arc)
 	{
 		for (const auto& player : players)
 		{
-			if (not player.isFreecam) // dont serialize the freecam
-			{
-				arc << static_cast<int>(player.playerstate);
-			}
+			arc << static_cast<int>(player.playerstate);
 		}
 	}
 	else

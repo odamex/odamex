@@ -28,6 +28,7 @@
 
 #include "r_local.h"
 #include "m_vectors.h"
+#include "freecam.h"
 
 #define FLOATSPEED		(FRACUNIT*4)
 
@@ -99,6 +100,7 @@ weaponstate_t P_GetWeaponState(const player_t& player);
 //
 void P_FallingDamage (AActor *ent);
 void P_PlayerThink (player_t& player);
+void P_FreecamThink(freecam_t& freecam);
 void P_SetPlayerPowerupStatuses(player_t& player, std::span<const int, NUMPOWERS> powers);
 bool P_AreTeammates(const player_t& a, const player_t& b);
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo = false);

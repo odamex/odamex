@@ -836,7 +836,7 @@ void V_ForceBlend(const argb_t color)
 	// blend the palette for 8-bit mode
 	// shademap_t::shade takes care of blending
 	// [SL] actually, an alpha overlay is drawn on top of the rendered screen
-	// in R_RenderPlayerView
+	// in R_RenderView
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 	{
 		argb_t palette_colors[256];

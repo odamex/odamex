@@ -1676,7 +1676,9 @@ bool P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 	if (onfloor && tmfloorsector == thing->floorsector)
 		testz = tmfloorz;
 
-	if (!(thing->flags & MF_NOCLIP) && !(thing->player && thing->player->spectator))
+	if (not (thing->flags & MF_NOCLIP)
+		and not (thing->player and thing->player->spectator)
+		and not (thing->type == MT_FREECAM))
 	{
 		if (tmceilingz - tmfloorz < thing->height)
 		{

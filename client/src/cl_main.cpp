@@ -70,7 +70,7 @@
 #include "g_gametype.h"
 #include "cl_parse.h"
 #include "cl_replay.h"
-#include "cl_freecam.h"
+#include "freecam.h"
 
 #include "m_consolecommandstream.h"
 
@@ -226,7 +226,7 @@ argb_t CL_GetPlayerColor(const player_t& player)
 		teammate = P_AreTeammates(consoleplayer(), player);
 		base_color = GetTeamInfo(player.userinfo.team)->Color;
 	}
-	if (player.id != consoleplayer_id && !consoleplayer().spectator)
+	if (player.id != cmdstate.GetConsolePlayerId() and not consoleplayer().spectator)
 	{
 		if (r_forceteamcolor && teammate)
 			base_color = teamcolor;
@@ -427,6 +427,8 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 		players.clear();
 	}
 
+	freecams.clear();
+
 	hasReceivedFullUpdate = false;
 
 	if (netdemo.isRecording())
@@ -590,6 +592,8 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 	::last_svgametic      = 0;
 	world_index           = 0;
 
+	cmdstate.ResetDisplayPlayer();
+
 	messenger = OdaMessenger{ pool };
 
 	CL_ResetWorldPrediction();
@@ -631,46 +635,45 @@ void CL_CheckDisplayPlayer(void);
 //
 void CL_CheckDisplayPlayer(void)
 {
-	static byte previd = consoleplayer_id;
+	static byte previd = cmdstate.GetConsolePlayerId();
 	byte newid = 0;
+
+	if (cmdstate.IsFreecam())
+		return;
 
 	// [jsd]: try to spy on player by name when connected if spyplayername is set:
 	if (spyplayername.length() > 0) {
 		player_t &spyplayer = nameplayer(spyplayername);
 		if (validplayer(spyplayer)) {
-			displayplayer_id = spyplayer.id;
+			cmdstate.SetDisplayPlayerId(spyplayer.id);
 		}
 	}
 
-	if (displayplayer_id != previd)
-		newid = displayplayer_id;
+	if (cmdstate.GetDisplayPlayerId() != previd)
+		newid = cmdstate.GetDisplayPlayerId();
 
 	if (!validplayer(displayplayer()) || !displayplayer().mo)
-		newid = consoleplayer_id;
+		newid = cmdstate.GetConsolePlayerId();
 
 	if (!P_CanSpy(consoleplayer(), displayplayer(), demoplayback || netdemo.isInPlayback()))
-		newid = consoleplayer_id;
+		newid = cmdstate.GetConsolePlayerId();
 
-	if (displayplayer().spectator && not displayplayer().isFreecam)
-		newid = consoleplayer_id;
+	if (displayplayer().spectator)
+		newid = cmdstate.GetConsolePlayerId();
 
 	if (newid)
 	{
 		// Request information about this player from the server
 		// (weapons, ammo, health, etc)
-		// server doesnt know about clientside freecam, dont tell it
-		if (not displayplayer().isFreecam && newid != freecamplayer_id)
-		{
-			messenger.Reliable().Write(CLC_Spy(newid));
-		}
-		displayplayer_id = newid;
+		messenger.Reliable().Write(CLC_Spy(newid));
+		cmdstate.SetDisplayPlayerId(newid);
 
 		// We have no idea where the new view target's weapon is sitting until the
 		// server tells us, and in a netdemo it may never tell us at all.
 		//
 		// Park it at the neutral position rather than wherever we last
 		// left this player.
-		if (newid != consoleplayer_id && validplayer(displayplayer()))
+		if (newid != cmdstate.GetConsolePlayerId() && validplayer(displayplayer()))
 			P_RestPsprites(displayplayer());
 
 		// Changing display player can sometimes affect status bar visibility
@@ -693,7 +696,7 @@ void CL_CheckDisplayPlayer(void)
 // are made to ensure only spectators can view enemy players.
 //
 template<class Iterator>
-void CL_SpyCycle(Iterator begin, Iterator end)
+void CL_SpyCycle(const Iterator& begin, const Iterator& end, bool forward)
 {
 	// Make sure we have players to iterate over
 	if (players.empty())
@@ -701,7 +704,7 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 
 	if (gamestate == GS_INTERMISSION)
 	{
-		displayplayer_id = consoleplayer_id;
+		cmdstate.ResetDisplayPlayer();
 		return;
 	}
 
@@ -713,7 +716,7 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 
 	// set the sentinal iterator to point to displayplayer
 	Iterator sentinal = begin;
-	while (sentinal != end && sentinal->id != displayplayer_id)
+	while (sentinal != end && sentinal->id != cmdstate.GetDisplayPlayerId())
 		++sentinal;
 
 	// We can't find the displayplayer.  This is bad.
@@ -728,28 +731,124 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 		// Increment iterator and wrap around if we hit end.
 		// The sentinal will stop the lop.
 		if (++it == end)
-			it = begin;
-
-		player_t& self = consoleplayer();
-		player_t& player = *it;
-
-		// spectators only cycle between active players
-		if (P_CanSpy(self, player, demoplayback || netdemo.isInPlayback()))
 		{
-			displayplayer_id = player.id;
-			CL_CheckDisplayPlayer();
-
-			if (demoplayback)
+			if (freecams.empty() or not CL_FreecamAllowSpy())
 			{
-				consoleplayer_id = player.id;
+				it = begin;
+			}
+			else // freecams available
+			{
+				cmdstate.SetFreecamId(forward ? freecams.front().id : freecams.back().id);
+				R_ForceViewWindowResize();
 				ST_ForceRefresh();
+				return;
 			}
 
-			P_FriendlyEffects(); // Mark any new friendly monsters with an effect
-
-			return;
 		}
+
+		if (CL_SpyPlayerIfAble(*it))
+			return;
+
 	} while (it != sentinal);
+}
+
+bool CL_SpyPlayerIfAble(player_t& player)
+{
+	// spectators only cycle between active players
+	if (P_CanSpy(consoleplayer(), player, demoplayback or netdemo.isInPlayback()))
+	{
+		cmdstate.SetDisplayPlayerId(player.id);
+		CL_CheckDisplayPlayer();
+
+		if (demoplayback)
+		{
+			cmdstate.SetConsolePlayerId(player.id);
+			ST_ForceRefresh();
+		}
+
+		P_FriendlyEffects(); // Mark any new friendly monsters with an effect
+
+		return true;
+	}
+	return false;
+}
+
+void CL_SpyCycleFreecams(bool forward)
+{
+	const byte current_id = cmdstate.GetFreecamId();
+
+	if (players.empty() and freecams.empty())
+		return;
+
+	const freecam_t* nextcam = freecam_t::getfreecam(forward ? current_id + 1 : current_id - 1);
+
+	if (nextcam)
+	{
+		cmdstate.SetFreecamId(nextcam->id);
+	}
+	else // back to players
+	{
+		if (forward)
+		{
+			for (auto& player : players)
+			{
+				if (CL_SpyPlayerIfAble(player))
+					break;
+			}
+		}
+		else
+		{
+			for (auto& player : std::ranges::reverse_view(players))
+			{
+				if (CL_SpyPlayerIfAble(player))
+					break;
+			}
+		}
+		R_ForceViewWindowResize();
+		ST_ForceRefresh();
+	}
+}
+
+//
+// CL_GetDisplayCamera
+//
+// Returns the camera of the object currently being displayed on screen
+// Does not have to be a player!
+//
+AActor::AActorPtr& CL_GetDisplayCamera()
+{
+	if (cmdstate.IsPlayer())
+		return displayplayer().camera;
+	if (cmdstate.IsFreecam())
+		return freecam_t::getfreecam(cmdstate.GetFreecamId())->mo;
+
+	return displayplayer().camera;
+}
+
+// CL_GetDisplayMobj
+//
+// Returns the mobj of the object currently being displayed on screen
+// Does not have to be a player!
+//
+AActor::AActorPtr& CL_GetDisplayMobj()
+{
+	if (cmdstate.IsPlayer())
+		return displayplayer().mo;
+	if (cmdstate.IsFreecam())
+		return freecam_t::getfreecam(cmdstate.GetFreecamId())->mo;
+
+	return displayplayer().mo;
+}
+
+commandingMobj_e CL_ActiveCommandingMobj()
+{
+	if (cmdstate.IsPlayer())
+		return commandingMobj_e::PLAYER;
+	if (cmdstate.IsFreecam())
+		return commandingMobj_e::FREECAM;
+
+	// this should never happen
+	return commandingMobj_e::UNKNOWN;
 }
 
 void D_ProcessEvents();
@@ -763,7 +862,22 @@ void NetUpdate (void)
 {
 	I_StartTic ();
 	D_ProcessEvents ();
-	G_BuildTiccmd (consoleplayer().netcmds[gametic % BACKUPTICS]);
+
+	switch (CL_ActiveCommandingMobj())
+	{
+		case commandingMobj_e::PLAYER:
+			G_BuildTiccmd(consoleplayer().netcmds[gametic % BACKUPTICS]);
+		    break;
+	    case commandingMobj_e::FREECAM:
+		    G_BuildTiccmd(freecam_t::getfreecam(cmdstate.GetFreecamId())->cmd);
+		    break;
+	    case commandingMobj_e::UNKNOWN:
+		    PrintFmt("Warning - unknown commanding mobj, resetting to consoleplayer\n");
+		    cmdstate.ResetDisplayPlayer();
+		    CL_CheckDisplayPlayer();
+		    G_BuildTiccmd(consoleplayer().netcmds[gametic % BACKUPTICS]);
+		    break;
+	}		
 }
 
 extern bool advancedemo;
@@ -861,8 +975,7 @@ void CL_RunTics()
 	if (!connected)
 		CL_RequestConnectInfo();
 
-	// [RH] Use the consoleplayer's camera to update sounds
-	S_UpdateSounds(listenplayer().camera);	// move positional sounds
+	S_UpdateSounds(CL_GetDisplayCamera());	// move positional sounds
 	S_UpdateMusic();	// play another chunk of music
 
 	D_DisplayTicker();
@@ -1128,7 +1241,7 @@ BEGIN_COMMAND (spectate)
 	if (spectator)
 	{
 		// reset camera to self
-		displayplayer_id = consoleplayer_id;
+		cmdstate.ResetDisplayPlayer();
 		CL_CheckDisplayPlayer();
 	}
 
@@ -1192,9 +1305,9 @@ BEGIN_COMMAND (flagnext)
 		for (int i = 0; i < NUMTEAMS; i++)
 		{
 			byte id = GetTeamInfo(static_cast<team_t>(i))->FlagData.flagger;
-			if (id != 0 && displayplayer_id != id)
+			if (id != 0 and cmdstate.GetDisplayPlayerId() != id)
 			{
-				displayplayer_id = id;
+				cmdstate.SetDisplayPlayerId(id);
 				CL_CheckDisplayPlayer();
 				return;
 			}
@@ -1205,13 +1318,19 @@ END_COMMAND (flagnext)
 
 BEGIN_COMMAND (spynext)
 {
-	CL_SpyCycle(players.begin(), players.end());
+	if (cmdstate.IsFreecam())
+		CL_SpyCycleFreecams(true);
+	else
+		CL_SpyCycle(players.begin(), players.end(), true);
 }
 END_COMMAND (spynext)
 
 BEGIN_COMMAND (spyprev)
 {
-	CL_SpyCycle(players.rbegin(), players.rend());
+	if (cmdstate.IsFreecam())
+		CL_SpyCycleFreecams(false);
+	else
+		CL_SpyCycle(players.rbegin(), players.rend(), false);
 }
 END_COMMAND (spyprev)
 
@@ -1222,7 +1341,7 @@ BEGIN_COMMAND (spy)
 			PrintFmt(PRINT_HIGH, "Unfollowing player '{}'.\n", spyplayername);
 
 			// revert to not spying:
-			displayplayer_id = consoleplayer_id;
+			cmdstate.ResetDisplayPlayer();
 		} else {
 			PrintFmt(PRINT_HIGH, "Expecting player name.  Try 'players' to list all player names.\n");
 		}
@@ -1734,9 +1853,9 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 		}
 		else
 		{
-			if (!netdemo.isPlaying())
+			if (not netdemo.isInPlayback())
 			{
-				displayplayer_id = consoleplayer_id; // get out of spynext
+				cmdstate.ResetDisplayPlayer(); // get out of spynext
 			}
 			player.cheats &= ~CF_FLY;	// remove flying ability
 			player.cheats &= ~CF_NOCLIP;
@@ -2073,6 +2192,7 @@ bool CL_PrepareConnect()
 bool CL_Connect()
 {
 	players.clear();
+	freecams.clear();
 
 	connected = true;
 	multiplayer = true;
@@ -2449,6 +2569,18 @@ void CL_SendSummonFriendCheat(const char* summon)
 	messenger.Reliable().Write(CLC_CheatSummonFriend(summon));
 }
 
+bool CL_FreecamAllowedOnLevel()
+{
+	return (netdemo.isInPlayback() or (G_IsLivesGame() and not G_IsTeamGame()));
+}
+
+bool CL_FreecamAllowSpy()
+{
+	return (netdemo.isInPlayback() or
+		   (consoleplayer().playerstate == PST_DEAD and
+			consoleplayer().lives < 1 and
+			::levelstate.getState() == LevelState::INGAME));
+}
 
 void PickupMessage (const AActor *toucher, const char *message)
 {
@@ -2604,7 +2736,7 @@ void CL_SimulatePlayers(int serverTic)
 			continue;
 
 		// Consoleplayer is handled in CL_PredictWorld
-		if (player.id == consoleplayer_id)
+		if (player.id == cmdstate.GetConsolePlayerId())
 			continue;
 
 		PlayerSnapshot snap = player.snapshots.getSnapshot(serverTic);
@@ -2739,7 +2871,7 @@ void CL_SimulateWorld()
 	int upper_sync_limit = CL_CalculateWorldIndexSync() + MAX_AHEAD;
 
 	// Was the displayplayer just teleported?
-	bool continuous = displayplayer().snapshots.getSnapshot(world_index).isContinuous();
+	const bool continuous = cmdstate.IsPlayer() and displayplayer().snapshots.getSnapshot(world_index).isContinuous();
 
 	// Reset the synchronization with the server if needed
 	if (world_index <= 0 || !continuous ||

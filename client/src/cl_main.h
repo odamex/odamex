@@ -51,6 +51,13 @@ extern odaproto::clc::PlayerInput localcmds[MAXSAVETICS];
 
 extern bool predicting;
 
+enum commandingMobj_e
+{
+	PLAYER,
+	FREECAM,
+	UNKNOWN
+};
+
 enum netQuitReason_e
 {
 	NQ_SILENT,          // Don't print a message.
@@ -85,6 +92,12 @@ void CL_SendCheat(int cheats);
 void CL_SendGiveCheat(const char* item);
 void CL_SendSummonCheat(const char* summon);
 void CL_SendSummonFriendCheat(const char* summon);
+
+bool CL_FreecamAllowedOnLevel();
+bool CL_FreecamAllowSpy();
+AActor::AActorPtr& CL_GetDisplayCamera();
+AActor::AActorPtr& CL_GetDisplayMobj();
+commandingMobj_e CL_ActiveCommandingMobj();
 
 void CL_DisplayTics();
 void CL_RunTics();

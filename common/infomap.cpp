@@ -206,6 +206,7 @@ void P_InitMobjNameMap()
 	MapMobj(MT_CAREPACK, "CarePackage");
 	MapMobj(MT_EXTRALIFE, "ExtraLifePowerUp");
 	MapMobj(MT_RESTEAMMATE, "ResurrectTeammatePowerUp");
+	MapMobj(MT_FREECAM, "Freecam");
 	MapMobj(MT_BRIDGE, "Bridge");
 	MapMobj(MT_ZDOOMBRIDGE, "ZBridge");
 	MapMobj(MT_BRIDGE8, "InvisibleBridge8");
