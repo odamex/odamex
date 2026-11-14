@@ -29,6 +29,7 @@
 #include "i_video.h"	// IWindowSurface
 #include "st_lib.h"
 #include "r_local.h"	// R_GetRenderingSurface()
+#include "resources/res_texture.h"
 
 // [RH] Routines to stretch status bar graphics depending on st_scale cvar.
 EXTERN_CVAR(st_scale)
@@ -62,25 +63,24 @@ void StatusBarWidget_Base::clearRect(int x, int y, int w, int h)
 // Draws a patch onto the drawing surface. STlib_ClearRect should be used to
 // draw a fresh copy of the background prior to drawing the patch.
 //
-void StatusBarWidget_Base::drawPatch(int x, int y, const patch_t* p)
+void StatusBarWidget_Base::drawPatch(int x, int y, const Texture* t)
 {
 	if (st_scale)
 	{
 		// draw onto stnum_surface, which will be stretched and blitted
 		// onto the rendering surface at the end of the frame.
 		const DCanvas* canvas = stnum_surface->getDefaultCanvas();
-		canvas->DrawPatch(p, x, y);
+		canvas->DrawTexture(t, x, y);
 	}
 	else
 	{
 		// draw directly onto the rendering surface since stretching isn't being used.
 		const DCanvas* canvas = R_GetRenderingSurface()->getDefaultCanvas();
-		canvas->DrawPatch(p, x + ST_X, y + ST_Y);
+		canvas->DrawTexture(t, x + ST_X, y + ST_Y);
 	}
 }
 
-void StatusBarWidgetNumber::init(int x_, int y_, lumpHandle_t* pl, int* num_,
-                                 int maxdigits_)
+void StatusBarWidgetNumber::init(int x_, int y_, const Texture** pl, int* num_, int maxdigits_)
 {
 	m_x = x_;
 	m_y = y_;
@@ -121,9 +121,9 @@ void StatusBarWidgetNumber::update(bool force_refresh, bool cleararea)
 		number = -number;
 	}
 
-	const patch_t* p0 = W_ResolvePatchHandle(p[0]);
-	const int w = p0->width();
-	const int h = p0->height();
+	const Texture* p0 = p[0];
+	const int w = p0->mWidth;
+	const int h = p0->mHeight;
 
 	// clear the area
 	if (cleararea)
@@ -142,33 +142,31 @@ void StatusBarWidgetNumber::update(bool force_refresh, bool cleararea)
 	// draw the new number
 	for (int numdigits = maxdigits; number && numdigits; numdigits--)
 	{
-		const patch_t* pnum = W_ResolvePatchHandle(p[number % 10]);
 		drawx -= w;
-		drawPatch(drawx, m_y, pnum);
+		drawPatch(drawx, m_y, p[number % 10]);
 		number /= 10;
 	}
 
 	// draw a minus sign if necessary
 	if (negative)
-		drawPatch(drawx - 8, m_y, W_ResolvePatchHandle(negminus));
+		drawPatch(drawx - 8, m_y, negminus);
 }
 
-void StatusBarWidgetPercent::init(int x, int y, lumpHandle_t* pl, int* num,
-                                  lumpHandle_t percent_patch)
+void StatusBarWidgetPercent::init(int x, int y, const Texture** pl, int* num, const Texture* percent_patch)
 {
 	StatusBarWidgetNumber::init(x, y, pl, num, 3);
-	m_percentLump = percent_patch;
+	m_percentTex = percent_patch;
 }
 
 void StatusBarWidgetPercent::update(bool force_refresh)
 {
 	if (force_refresh)
-		drawPatch(getX(), getY(), W_ResolvePatchHandle(m_percentLump));
+		drawPatch(getX(), getY(), m_percentTex);
 
 	StatusBarWidgetNumber::update(force_refresh);
 }
 
-void StatusBarWidgetMultiIcon::init(int x_, int y_, lumpHandle_t* il, int* inum_)
+void StatusBarWidgetMultiIcon::init(int x_, int y_, const Texture** il, int* inum_)
 {
 	m_x = x_;
 	m_y = y_;
@@ -184,16 +182,15 @@ void StatusBarWidgetMultiIcon::update(bool force_refresh)
 		// clear the background area
 		if (oldinum != -1)
 		{
-			const patch_t* oldnum = W_ResolvePatchHandle(p[oldinum]);
-			const int drawx = m_x - oldnum->leftoffset();
-			const int drawy = m_y - oldnum->topoffset();
-			const int w = oldnum->width();
-			const int h = oldnum->height();
+			const int drawx = m_x - p[oldinum]->mOffsetX;
+			const int drawy = m_y - p[oldinum]->mOffsetY;
+			const int w = p[oldinum]->mWidth;
+			const int h = p[oldinum]->mHeight;
 
 			clearRect(drawx, drawy, w, h);
 		}
 
-		drawPatch(m_x, m_y, W_ResolvePatchHandle(p[*inum]));
+		drawPatch(m_x, m_y, p[*inum]);
 		oldinum = *inum;
 	}
 }

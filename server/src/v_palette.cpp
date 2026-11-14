@@ -178,6 +178,7 @@ dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 	colormap->color = color;
 	colormap->fade = fade;
 	colormap->next = NormalLight.next;
+	colormap->argblut = nullptr;	// the true-colour drawers are client only
 	NormalLight.next = colormap;
 
 	// [AM] We don't keep the necessary palette info on the server to do this.

@@ -25,6 +25,8 @@
 
 #include "i_system.h"
 #include "m_jsonlump.h"
+#include "resources/res_main.h"
+#include "resources/res_texture.h"
 #include "oscanner.h"
 #include "hashtable.h"
 
@@ -90,14 +92,17 @@ jsonlumpresult_t WI_ParseInterlevelFrame(const Json::Value& frame, interlevelfra
 	}
 
 	output.imagelump = image.asString();
-	output.imagelumpnum = W_CheckNumForName(output.imagelump);
-	if (output.imagelumpnum < 0)
+	output.imageresourceid = Res_GetTextureResourceId(
+	    OStringToUpper(output.imagelump.c_str()), GRAPHICS, false);
+	if (output.imageresourceid == ResourceId::INVALID_ID)
 	{
 		// TNT1A0 used for transparent by Legacy of Rust
-		output.imagelumpnum = W_GetNumForName(output.imagelump, ns_sprites);
+		output.imageresourceid = Res_GetTextureResourceId(
+		    OStringToUpper(output.imagelump.c_str()), SPRITE);
 	}
 	output.altimagelump = altimage.asString();
-	output.altimagelumpnum = W_CheckNumForName(output.altimagelump);
+	output.altimageresourceid = Res_GetTextureResourceId(
+	    OStringToUpper(output.altimagelump.c_str()), GRAPHICS, false);
 	output.type = static_cast<interlevelframe_t::frametype_t>(type.asInt());
 	output.duration = static_cast<int>(duration.asDouble() * TICRATE);
 	output.maxduration = static_cast<int>(maxduration.asDouble() * TICRATE);
@@ -214,9 +219,9 @@ struct intermissionscript_t
 	bool tilebackground;
 	// unsupported ^^^
 	OLumpName splat;
-	int splatnum;
+	ResourceId splatresourceid;
 	OLumpName ptr1, ptr2;
-	int ptr1num, ptr2num;
+	ResourceId ptr1resourceid, ptr2resourceid;
 	std::vector<std::tuple<OLumpName, int, int>> spots;
 };
 
@@ -231,13 +236,13 @@ void WI_ParseZDoomPic(OScanner& os, std::vector<interlevelanim_t>& anims, interl
 	int y = os.getTokenInt();
 	os.mustScan(8);
 	OLumpName picname = os.getToken();
-	int picnum = W_GetNumForName(picname);
+	ResourceId picnum = Res_GetTextureResourceId(OStringToUpper(picname.c_str()), GRAPHICS);
 	if (!twoanims && cond2.condition != animcondition_t::None)
-		anims.emplace_back(std::vector<interlevelframe_t>{interlevelframe_t{picname, picnum, "", -1, interlevelframe_t::DurationInf, 0, 0}}, std::vector<interlevelcond_t>{cond1, cond2}, x, y);
+		anims.emplace_back(std::vector<interlevelframe_t>{interlevelframe_t{picname, picnum, "", ResourceId::INVALID_ID, interlevelframe_t::DurationInf, 0, 0}}, std::vector<interlevelcond_t>{cond1, cond2}, x, y);
 	else
-		anims.emplace_back(std::vector<interlevelframe_t>{interlevelframe_t{picname, picnum, "", -1, interlevelframe_t::DurationInf, 0, 0}}, std::vector<interlevelcond_t>{cond1}, x, y);
+		anims.emplace_back(std::vector<interlevelframe_t>{interlevelframe_t{picname, picnum, "", ResourceId::INVALID_ID, interlevelframe_t::DurationInf, 0, 0}}, std::vector<interlevelcond_t>{cond1}, x, y);
 	if ((cond2.condition != animcondition_t::None) && twoanims)
-		anims.emplace_back(std::vector<interlevelframe_t>{interlevelframe_t{picname, picnum, "", -1, interlevelframe_t::DurationInf, 0, 0}}, std::vector<interlevelcond_t>{cond2}, x, y);
+		anims.emplace_back(std::vector<interlevelframe_t>{interlevelframe_t{picname, picnum, "", ResourceId::INVALID_ID, interlevelframe_t::DurationInf, 0, 0}}, std::vector<interlevelcond_t>{cond2}, x, y);
 }
 
 void WI_ParseZDoomAnim(OScanner& os, std::vector<interlevelanim_t>& anims, interlevelcond_t cond1 = {}, interlevelcond_t cond2 = {}, bool twoanims = false)
@@ -265,11 +270,11 @@ void WI_ParseZDoomAnim(OScanner& os, std::vector<interlevelanim_t>& anims, inter
 			os.error("Expected identifier, got \"{}\".", os.getToken());
 		}
 		OLumpName framename = os.getToken();
-		int framenum = W_GetNumForName(framename);
+		ResourceId frameresourceid = Res_GetTextureResourceId(OStringToUpper(framename.c_str()), GRAPHICS);
 		interlevelframe_t::frametype_t type = (i == 0 ?
 			static_cast<interlevelframe_t::frametype_t>(interlevelframe_t::DurationFixed | interlevelframe_t::RandomStart) :
 			interlevelframe_t::DurationFixed);
-		anim.frames.emplace_back(framename, framenum, "", -1, type, duration, 0);
+		anim.frames.emplace_back(framename, frameresourceid, "", ResourceId::INVALID_ID, type, duration, 0);
 		if (++i >= 20)
 			os.error("More than 20 frames in animation.");
 		os.mustScan();
@@ -292,8 +297,9 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 		return found->second.get();
 	}
 
-	const int lumpnum = W_CheckNumForName(lumpname);
-	if (lumpnum == -1)
+	const ResourceId script_res_id =
+	    Res_GetResourceId(OStringToUpper(lumpname.c_str()), NS_GLOBAL);
+	if (not Res_CheckResource(script_res_id))
 		return nullptr;
 
 	std::unique_ptr<interlevel_t> output = std::make_unique<interlevel_t>();
@@ -307,14 +313,14 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 	output->layers[2].conditions.emplace_back(animcondition_t::OnEnteringScreen, 0);
 	LevelInfos& levels = getLevelInfos();
 	intermissionscript_t intermissionscript{};
-	const char* buffer = W_CacheLumpNum<char>(lumpnum, PU_STATIC);
+	const char* buffer = Res_LoadResource<char>(script_res_id, PU_STATIC);
 
 	const OScannerConfig config = {
 	    lumpname, // lumpName
 	    false,    // semiComments
 	    false,    // cComments
 	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lumpnum));
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(script_res_id));
 
 	while (os.scan())
 	{
@@ -348,17 +354,17 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 		{
 			os.mustScan(8);
 			intermissionscript.splat = os.getToken();
-			intermissionscript.splatnum = W_GetNumForName(intermissionscript.splat);
+			intermissionscript.splatresourceid = Res_GetTextureResourceId(OStringToUpper(intermissionscript.splat.c_str()), GRAPHICS);
 		}
 		else if (iequals(name, "pointer"))
 		{
 			os.mustScan(8);
 			intermissionscript.ptr1 = os.getToken();
-			intermissionscript.ptr1num = W_GetNumForName(intermissionscript.ptr1);
+			intermissionscript.ptr1resourceid = Res_GetTextureResourceId(OStringToUpper(intermissionscript.ptr1.c_str()), GRAPHICS);
 
 			os.mustScan(8);
 			intermissionscript.ptr2 = os.getToken();
-			intermissionscript.ptr2num = W_GetNumForName(intermissionscript.ptr2);
+			intermissionscript.ptr2resourceid = Res_GetTextureResourceId(OStringToUpper(intermissionscript.ptr2.c_str()), GRAPHICS);
 
 		}
 		else if (iequals(name, "spots"))
@@ -524,18 +530,18 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 		}
 	}
 
-	int tnt1 = W_GetNumForName("TNT1A0", ns_sprites);
+	ResourceId tnt1 = Res_GetTextureResourceId("TNT1A0", SPRITE);
 	for (const auto& [map, x, y] : intermissionscript.spots)
 	{
 		splats.emplace_back(
-			std::vector<interlevelframe_t>{{intermissionscript.splat, intermissionscript.splatnum, "", -1, interlevelframe_t::DurationInf, 0, 0}},
+			std::vector<interlevelframe_t>{{intermissionscript.splat, intermissionscript.splatresourceid, "", ResourceId::INVALID_ID, interlevelframe_t::DurationInf, 0, 0}},
 			std::vector<interlevelcond_t>{{animcondition_t::MapVisited, map}},
 			x, y
 		);
 		pointers.emplace_back(
 			std::vector<interlevelframe_t>{
-				{intermissionscript.ptr1, intermissionscript.ptr1num, intermissionscript.ptr2, intermissionscript.ptr2num, interlevelframe_t::DurationFixed, 20, 0},
-				{"TNT1A0", tnt1, "", -1, interlevelframe_t::DurationFixed, 12, 0}
+				{intermissionscript.ptr1, intermissionscript.ptr1resourceid, intermissionscript.ptr2, intermissionscript.ptr2resourceid, interlevelframe_t::DurationFixed, 20, 0},
+				{"TNT1A0", tnt1, "", ResourceId::INVALID_ID, interlevelframe_t::DurationFixed, 12, 0}
 			},
 			std::vector<interlevelcond_t>{{animcondition_t::CurrMapEqual, map}},
 			x, y

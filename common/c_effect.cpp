@@ -26,6 +26,7 @@
 
 #include "actor.h"
 #include "c_effect.h"
+#include "resources/res_main.h"
 #include "p_local.h"
 #include "v_video.h"
 #include "m_random.h"
@@ -196,7 +197,7 @@ static void MakeHearts(const AActor* actor)
 			particle->velz += FRACUNIT * 3;
 		particle->accz -= FRACUNIT / 15;
 
-		particle->sprite = W_GetNumForName("FRNDHRT");
+		particle->sprite = Res_GetResourceId("FRNDHRT", NS_SPRITES);
 	}
 }
 

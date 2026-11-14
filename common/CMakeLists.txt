@@ -1,15 +1,18 @@
 file(GLOB COMMON_HEADERS *.h)
 file(GLOB COMMON_SOURCES *.cpp)
 
+file(GLOB RESOURCE_HEADERS resources/*.h)
+file(GLOB RESOURCE_SOURCES resources/*.cpp)
+
 configure_file(git_describe.h.in "${CMAKE_CURRENT_BINARY_DIR}/git_describe.h")
 
-if (UNIX)
+if(UNIX)
   include(CheckSymbolExists)
   check_symbol_exists(backtrace "execinfo.h" HAVE_BACKTRACE)
 endif()
 
 add_library(odacommon INTERFACE)
-target_sources(odacommon PUBLIC ${COMMON_SOURCES} ${COMMON_HEADERS} "${CMAKE_CURRENT_BINARY_DIR}/git_describe.h")
+target_sources(odacommon PUBLIC ${COMMON_SOURCES} ${COMMON_HEADERS} ${RESOURCE_SOURCES} ${RESOURCE_HEADERS} "${CMAKE_CURRENT_BINARY_DIR}/git_describe.h")
 
 target_include_directories(odacommon INTERFACE . ${CMAKE_CURRENT_BINARY_DIR})
 if (HAVE_BACKTRACE)

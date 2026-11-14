@@ -25,6 +25,8 @@
 
 #include "odamex.h"
 
+#include "r_context.h"
+
 #include "gstrings.h"
 #include "d_player.h"
 #include "g_game.h"
@@ -64,6 +66,7 @@
 #include "hu_stuff.h"
 #include "p_acs.h"
 #include "i_input.h"
+#include "resources/res_filelib.h"
 #include "i_time.h"
 #include "msg_pack.h"
 
@@ -122,6 +125,10 @@ int       last_svgametic = 0;
 int       lastEchoedClientTic = 0;
 
 bool      hasReceivedFullUpdate = false;
+
+static bool resource_digests_unacked = false;
+static int  resource_digests_sent_tic = 0;
+static bool resource_digests_wanted = false;
 bool      isReceivingFullUpdate = false;
 
 std::string connectpasshash = "";
@@ -350,7 +357,7 @@ static int CL_CalculateWorldIndexDriftCorrection()
 		world_index_accum += CORRECTION_PERIOD * delta;
 
 	// truncate the decimal portion of world_index_accum
-	int correction = int(world_index_accum);
+	int correction = static_cast<int>(world_index_accum);
 
 	// reset world_index_accum if our correction will affect world_index
 	if (correction != 0)
@@ -428,6 +435,8 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 	}
 
 	hasReceivedFullUpdate = false;
+	resource_digests_unacked = false;
+	resource_digests_wanted = false;
 
 	if (netdemo.isRecording())
 		netdemo.stopRecording();
@@ -861,6 +870,13 @@ void CL_RunTics()
 	if (!connected)
 		CL_RequestConnectInfo();
 
+	// Re-send resource digests until the server acknowledges receipt.
+	if (::resource_digests_unacked and ::connected and not ::simulated_connection and
+	    ::gametic - ::resource_digests_sent_tic > 5 * TICRATE)
+	{
+		CL_SendResourceDigests();
+	}
+
 	// [RH] Use the consoleplayer's camera to update sounds
 	S_UpdateSounds(listenplayer().camera);	// move positional sounds
 	S_UpdateMusic();	// play another chunk of music
@@ -1077,7 +1093,7 @@ BEGIN_COMMAND (rcon)
 {
 	if (connected && argc > 1)
 	{
-		const std::string_view commandString {args, std::min(size_t(256), strlen(args)) };
+		const std::string_view commandString {args, std::min(static_cast<size_t>(256), strlen(args)) };
 
 		messenger.Reliable().Write(CLC_Rcon(commandString));
 	}
@@ -1650,6 +1666,47 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 }
 
 //
+// CL_SendResourceDigests
+//
+// Sends hashes and content digests of our loaded resource files so the
+// server can verify they match its own. Called after each successful
+// resource load, and re-sent periodically until the server acknowledges
+// with svc_resourcedigestsack. Only a server that asked for them in
+// svc_loadmap gets them, since an older server drops a client that sends
+// a message it doesn't know.
+//
+void CL_SendResourceDigests()
+{
+	if (not ::connected or ::simulated_connection or not ::resource_digests_wanted)
+		return;
+
+	::messenger.Reliable().Write(CLC_ResourceDigests(::wadfiles, ::patchfiles));
+
+	::resource_digests_unacked = true;
+	::resource_digests_sent_tic = ::gametic;
+}
+
+//
+// CL_AckResourceDigests
+//
+// The server accepted our resource digests; stop re-sending them.
+//
+void CL_AckResourceDigests()
+{
+	::resource_digests_unacked = false;
+}
+
+//
+// CL_SetResourceDigestsWanted
+//
+// Records whether the server wants our resource digests after each load.
+//
+void CL_SetResourceDigestsWanted(const bool wanted)
+{
+	::resource_digests_wanted = wanted;
+}
+
+//
 // CL_SendUserInfo
 //
 void CL_SendUserInfo(buf_t& netBuf)
@@ -1858,13 +1915,16 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 	CL_StartDownload(downloadsites, missing_file, DL_RECONNECT);
 }
 
+// Globals to store the filename and hash to download
+
+
 //
 // [denis] CL_PrepareConnect
 // Process server info and switch to the right wads...
 //
 bool CL_PrepareConnect()
 {
-	G_CleanupDemo();	// stop demos from playing before D_DoomWadReboot wipes out Zone memory
+	G_CleanupDemo();	// stop demos from playing before wiping out Zone memory
 
 	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
 
@@ -2024,6 +2084,16 @@ bool CL_PrepareConnect()
 		}
 
 		PrintFmt("> {}\n", file.getBasename());
+	}
+
+	if (MSG_BytesLeft() >= 4 and MSG_ReadLong() == 0x01020306)
+	{
+		for (byte i = 0; i < server_wads; i++)
+		{
+			OMD5Hash digest;
+			OMD5Hash::makeFromHexStr(digest, MSG_ReadString());
+			newwadfiles.at(i).setWantedContentDigest(digest);
+		}
 	}
 
 	// TODO: Allow deh/bex file downloads
@@ -2218,6 +2288,9 @@ void CL_TryToConnect(uint32_t server_token)
 
 		MSG_WriteString(&netBuf, connectpasshash.c_str());
 
+		// After the password, where a protobreak server stops reading.
+		MSG_Pack(netBuf, CLC_ResourceDigests(::wadfiles, ::patchfiles));
+
 		NET_SendPacket(netBuf, serveraddr);
 	}
 
@@ -2320,9 +2393,6 @@ void CL_SaveCmd(void)
 }
 
 extern int outrate;
-
-// TODO:  we have to stop doing this willy-nilly extern madness..
-extern vissprite_t* closestNonCredibleVisSprite;
 
 //
 // CL_SendCmd

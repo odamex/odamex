@@ -137,7 +137,7 @@ public:
 
 	double getAspectRatio() const
 	{
-		return double(width) / double(height);
+		return static_cast<double>(width) / static_cast<double>(height);
 	}
 
 	double getPixelAspectRatio() const
@@ -146,7 +146,7 @@ public:
 		if (isWideScreen())
 			return 1.0;
 
-		return double(width) * 0.75 / double(height);
+		return static_cast<double>(width) * 0.75 / static_cast<double>(height);
 	}
 
 	uint16_t	width;
@@ -270,7 +270,8 @@ public:
 
 	inline const uint8_t* getBuffer(uint16_t x, uint16_t y) const
 	{
-		return mSurfaceBuffer + int(y) * getPitch() + int(x) * getBytesPerPixel();
+		return mSurfaceBuffer + ((static_cast<int>(y) + (static_cast<int>(x) * mPitchInPixels))
+								* getBytesPerPixel());
 	}
 
 	inline uint8_t* getBuffer(uint16_t x, uint16_t y)
@@ -289,6 +290,18 @@ public:
 
 	inline uint16_t getPitchInPixels() const
 	{	return mPitchInPixels;	}
+
+	inline int getRowStepInPixels() const
+	{	return 1;	}
+
+	inline int getColStepInPixels() const
+	{	return mPitchInPixels;	}
+
+	inline int getRowStepInBytes() const
+	{	return getBytesPerPixel();	}
+
+	inline int getColStepInBytes() const
+	{	return mPitchInPixels * getBytesPerPixel();	}
 
 	inline uint8_t getBitsPerPixel() const
 	{	return mPixelFormat.getBitsPerPixel();	}
@@ -310,6 +323,8 @@ public:
 
 	void blitcrop(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
 			int destx, int desty, int destw, int desth);
+
+	void copyLinesTo32(void* dest, int destpitch, int first, int count) const;
 
 	void clear();
 
@@ -346,6 +361,9 @@ private:
 	uint16_t			mWidth;
 	uint16_t			mHeight;
 
+	// Bytes and pixels between the starts of two adjacent stored lines. A stored
+	// line is a screen COLUMN, so this is the distance from one column to the
+	// next -- getColStepInPixels().
 	uint16_t			mPitch;
 	uint16_t			mPitchInPixels;		// mPitch / mPixelFormat.getBytesPerPixel()
 

@@ -43,10 +43,11 @@
 #include "m_bbox.h"
 #include "m_fileio.h"
 #include "oscanner.h"
+#include "r_context.h"
 #include "r_interp.h"
 #include "r_local.h"
 #include "r_voxel.h"
-#include "w_wad.h"
+#include "resources/res_main.h"
 #include "z_zone.h"
 
 EXTERN_CVAR(r_voxels)
@@ -136,11 +137,20 @@ enum VoxelFace
 
 std::unordered_map<uint64_t, VoxelModel> g_voxels;
 std::unordered_map<uint64_t, VoxelRenderOptions> g_voxelOptions;
-std::deque<voxelvis_t> g_visibleVoxels;
+// Each slice's projections for the current view, indexed by
+// rendercontext_t::index. A slice only ever adds to its own, so the slices can
+// project at the same time; the masked pass reads every slice's.
+std::array<std::deque<voxelvis_t>, MAXRENDERSLICES> g_visibleVoxels;
 std::string g_voxelDir;
 std::unordered_map<std::string, std::string> g_voxelFiles;
-fixed_t g_eye_x = 0;
-fixed_t g_eye_y = 0;
+
+// The viewer's position in the model's own coordinates, for the voxel being
+// drawn.
+struct VoxelEye
+{
+	fixed_t x = 0;
+	fixed_t y = 0;
+};
 
 uint64_t FrameKey(const int32_t spritenum, const int frame)
 {
@@ -477,10 +487,10 @@ void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
 	os.warning("Unterminated VOXELDEF option block.");
 }
 
-void VX_ParseVoxelDefLump(const int lump)
+void VX_ParseVoxelDefLump(const ResourceId res_id)
 {
-	const char* data = W_CacheLumpNum<char>(lump, PU_CACHE);
-	const unsigned len = W_LumpLength(lump);
+	const unsigned len = Res_GetResourceSize(res_id);
+	const char* data = len ? Res_LoadResource<char>(res_id, PU_CACHE) : nullptr;
 	if (not data or len == 0)
 		return;
 
@@ -586,17 +596,18 @@ void VX_ParseVoxelDefLump(const int lump)
 
 void VX_ParseVoxelDefs()
 {
-	int lump = -1;
-	while ((lump = W_FindLump("VOXELDEF", lump)) != -1)
-		VX_ParseVoxelDefLump(lump);
+	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/VOXELDEF"));
+	for (const ResourceId res_id : res_ids)
+		VX_ParseVoxelDefLump(res_id);
 }
 
 int VX_PaletteIndex(const byte* pal, int r, int g, int b)
 {
-	int best = 0;
+	int best = 1;
 	int best_dist = std::numeric_limits<int>::max();
 
-	for (int i = 0; i < 256; i++)
+	pal += 3;
+	for (int i = 1; i < 256; i++)
 	{
 		const int dr = r - static_cast<int>(*pal++);
 		const int dg = g - static_cast<int>(*pal++);
@@ -615,7 +626,7 @@ int VX_PaletteIndex(const byte* pal, int r, int g, int b)
 
 void VX_CreateRemapTable(const byte* src, std::array<byte, 256>& table)
 {
-	const byte* pal = W_CacheLumpName<byte>("PLAYPAL", PU_CACHE);
+	const byte* pal = Res_LoadResource<byte>(Res_GetResourceId("PLAYPAL", NS_GLOBAL), PU_CACHE);
 
 	for (int c = 0; c < 256; c++)
 	{
@@ -838,46 +849,27 @@ bool VX_LoadByName(const int32_t spritenum, const int frame, const std::string& 
 		resolvedVoxelName.back() = '\\';
 	const std::string lumpName = StdStringToUpper(resolvedVoxelName);
 
-	int start = -1;
-	while ((start = W_FindLump("VX_START", start)) != -1)
+	// Voxels in loaded resource files: a WAD's VX_START/VX_END markers or an
+	// archive's voxels/ directory. The newest resource file wins.
+	const ResourceId res_id = Res_GetResourceId(OString(lumpName), NS_VOXELS, true);
+	if (Res_CheckResource(res_id))
 	{
-		int end = -1;
-		for (int i = start + 1; std::cmp_less(i, W_NumLumps()); i++)
+		const unsigned len = Res_GetResourceSize(res_id);
+		if (len == 0)
+			return false;
+
+		const byte* bytes = Res_LoadResource<byte>(res_id, PU_CACHE);
+
+		VoxelModel model;
+		if (not bytes or not VX_Decode(bytes, len, model))
 		{
-			if (W_CheckLumpName(i, "VX_END"))
-			{
-				end = i;
-				break;
-			}
-		}
-		if (end == -1)
-			break;
-
-		for (int i = start + 1; i < end; i++)
-		{
-			if (not W_CheckLumpName(i, lumpName.c_str()))
-				continue;
-
-			const unsigned len = W_LumpLength(i);
-			if (len == 0)
-				return false;
-
-			std::vector<byte> bytes(len);
-			W_ReadLump(i, bytes.data());
-
-			VoxelModel model;
-			if (not VX_Decode(bytes.data(), bytes.size(), model))
-			{
-				PrintFmt(PRINT_WARNING, "VX_Load: failed to decode lump {}\n", lumpName);
-				return false;
-			}
-
-			g_voxels[FrameKey(spritenum, frame)] = std::move(model);
-			g_voxelOptions[FrameKey(spritenum, frame)] = opts;
-			return true;
+			PrintFmt(PRINT_WARNING, "VX_Load: failed to decode lump {}\n", lumpName);
+			return false;
 		}
 
-		start = end;
+		g_voxels[FrameKey(spritenum, frame)] = std::move(model);
+		g_voxelOptions[FrameKey(spritenum, frame)] = opts;
+		return true;
 	}
 
 	// Server-provided WAD resources take precedence above and remain usable even
@@ -939,11 +931,23 @@ const VoxelRenderOptions* VX_GetOptions(const int32_t spritenum, const int frame
 	return it == g_voxelOptions.end() ? nullptr : &it->second;
 }
 
-void VX_DrawSolidShadedColumn(vissprite_t* spr, const int screenX, const int yl,
-                              const int yh, const byte color)
+// The fixed-point scale between s0 at screen x x0 and s1 at x1, at x.
+fixed_t VX_LerpScale(const fixed_t s0, const fixed_t s1, const int64_t x0, const int64_t x1,
+                     const int64_t x)
+{
+	if (x1 == x0)
+		return s0;
+	const int64_t t = ((x - x0) << FRACBITS) / (x1 - x0);
+	return static_cast<fixed_t>(s0 + FixedMulWide(static_cast<int64_t>(s1) - s0, t));
+}
+
+void VX_DrawSolidShadedColumn(rendercontext_t& ctx, vissprite_t* spr, const int screenX,
+                              const int yl, const int yh, const byte color)
 {
 	if (yl > yh)
 		return;
+
+	drawcolumn_t& dcol = ctx.draw.dcol;
 
 	byte src = color;
 	dcol.x = screenX;
@@ -957,16 +961,18 @@ void VX_DrawSolidShadedColumn(vissprite_t* spr, const int screenX, const int yl,
 	if (spr->translation)
 	{
 		dcol.translation = spr->translation;
-		R_DrawTranslatedColumn();
+		R_DrawTranslatedColumn(ctx);
 	}
 	else
 	{
-		R_DrawColumn();
+		R_DrawColumn(ctx);
 	}
 }
 
-void VX_DrawColumn(vissprite_t* spr, int x, int y)
+void VX_DrawColumn(rendercontext_t& ctx, vissprite_t* spr, const VoxelEye& eye, int x, int y)
 {
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
 	const auto* vv = spr->voxel;
 	const auto* v = vv->model;
 
@@ -976,15 +982,15 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 		return;
 
 	int qu_x = 2;
-	if (g_eye_x < (x << FRACBITS))
+	if (eye.x < (x << FRACBITS))
 		qu_x = 0;
-	else if (g_eye_x < ((x + 1) << FRACBITS))
+	else if (eye.x < ((x + 1) << FRACBITS))
 		qu_x = 1;
 
 	int qu_y = 2;
-	if (g_eye_y < (y << FRACBITS))
+	if (eye.y < (y << FRACBITS))
 		qu_y = 0;
-	else if (g_eye_y < ((y + 1) << FRACBITS))
+	else if (eye.y < ((y + 1) << FRACBITS))
 		qu_y = 1;
 	const int quadrant = (qu_y * 3) + qu_x;
 	if (quadrant == 4)
@@ -1031,10 +1037,10 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 	const fixed_t C_yscale = FixedDiv(FocalLengthY, Cy);
 	const fixed_t D_yscale = FixedDiv(FocalLengthY, Dy);
 
-	const fixed_t Ax = centerxfrac + FixedMul(Ax0, A_xscale);
-	const fixed_t Bx = centerxfrac + FixedMul(Bx0, B_xscale);
-	const fixed_t Cx = centerxfrac + FixedMul(Cx0, C_xscale);
-	const fixed_t Dx = centerxfrac + FixedMul(Dx0, D_xscale);
+	const int64_t Ax = centerxfrac + FixedMulWide(Ax0, A_xscale);
+	const int64_t Bx = centerxfrac + FixedMulWide(Bx0, B_xscale);
+	const int64_t Cx = centerxfrac + FixedMulWide(Cx0, C_xscale);
+	const int64_t Dx = centerxfrac + FixedMulWide(Dx0, D_xscale);
 
 	static const std::array<byte, 9> A_faces = {F_BACK,  F_BACK, F_RIGHT, F_LEFT, 0,
 	                                            F_RIGHT, F_LEFT, F_FRONT, F_FRONT};
@@ -1048,25 +1054,23 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 	const fixed_t local_y = (y << FRACBITS) - v->y_pivot;
 	const fixed_t columnTilt = FixedMul(local_y, vv->pitchSlope);
 
-	for (fixed_t ux = ((Ax - 1) | (FRACUNIT - 1)) + 1; ux < std::max(Bx, Cx);
-	     ux += FRACUNIT)
-	{
-		if (ux >= ((spr->x2 + 1) << FRACBITS))
-			break;
-		if (ux < (spr->x1 << FRACBITS))
-			continue;
+	// Only the sprite's own columns: a corner close to the camera can project
+	// a long way off the screen.
+	const int64_t ux_start = std::max<int64_t>(((Ax - 1) | (FRACUNIT - 1)) + 1,
+	                                           static_cast<int64_t>(spr->x1) << FRACBITS);
+	const int64_t ux_stop = std::min<int64_t>(std::max(Bx, Cx),
+	                                          static_cast<int64_t>(spr->x2 + 1) << FRACBITS);
 
-		const int screenX = ux >> FRACBITS;
-		const fixed_t clip_y1 = (mceilingclip[screenX] + 1) << FRACBITS;
-		const fixed_t clip_y2 = (mfloorclip[screenX] << FRACBITS) - 1;
+	for (int64_t ux = ux_start; ux < ux_stop; ux += FRACUNIT)
+	{
+		const int screenX = static_cast<int>(ux >> FRACBITS);
+		const fixed_t clip_y1 = (ctx.sprite.mceilingclip[screenX] + 1) << FRACBITS;
+		const fixed_t clip_y2 = (ctx.sprite.mfloorclip[screenX] << FRACBITS) - 1;
 		if (clip_y2 <= clip_y1)
 			continue;
 
-		fixed_t scale = 0;
-		if (ux > Bx)
-			scale = B_yscale + FixedMul(C_yscale - B_yscale, FixedDiv(ux - Bx, Cx - Bx));
-		else
-			scale = A_yscale + FixedMul(B_yscale - A_yscale, FixedDiv(ux - Ax, Bx - Ax));
+		const fixed_t scale = ux > Bx ? VX_LerpScale(B_yscale, C_yscale, Bx, Cx, ux)
+		                              : VX_LerpScale(A_yscale, B_yscale, Ax, Bx, ux);
 		if (scale <= 0)
 			continue;
 
@@ -1084,12 +1088,10 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 				continue;
 
 			const fixed_t top_z = spr->gzt - viewz + columnTilt - (top << FRACBITS);
-			fixed_t uy1 = centeryfrac - FixedMul(top_z, scale);
-			fixed_t uy2 = uy1 + (static_cast<fixed_t>(len) * scale);
-			const fixed_t uy0 = uy1;
-
-			uy1 = std::clamp(uy1, clip_y1, clip_y2);
-			uy2 = std::clamp(uy2, clip_y1, clip_y2);
+			const int64_t uy0 = centeryfrac - FixedMulWide(top_z, scale);
+			const fixed_t uy1 = static_cast<fixed_t>(std::clamp<int64_t>(uy0, clip_y1, clip_y2));
+			const fixed_t uy2 = static_cast<fixed_t>(std::clamp<int64_t>(
+			    uy0 + (static_cast<int64_t>(len) * scale), clip_y1, clip_y2));
 
 			// Some viewing angles have no second visible side.  In those cases,
 			// rounding can put the center screen column just past Bx; keep using
@@ -1105,7 +1107,7 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 					dcol.yl = uy1 >> FRACBITS;
 					dcol.yh = uy2 >> FRACBITS;
 					if (dcol.yl <= dcol.yh)
-						R_DrawFuzzColumn();
+						R_DrawFuzzColumn(ctx);
 				}
 				slab += len;
 				continue;
@@ -1119,34 +1121,30 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 			if (has_top or has_bottom)
 			{
 				if (ux > Cx)
-					wscale = C_yscale +
-					         FixedMul(B_yscale - C_yscale, FixedDiv(ux - Cx, Bx - Cx));
+					wscale = VX_LerpScale(C_yscale, B_yscale, Cx, Bx, ux);
 				else if (ux > Dx)
-					wscale = D_yscale +
-					         FixedMul(C_yscale - D_yscale, FixedDiv(ux - Dx, Cx - Dx));
+					wscale = VX_LerpScale(D_yscale, C_yscale, Dx, Cx, ux);
 				else
-					wscale = A_yscale +
-					         FixedMul(D_yscale - A_yscale, FixedDiv(ux - Ax, Dx - Ax));
+					wscale = VX_LerpScale(A_yscale, D_yscale, Ax, Dx, ux);
 			}
 
 			if (has_top)
 			{
-				fixed_t uy = centeryfrac - FixedMul(top_z, wscale);
+				int64_t uy = centeryfrac - FixedMulWide(top_z, wscale);
 				uy = ((uy - 1) | (FRACUNIT - 1)) + 1;
-				uy = std::max(uy, clip_y1);
+				uy = std::clamp<int64_t>(uy, clip_y1, clip_y2);
 
-				VX_DrawSolidShadedColumn(spr, screenX, uy >> FRACBITS,
+				VX_DrawSolidShadedColumn(ctx, spr, screenX, static_cast<int>(uy >> FRACBITS),
 				                         (uy1 - 1) >> FRACBITS, slab[0]);
 			}
 			else if (has_bottom)
 			{
-				fixed_t uy =
-				    centeryfrac -
-				    FixedMul(top_z - (static_cast<int>(len) << FRACBITS), wscale);
-				uy = std::min(uy, clip_y2);
+				int64_t uy = centeryfrac -
+				             FixedMulWide(top_z - (static_cast<int>(len) << FRACBITS), wscale);
+				uy = std::clamp<int64_t>(uy, clip_y1, clip_y2);
 
-				VX_DrawSolidShadedColumn(spr, screenX, (uy2 + 1) >> FRACBITS,
-				                         uy >> FRACBITS, slab[len - 1]);
+				VX_DrawSolidShadedColumn(ctx, spr, screenX, (uy2 + 1) >> FRACBITS,
+				                         static_cast<int>(uy >> FRACBITS), slab[len - 1]);
 			}
 
 			if (has_side)
@@ -1156,23 +1154,32 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 				dcol.yh = uy2 >> FRACBITS;
 
 				dcol.iscale = iscale;
-				dcol.texturefrac = FixedMul(
-				    (((dcol.yl << FRACBITS) - uy0) >> FRACBITS) << FRACBITS, iscale);
+
+				// the slab's texel at the first drawn row
+				// uy0 can be far above the screen, so this is 64-bit
+				// until it is known to be in range
+				const int64_t rows = ((static_cast<int64_t>(dcol.yl) << FRACBITS) - uy0) >> FRACBITS;
+				int64_t texturefrac = rows * iscale;
+				const fixed_t maxfrac = static_cast<fixed_t>(len) << FRACBITS;
+				if (texturefrac >= maxfrac)
+				{
+					slab += len;
+					continue;
+				}
 
 				int local_yl = dcol.yl;
 				int local_yh = dcol.yh;
-				if (dcol.texturefrac < 0)
+				if (texturefrac < 0)
 				{
-					const int cnt =
-					    (FixedDiv(-dcol.texturefrac, dcol.iscale) + FRACUNIT - 1) >>
-					    FRACBITS;
-					local_yl += cnt;
-					dcol.texturefrac += cnt * dcol.iscale;
+					const int64_t cnt = ((((-texturefrac) << FRACBITS) / dcol.iscale) + FRACUNIT - 1) >>
+					                    FRACBITS;
+					local_yl = static_cast<int>(std::min<int64_t>(local_yl + cnt, local_yh + 1));
+					texturefrac += cnt * dcol.iscale;
 				}
+				dcol.texturefrac = static_cast<fixed_t>(texturefrac);
 
 				const fixed_t endfrac =
 				    dcol.texturefrac + ((local_yh - local_yl) * dcol.iscale);
-				const fixed_t maxfrac = static_cast<fixed_t>(len) << FRACBITS;
 				if (endfrac >= maxfrac)
 				{
 					const int cnt =
@@ -1192,14 +1199,14 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 						dcol.colormap = spr->colormap;
 						// The legacy column drawer does not modify its source data.
 						dcol.source = const_cast<byte*>(slab); // NOLINT
-						R_DrawTranslatedColumn();
+						R_DrawTranslatedColumn(ctx);
 					}
 					else
 					{
 						dcol.colormap = spr->colormap;
 						// The legacy column drawer does not modify its source data.
 						dcol.source = const_cast<byte*>(slab); // NOLINT
-						R_DrawColumn();
+						R_DrawColumn(ctx);
 					}
 				}
 			}
@@ -1214,41 +1221,42 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 // 
 // The block is split in half along its longer axis -- the far half is drawn
 // recursively and the loop continues with the near half.
-void VX_RecursiveDraw(vissprite_t* spr, int x, int y, int w, int h)
+void VX_RecursiveDraw(rendercontext_t& ctx, vissprite_t* spr, const VoxelEye& eye, int x, int y,
+                      int w, int h)
 {
 	while (w > 1 or h > 1)
 	{
 		if (w >= h)
 		{
-			if (g_eye_x < ((x * 2 + w) << (FRACBITS - 1)))
+			if (eye.x < (((x * 2) + w) << (FRACBITS - 1)))
 			{
-				VX_RecursiveDraw(spr, x + (w / 2), y, (w + 1) / 2, h);
+				VX_RecursiveDraw(ctx, spr, eye, x + (w / 2), y, (w + 1) / 2, h);
 				w = w / 2;
 			}
 			else
 			{
-				VX_RecursiveDraw(spr, x, y, w / 2, h);
+				VX_RecursiveDraw(ctx, spr, eye, x, y, w / 2, h);
 				x += w / 2;
 				w = (w + 1) / 2;
 			}
 		}
 		else
 		{
-			if (g_eye_y < ((y * 2 + h) << (FRACBITS - 1)))
+			if (eye.y < (((y * 2) + h) << (FRACBITS - 1)))
 			{
-				VX_RecursiveDraw(spr, x, y + (h / 2), w, (h + 1) / 2);
+				VX_RecursiveDraw(ctx, spr, eye, x, y + (h / 2), w, (h + 1) / 2);
 				h = h / 2;
 			}
 			else
 			{
-				VX_RecursiveDraw(spr, x, y, w, h / 2);
+				VX_RecursiveDraw(ctx, spr, eye, x, y, w, h / 2);
 				y += h / 2;
 				h = (h + 1) / 2;
 			}
 		}
 	}
 
-	VX_DrawColumn(spr, x, y);
+	VX_DrawColumn(ctx, spr, eye, x, y);
 }
 
 bool VX_CheckBBox(const fixed_t* bspcoord)
@@ -1264,13 +1272,13 @@ bool VX_CheckBBox(const fixed_t* bspcoord)
 	return true;
 }
 
-void VX_SpritesInNode(unsigned int bspnum)
+void VX_SpritesInNode(rendercontext_t& ctx, unsigned int bspnum)
 {
 	while (not(bspnum & NF_SUBSECTOR))
 	{
 		const node_t* bsp = &nodes[bspnum];
 		if (VX_CheckBBox(bsp->bbox[0]))
-			VX_SpritesInNode(bsp->children[0]);
+			VX_SpritesInNode(ctx, bsp->children[0]);
 
 		if (not VX_CheckBBox(bsp->bbox[1]))
 			return;
@@ -1278,8 +1286,12 @@ void VX_SpritesInNode(unsigned int bspnum)
 		bspnum = bsp->children[1];
 	}
 
-	const subsector_t* sub = &subsectors[bspnum & ~NF_SUBSECTOR];
-	R_AddSprites(sub->sector, sub->sector->lightlevel, FAKED_Center);
+	// R_AddSprites lights and colours the sprites from the context's current
+	// sector, which R_Subsector would have set.
+	sector_t* sector = subsectors[bspnum & ~NF_SUBSECTOR].sector;
+	ctx.draw.basecolormap = sector->colormap->maps;
+	ctx.bsp.foggy = R_SectorIsFoggy(sector);
+	R_AddSprites(ctx, sector, sector->lightlevel, FAKED_Center);
 }
 
 bool g_voxelsInitialized = false;
@@ -1299,7 +1311,8 @@ void VX_Init()
 {
 	g_voxels.clear();
 	g_voxelOptions.clear();
-	g_visibleVoxels.clear();
+	for (std::deque<voxelvis_t>& voxels : g_visibleVoxels)
+		voxels.clear();
 	g_voxelDir = VX_ResolveVoxelDir();
 	VX_ScanVoxelDir();
 	g_voxelsInitialized = true;
@@ -1324,18 +1337,27 @@ void VX_Init()
 	         g_voxels.size(), g_voxelOptions.size());
 }
 
-void VX_ClearVoxels()
+void VX_ClearVoxels(rendercontext_t& ctx)
 {
-	g_visibleVoxels.clear();
+	g_visibleVoxels[ctx.index].clear();
 }
 
-void VX_NearbySprites()
+void VX_NearbySprites(rendercontext_t& ctx)
 {
 	if (r_voxels and numnodes > 0)
-		VX_SpritesInNode(static_cast<unsigned int>(numnodes - 1));
+		VX_SpritesInNode(ctx, static_cast<unsigned int>(numnodes - 1));
 }
 
-bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
+bool VX_HasVoxel(const AActor* thing, const int frame)
+{
+	if (not r_voxels or not thing)
+		return false;
+
+	const VoxelModel* v = VX_GetModel(thing->sprite, frame);
+	return v and (sv_allowvoxels or not v->fromLocalDirectory);
+}
+
+bool VX_ProjectVoxel(rendercontext_t& ctx, const AActor* thing, const int frame, vissprite_t* vis)
 {
 	if (not r_voxels or not thing or not vis or not thing->subsector or
 	    not thing->subsector->sector)
@@ -1433,14 +1455,15 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 	if (x1 > x2)
 		return false;
 
-	g_visibleVoxels.push_back({.model = v,
-	                           .angle = angle,
-	                           .topLeftX = TL_x,
-	                           .topLeftY = TL_y,
-	                           .cosine = c,
-	                           .sine = s,
-	                           .pitchSlope = pitchSlope});
-	vis->voxel = &g_visibleVoxels.back();
+	std::deque<voxelvis_t>& voxels = g_visibleVoxels[ctx.index];
+	voxels.push_back({.model = v,
+	                  .angle = angle,
+	                  .topLeftX = TL_x,
+	                  .topLeftY = TL_y,
+	                  .cosine = c,
+	                  .sine = s,
+	                  .pitchSlope = pitchSlope});
+	vis->voxel = &voxels.back();
 	vis->x1 = x1;
 	vis->x2 = x2;
 	vis->gx = gx;
@@ -1451,7 +1474,7 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 	return true;
 }
 
-void VX_DrawVoxel(vissprite_t* spr)
+void VX_DrawVoxel(rendercontext_t& ctx, vissprite_t* spr)
 {
 	if (not spr or not spr->voxel)
 		return;
@@ -1460,6 +1483,8 @@ void VX_DrawVoxel(vissprite_t* spr)
 	if (not v)
 		return;
 
+	const int* const mfloorclip = ctx.sprite.mfloorclip;
+	const int* const mceilingclip = ctx.sprite.mceilingclip;
 	while (spr->x1 <= spr->x2 and mfloorclip[spr->x1] - mceilingclip[spr->x1] < 2)
 		spr->x1++;
 	while (spr->x2 >= spr->x1 and mfloorclip[spr->x2] - mceilingclip[spr->x2] < 2)
@@ -1474,8 +1499,15 @@ void VX_DrawVoxel(vissprite_t* spr)
 	const fixed_t delta_x = viewx - spr->gx;
 	const fixed_t delta_y = viewy - spr->gy;
 
-	g_eye_x = v->x_pivot + FixedMul(delta_x, c) + FixedMul(delta_y, s);
-	g_eye_y = v->y_pivot + FixedMul(delta_x, s) - FixedMul(delta_y, c);
+	const VoxelEye eye = {v->x_pivot + FixedMul(delta_x, c) + FixedMul(delta_y, s),
+	                      v->y_pivot + FixedMul(delta_x, s) - FixedMul(delta_y, c)};
 
-	VX_RecursiveDraw(spr, 0, 0, v->x_size, v->y_size);
+	// The slabs are palette indices with 0 transparent, and have no
+	// true-colour plane.
+	drawcolumn_t& dcol = ctx.draw.dcol;
+	dcol.masked = true;
+	dcol.texturedata = nullptr;
+	dcol.argbtexturedata = nullptr;
+
+	VX_RecursiveDraw(ctx, spr, eye, 0, 0, v->x_size, v->y_size);
 }

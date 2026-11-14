@@ -24,6 +24,8 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include "cmdlib.h"
 #include "z_zone.h"
 #include "p_local.h"
@@ -41,6 +43,7 @@
 #include "p_inter.h"
 #include "gi.h"
 #include "g_skill.h"
+#include "resources/res_texture.h"
 #include "infomap.h"
 #include "p_mobj.h"
 #include "r_sky.h"
@@ -470,11 +473,9 @@ FBehavior::FBehavior (byte* object, int len)
   Arrays(nullptr), NumArrays(0)
 {
 
-	if (object[0] != 'A' || object[1] != 'C' || object[2] != 'S')
-	{
-		Format = ACS_Unknown;
+	Format = ACS_Unknown;
+	if (len < 4 or object[0] != 'A' or object[1] != 'C' or object[2] != 'S')
 		return;
-	}
 
 	switch (object[3])
 	{
@@ -1446,23 +1447,23 @@ int DLevelScript::ThingCount (int type, int tid)
 
 void DLevelScript::ChangeFlat (int tag, int name, bool floorOrCeiling)
 {
-	int secnum = -1;
 	const OLumpName flatname = level.behavior->LookupString (name);
 
 	if (flatname.empty())
 		return;
 
-	const int flat = R_FlatNumForName(flatname);
+	const ResourceId res_id = Res_GetTextureResourceId(flatname.c_str(), FLOOR);
 
-	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
+	int secnum = -1;
+	while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
 	{
 		if (floorOrCeiling == false)
 		{
-			sectors[secnum].floorpic = flat;
+			sectors[secnum].floor_res_id = res_id;
 		}
 		else
 		{
-			sectors[secnum].ceilingpic = flat;
+			sectors[secnum].ceiling_res_id = res_id;
 		}
 		sectors[secnum].SectorChanges |= SPC_FlatPic;
 	}
@@ -1611,7 +1612,7 @@ void DLevelScript::ACS_SoundSequence(const int* args, byte argCount)
 
 void DLevelScript::SetLineTexture(int lineid, int side, int position, int name)
 {
-	int texture, linenum = -1;
+	int linenum = -1;
 	const OLumpName texname = level.behavior->LookupString(name);
 
 	if (texname.empty())
@@ -1624,7 +1625,7 @@ void DLevelScript::SetLineTexture(int lineid, int side, int position, int name)
 
 	side = (side) ? 1 : 0;
 
-	texture = R_TextureNumForName(texname);
+	const ResourceId res_id = Res_GetTextureResourceId(texname.c_str(), WALL);
 
 	while ((linenum = P_FindLineFromID (lineid, linenum)) >= 0)
 	{
@@ -1639,15 +1640,15 @@ void DLevelScript::SetLineTexture(int lineid, int side, int position, int name)
 		switch (position)
 		{
 			case TEXTURE_TOP:
-				currentSideDef->toptexture = texture;
+				currentSideDef->toptexture = res_id;
 				currentSideDef->SidedefChanges |= SDPC_TexTop;
 				break;
 			case TEXTURE_MIDDLE:
-				currentSideDef->midtexture = texture;
+				currentSideDef->midtexture = res_id;
 				currentSideDef->SidedefChanges |= SDPC_TexMid;
 				break;
 			case TEXTURE_BOTTOM:
-				currentSideDef->bottomtexture = texture;
+				currentSideDef->bottomtexture = res_id;
 				currentSideDef->SidedefChanges |= SDPC_TexBottom;
 				break;
 			default:

@@ -24,7 +24,7 @@
 
 
 #include "odamex.h"
-
+#include "resources/res_main.h"
 
 #include <set>
 
@@ -46,6 +46,7 @@
 #include "v_video.h"
 #include "w_wad.h"
 #include "w_ident.h"
+#include "z_zone.h"
 
 level_locals_t level;			// info about current level
 maplist_lastmaps_t forcedlastmaps;		// forced last map for the current wad
@@ -165,7 +166,7 @@ level_pwad_info_t& LevelInfos::findByNum(int levelnum)
 {
 	for (auto& info : m_infos)
 	{
-		if (info.levelnum == levelnum && W_CheckNumForName(info.mapname) != -1)
+		if (info.levelnum == levelnum and Res_CheckMap(OString(info.mapname.c_str())))
 		{
 			return info;
 		}
@@ -392,13 +393,13 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 
 	if (mapname.length())
 	{
-		if (W_CheckNumForName(mapname) != -1)
+		if (Res_CheckMap(OString(StdStringToUpper(mapname))))
 		{
 			G_DeferedInitNew(mapname);
 		}
         else
         {
-            PrintFmt_Bold("map {} not found, loading start map instead", mapname);
+            PrintFmt_Bold("{} Loading the start map instead.", G_MissingMapMessage(mapname));
 			G_DeferedInitNew(startmap);
         }
 	}
@@ -477,6 +478,38 @@ void G_ParseWadString(const std::string& str, OWantFiles& newwadfiles,
 // Takes a string of random wads and patches, which is sorted through and
 // trampolined to the implementation of G_LoadWad.
 //
+//
+// G_MissingMapMessage
+//
+// Says why a map that Res_CheckMap doesn't find can't be played.
+//
+std::string G_MissingMapMessage(const std::string& mapname)
+{
+	if (Res_IsUDMFMap(OString(StdStringToUpper(mapname))))
+		return fmt::format("Map {} is a UDMF map, which Odamex can't load yet.", mapname);
+	return fmt::format("Map {} not found.", mapname);
+}
+
+
+//
+// G_WarnHiddenUDMFMap
+//
+// Warns when the map about to be played stands in for a UDMF map of the same
+// name from a later file, which can't be loaded yet.
+//
+void G_WarnHiddenUDMFMap(const std::string& mapname)
+{
+	std::string udmf_file, map_file;
+	if (Res_FindHiddenUDMFMap(OString(StdStringToUpper(mapname)), udmf_file, map_file))
+	{
+		PrintFmt(PRINT_WARNING,
+		         "{} in {} is a UDMF map, which Odamex can't load yet. Playing {} from "
+		         "{} instead.\n",
+		         mapname, udmf_file, mapname, map_file);
+	}
+}
+
+
 bool G_LoadWadString(const std::string& str, const std::string& mapname, const maplist_lastmaps_t& lastmaps)
 {
 	OWantFiles newwadfiles;
@@ -498,12 +531,12 @@ BEGIN_COMMAND (map)
 		// [Dash|RD] -- We can make a safe assumption that the user might not specify
 		//              the whole lumpname for the level, and might opt for just the
 		//              number. This makes sense, so why isn't there any code for it?
-		if (W_CheckNumForName (argv[1]) == -1 && isdigit(argv[1][0]))
+		if (not Res_CheckMap(OString(StdStringToUpper(argv[1]))) and isdigit(argv[1][0]))
 		{ // The map name isn't valid, so lets try to make some assumptions for the user.
 
 			// If argc is 2, we assume Doom 2/Final Doom. If it's 3, Ultimate Doom.
-            // [Russell] - gamemode is always the better option compared to above
-			if ( argc == 2 )
+			// [Russell] - gamemode is always the better option compared to above
+			if (argc == 2)
 			{
 				if ((gameinfo.flags & GI_MAPxx))
                     mapname = fmt::format("MAP{:02d}", atoi( argv[1] ) );
@@ -512,9 +545,9 @@ BEGIN_COMMAND (map)
 
 			}
 
-			if (W_CheckNumForName (mapname) == -1)
+			if (not Res_CheckMap(OString(mapname.c_str())))
 			{ // Still no luck, oh well.
-				PrintFmt(PRINT_WARNING, "Map {} not found.\n", argv[1]);
+				PrintFmt(PRINT_WARNING, "{}\n", G_MissingMapMessage(mapname.c_str()));
 			}
 			else
 			{ // Success
@@ -526,9 +559,9 @@ BEGIN_COMMAND (map)
 		else
 		{
 			// Ch0wW - Map was still not found, so don't bother trying loading the map.
-			if (W_CheckNumForName (argv[1]) == -1)
+			if (not Res_CheckMap(OString(StdStringToUpper(argv[1]))))
 			{
-				PrintFmt(PRINT_WARNING, "Map {} not found.\n", argv[1]);
+				PrintFmt(PRINT_WARNING, "{}\n", G_MissingMapMessage(argv[1]));
 			}
 			else
 			{
@@ -548,7 +581,8 @@ BEGIN_COMMAND (map)
 		PrintFmt(PRINT_HIGH, "{}\n", current);
 	}
 }
-END_COMMAND (map)
+END_COMMAND(map)
+
 
 OLumpName CalcMapName(int episode, int level)
 {
@@ -562,7 +596,8 @@ OLumpName CalcMapName(int episode, int level)
 	}
 }
 
-void G_AirControlChanged()
+
+void G_AirControlChanged ()
 {
 	if (level.aircontrol <= 256)
 	{
@@ -705,7 +740,9 @@ void G_SerializeSnapshots(FArchive &arc)
 	else
 	{
 		LevelInfos& levels = getLevelInfos();
-		char mapname[8];
+		// One byte larger than the serialized name so the buffer is always
+		// NUL terminated when handed to findByName.
+		char mapname[9] = {0};
 
 		G_ClearSnapshots ();
 
@@ -750,7 +787,9 @@ void P_SerializeACSDefereds(FArchive &arc)
 	else
 	{
 		LevelInfos& levels = getLevelInfos();
-		char mapname[8];
+		// One byte larger than the serialized name so the buffer is always
+		// NUL terminated when handed to findByName.
+		char mapname[9] = {0};
 
 		P_RemoveDefereds();
 
@@ -915,6 +954,14 @@ void G_InitLevelLocals()
 	::level.secretmap = info.secretmap;
 	::level.music = info.music;
 	::level.skypic = info.skypic;
+
+	if (::level.skypic.empty())
+	{
+		LevelInfos& levels = getLevelInfos();
+		if (levels.size() > 0)
+			::level.skypic = levels.at(0).skypic;
+	}
+
 	if (::level.skypic2.empty())
 	{
 		::level.skypic2 = ::level.skypic;

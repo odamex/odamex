@@ -191,6 +191,10 @@ int main(int argc, char *argv[])
 		atterm (I_Quit);
 		atterm (DObject::StaticShutdown);
 
+		// Figure out what directory the program resides in.
+		progdir = M_GetBinaryDir();
+		startdir = M_GetCWD();
+
 		D_DoomMain(); // Usually does not return
 
 		// If D_DoomMain does return (as is the case with the +demotest parameter)

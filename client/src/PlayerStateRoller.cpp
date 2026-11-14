@@ -365,11 +365,11 @@ bool PlayerStateRoller::RollbackLives(HistoryTableType::iterator i_historyIter, 
 
 bool PlayerStateRoller::RollbackBackpack(HistoryTableType::iterator i_historyIter, const bool i_backpack)
 {
-	if (const int backpackDelta = int(i_backpack) - int(i_historyIter->second.backpack))
+	if (const int backpackDelta = static_cast<int>(i_backpack) - static_cast<int>(i_historyIter->second.backpack))
 	{
 		Roll(i_historyIter->first, [& backpackDelta] (auto& rollingState)
 		{
-			rollingState.backpack = bool(int(rollingState.backpack) + backpackDelta);
+			rollingState.backpack = static_cast<bool>(static_cast<int>(rollingState.backpack) + backpackDelta);
 		});
 		return true;
 	}
@@ -386,7 +386,7 @@ bool PlayerStateRoller::RollbackCards(HistoryTableType::iterator i_historyIter, 
 		{
 			for (size_t i = 0; i < cardsDelta.size(); ++i)
 			{
-				rollingState.cards[i] = bool(int(rollingState.cards[i]) + cardsDelta[i]);
+				rollingState.cards[i] = static_cast<bool>(static_cast<int>(rollingState.cards[i]) + cardsDelta[i]);
 			}
 		});
 		return true;
@@ -402,14 +402,14 @@ bool PlayerStateRoller::RollbackCheats(HistoryTableType::iterator i_historyIter,
 		std::array<int, sizeof(i_cheats) * 8> deltaCheats;
 		for (size_t i = 0; i < deltaCheats.size(); ++i)
 		{
-			deltaCheats[i] = int((i_cheats >> i) & 0x1) - int((i_historyIter->second.cheats >> i) & 0x1);
+			deltaCheats[i] = static_cast<int>((i_cheats >> i) & 0x1) - static_cast<int>((i_historyIter->second.cheats >> i) & 0x1);
 		}
 
 		Roll(i_historyIter->first, [& deltaCheats] (auto& rollingState)
 		{
 			for (size_t i = 0; i < deltaCheats.size(); ++i)
 			{
-				const bool correctedCheatValue = bool(int((rollingState.cheats >> i) & 0x1) + deltaCheats[i]);
+				const bool correctedCheatValue = static_cast<bool>(static_cast<int>((rollingState.cheats >> i) & 0x1) + deltaCheats[i]);
 				if (correctedCheatValue)
 				{
 					rollingState.cheats |= (1 << i);

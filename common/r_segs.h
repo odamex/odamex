@@ -23,12 +23,14 @@
 
 #pragma once
 
+struct rendercontext_t;
 
-void R_PrepWall(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2, 
-				fixed_t dist1, fixed_t dist2, int start, int stop);
-void R_RenderMaskedSegRange (drawseg_t *ds, int x1, int x2);
-void R_StoreWallRange(int start, int stop);
-void R_RenderSegLoop();
-void R_ClearOpenings();
+void R_InitWallRays();
+void R_PrepWall(rendercontext_t& ctx, fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
+				int64_t tx1, int64_t ty1, int64_t tx2, int64_t ty2, int start, int stop,
+				int first, int last);
+void R_RenderMaskedSegRange (rendercontext_t& ctx, drawseg_t *ds, int x1, int x2);
+void R_StoreWallRange(rendercontext_t& ctx, int start, int stop);
+void R_ClearOpenings(rendercontext_t& ctx);
 
 EXTERN_CVAR (r_columnmethod)

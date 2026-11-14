@@ -39,6 +39,7 @@
 #include "g_levelstate.h"
 #include "hu_drawers.h"
 #include "p_ctf.h"
+#include "v_font.h"
 #include "v_text.h"
 #include "i_video.h"
 #include "cmdlib.h"
@@ -503,7 +504,7 @@ int DrawRespawnText(int y)
 	{
 		hud::DrawTextMono(0, y, ::hud_scale, hud::X_CENTER, hud::Y_BOTTOM,
 		                  hud::X_CENTER, hud::Y_BOTTOM, line.c_str(), CR_GREY);
-		y += V_LineHeight() + 1;
+		y += hud::GetLineHeight(::hud_scale) + 1;
 	}
 
 	return y;
@@ -641,7 +642,7 @@ std::string Timer()
  * @param y     Height of the stack so far.
  * @param color Color to draw with.
  */
-void DrawTimerText(const int y, const int color)
+void DrawTimerText(const int y, const int color, const fontface_t face)
 {
 	const std::string str = Timer();
 
@@ -649,12 +650,12 @@ void DrawTimerText(const int y, const int color)
 	if (TimerIsShotClock())
 	{
 		hud::DrawTextMono(0, y, ::hud_scale, hud::X_CENTER, hud::Y_BOTTOM,
-		                  hud::X_CENTER, hud::Y_BOTTOM, str.c_str(), color);
+		                  hud::X_CENTER, hud::Y_BOTTOM, str.c_str(), color, false, face);
 		return;
 	}
 
 	hud::DrawText(0, y, ::hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-	              hud::Y_BOTTOM, str.c_str(), color);
+	              hud::Y_BOTTOM, str.c_str(), color, false, face);
 }
 
 std::string IntermissionTimer()
@@ -1129,17 +1130,10 @@ void EleBar(const int x, const int y, const int w, const float scale,
             const x_align_t x_align, const y_align_t y_align, const x_align_t x_origin,
             const y_align_t y_origin, const float pct, const EColorRange color)
 {
-	patch_t* leftempty = W_ResolvePatchHandle(::line_leftempty);
-	patch_t* leftfull = W_ResolvePatchHandle(::line_leftfull);
-	patch_t* centerempty = W_ResolvePatchHandle(::line_centerempty);
-	patch_t* centerleft = W_ResolvePatchHandle(::line_centerleft);
-	//patch_t* centerright = W_ResolvePatchHandle(::line_centerright); // unused
-	patch_t* centerfull = W_ResolvePatchHandle(::line_centerfull);
-	patch_t* rightempty = W_ResolvePatchHandle(::line_rightempty);
-	patch_t* rightfull = W_ResolvePatchHandle(::line_rightfull);
+	const Texture*  centerfull = W_ResolvePatchHandle(::line_centerfull);
 
 	// We assume that all parts of the bar are identical width.
-	const int UNIT_WIDTH = centerfull->width();
+	const int UNIT_WIDTH = centerfull->mWidth;
 
 	// Number of things to draw.
 	const int UNITS = w / UNIT_WIDTH;
@@ -1151,7 +1145,7 @@ void EleBar(const int x, const int y, const int w, const float scale,
 		return;
 	}
 
-	std::vector<patch_t*> lineHandles;
+	std::vector<lumpHandle_t> lineHandles;
 	lineHandles.reserve(UNITS);
 	for (int i = 0; i < UNITS; i++)
 	{
@@ -1160,12 +1154,12 @@ void EleBar(const int x, const int y, const int w, const float scale,
 			if (pct <= (0.0 + FLT_EPSILON))
 			{
 				// Completely empty.
-				lineHandles.push_back(leftempty);
+				lineHandles.push_back(::line_leftempty);
 			}
 			else
 			{
 				// The smallest amount of progress.
-				lineHandles.push_back(leftfull);
+				lineHandles.push_back(::line_leftfull);
 			}
 		}
 		else if (i == UNITS - 1)
@@ -1173,12 +1167,12 @@ void EleBar(const int x, const int y, const int w, const float scale,
 			if (pct >= (1.0 - FLT_EPSILON))
 			{
 				// Completely full.
-				lineHandles.push_back(rightfull);
+				lineHandles.push_back(::line_rightfull);
 			}
 			else
 			{
 				// Anything short of 100% - epsilon.
-				lineHandles.push_back(rightempty);
+				lineHandles.push_back(::line_rightempty);
 			}
 		}
 		else
@@ -1192,17 +1186,17 @@ void EleBar(const int x, const int y, const int w, const float scale,
 			if (scaled < static_cast<float>(idx) + 0.5f)
 			{
 				// Empty.
-				lineHandles.push_back(centerempty);
+				lineHandles.push_back(::line_centerempty);
 			}
 			else if (scaled < static_cast<float>(idx) + 1.0f)
 			{
 				// Half full.
-				lineHandles.push_back(centerleft);
+				lineHandles.push_back(::line_centerleft);
 			}
 			else
 			{
 				// Full.
-				lineHandles.push_back(centerfull);
+				lineHandles.push_back(::line_centerfull);
 			}
 		}
 	}
@@ -1219,10 +1213,10 @@ void EleBar(const int x, const int y, const int w, const float scale,
 		drawX = x;
 	}
 
-	for (const auto& patch : lineHandles)
+	for (const auto& handle : lineHandles)
 	{
 		hud::DrawTranslatedPatch(drawX, y, scale, x_align, y_align, x_origin, y_origin,
-		                         patch, ::Ranges + color * 256);
+		                         W_ResolvePatchHandle(handle), ::Ranges + (color * 256));
 
 		if (x_align == hud::X_RIGHT)
 		{
@@ -1235,6 +1229,17 @@ void EleBar(const int x, const int y, const int w, const float scale,
 	}
 }
 
+// How far to move a color swatch h units tall, in real pixels, so that it
+// is centered on the capitals of a name drawn at the same y.
+int swatchNudge(const unsigned short h, const float scale)
+{
+	const int x_scale = std::max(1, static_cast<int>(scale * CleanXfac));
+	const int y_scale = std::max(1, static_cast<int>(scale * CleanYfac));
+	const OFont* font = V_GetFaceFont(FACE_SMALL, x_scale);
+
+	return (font->getCapHeight() - (h * y_scale)) / 2;
+}
+
 // Draw a list of player colors in the game.  Lines up with player names.
 void EAPlayerColors(int x, int y,
                     const unsigned short w, const unsigned short h,
@@ -1243,6 +1248,8 @@ void EAPlayerColors(int x, int y,
                     const x_align_t x_origin, const y_align_t y_origin,
                     const short padding, const short limit)
 {
+	const int nudge = swatchNudge(h, scale);
+
 	byte drawn = 0;
 	for (const auto& player : sortedPlayers())
 	{
@@ -1253,7 +1260,8 @@ void EAPlayerColors(int x, int y,
 		if (ingamePlayer(*player))
 		{
 			argb_t playercolor = CL_GetPlayerColor(*player);
-			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, playercolor);
+			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin,
+			           playercolor, nudge);
 
 			y += h + padding;
 			drawn += 1;
@@ -1270,6 +1278,8 @@ void EATeamPlayerColors(int x, int y,
                         const short padding, const short limit,
                         const byte team)
 {
+	const int nudge = swatchNudge(h, scale);
+
 	byte drawn = 0;
 	for (const auto& player : sortedPlayers())
 	{
@@ -1280,7 +1290,8 @@ void EATeamPlayerColors(int x, int y,
 		if (inTeamPlayer(*player, team))
 		{
 			argb_t playercolor = CL_GetPlayerColor(*player);
-			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, playercolor);
+			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin,
+			           playercolor, nudge);
 
 			y += h + padding;
 			drawn += 1;

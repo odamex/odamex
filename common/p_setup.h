@@ -27,6 +27,8 @@
 
 #include "doomdata.h"
 
+class OString;
+class ResourceId;
 struct line_t;
 
 // NOT called by W_Ticker. Fixme.
@@ -34,9 +36,12 @@ struct line_t;
 // [RH] The only parameter used is mapname, so I removed playermask and skill.
 //		On September 1, 1998, I added the position to indicate which set
 //		of single-player start spots should be spawned in the level.
-void P_SetupLevel (const char *mapname, int position);
+void P_SetupLevel (const OString& lumpname, int position);
 void P_TranslateLineDef(line_t* ld, maplinedef_t* mld);
 std::optional<mapthing2_t> P_GetFirstAvailableSpawn();
 
 // Called by startup code.
 void P_Init();
+
+void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd);
+void P_SetTextureNoErr(ResourceId* texture, unsigned int *color, const OString& name);

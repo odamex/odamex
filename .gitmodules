@@ -11,6 +11,7 @@
 [submodule "libraries/fltk"]
 	path = libraries/fltk
 	url = https://github.com/fltk/fltk
+	branch = master
 [submodule "libraries/protobuf"]
 	path = libraries/protobuf
 	url = https://github.com/protocolbuffers/protobuf.git
@@ -34,3 +35,6 @@
 [submodule "libraries/cpptrace"]
 	path = libraries/cpptrace
 	url = https://github.com/jeremy-rifkin/cpptrace.git
+[submodule "libraries/freetype"]
+	path = libraries/freetype
+	url = https://github.com/freetype/freetype.git

@@ -63,15 +63,13 @@ class StringTable
 
 	bool canSetPassString(int pass, const std::string& name) const;
 	void clearStrings();
-	void loadLanguage(const char* code, bool exactMatch, int pass, char* lump,
+	void loadLanguage(const char* code, bool exactMatch, int pass, const char* lump,
 	                  size_t lumpLen);
-	void loadStringsLump(const int lump, const char* lumpname, const bool engOnly);
+	void loadStringsLump(const uint32_t language_res_id, const bool engOnly);
 	void prepareIndexes();
 
   public:
-	StringTable() : _stringHash()
-	{
-	}
+	StringTable() : _stringHash() { }
 
 	//
 	// Obtain a string by name.

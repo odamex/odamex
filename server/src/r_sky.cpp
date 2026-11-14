@@ -17,21 +17,41 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Sky rendering.
+//	Sky rendering (serverside stub).  Tracks which flats represent skies,
+//	including ID24 SKYDEFS flat mappings, for gameplay logic.
 //
 //-----------------------------------------------------------------------------
 
 #include "odamex.h"
 
-#include "m_jsonlump.h"
-#include "r_sky.h"
-#include "r_data.h"
-#include "w_wad.h"
+#include "g_level.h"
 #include "i_system.h"
+#include "m_jsonlump.h"
+#include "r_data.h"
+#include "g_mapinfo.h"
+
+#include "resources/res_resourceid.h"
+#include "resources/res_main.h"
+#include "resources/res_texture.h"
 
 #include <unordered_set>
 
-std::unordered_set<int32_t> skyflatlookup;
+static ResourceId sky_flat_resource_id = ResourceId::INVALID_ID;
+
+static std::unordered_set<uint32_t> skyflatlookup;
+
+//
+// R_ResourceIdIsSkyFlat
+//
+// Returns true if the given ResourceId represents the sky.
+//
+bool R_ResourceIdIsSkyFlat(const ResourceId res_id)
+{
+	if (res_id == sky_flat_resource_id)
+		return true;
+	return skyflatlookup.contains(static_cast<uint32_t>(res_id));
+}
+
 
 void R_InitSkyDefs()
 {
@@ -48,10 +68,11 @@ void R_InitSkyDefs()
 			const Json::Value& flatelem = flatentry["flat"];
 
 			OLumpName flatname = flatelem.asString();
-			int32_t flatnum = R_FlatNumForName(flatname);
-			if(flatnum < 0 || flatnum >= ::numflats) return jsonlumpresult_t::PARSEERROR;
+			const ResourceId flat_res_id =
+			    Res_GetTextureResourceId(OStringToUpper(flatname.c_str()), FLOOR);
+			if (not Res_CheckResource(flat_res_id)) return jsonlumpresult_t::PARSEERROR;
 
-			skyflatlookup.insert(flatnum);
+			skyflatlookup.insert(static_cast<uint32_t>(flat_res_id));
 		}
 
 		return jsonlumpresult_t::SUCCESS;
@@ -62,14 +83,42 @@ void R_InitSkyDefs()
 		I_Error("R_InitSkyDefs: SKYDEFS JSON error: {}", M_JSONLumpResultToString(result));
 }
 
-bool R_IsSkyFlat(int flatnum)
-{
-    return flatnum == skyflatnum || skyflatlookup.contains(flatnum);
-}
-
 void R_ClearSkyDefs()
 {
 	skyflatlookup.clear();
 }
+
+
+//
+// R_InitSkyMap
+//
+void R_InitSkyMap()
+{
+}
+
+
+//
+// R_SetSkyTextures
+//
+// Loads the sky textures and re-initializes the sky map lookup tables.
+//
+void R_SetSkyTextures(const char* sky1_name, const char* sky2_name)
+{
+	// [SL] 2011-11-30 - Don't run if we don't know what sky texture to use
+	if (gamestate != GS_LEVEL)
+		return;
+
+	const ResourceId res_id = Res_GetTextureResourceId(OStringToUpper(sky1_name), WALL);
+	if (not Res_CheckResource(res_id))
+		I_Error("Invalid sky1 texture \"{}\"", OStringToUpper(sky1_name));
+
+	if (HexenHack)
+		sky_flat_resource_id = Res_GetTextureResourceId("F_SKY", FLOOR);
+	else
+		sky_flat_resource_id = Res_GetTextureResourceId("F_SKY1", FLOOR);
+
+	R_InitSkyMap();
+}
+
 
 VERSION_CONTROL (r_sky_cpp, "$Id$")

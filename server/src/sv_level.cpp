@@ -52,14 +52,18 @@ END_DISABLE_WARNING_GNU
 #include "s_sound.h"
 #include "sv_main.h"
 #include "sv_maplist.h"
-#include "w_wad.h"
 #include "z_zone.h"
 #include "g_levelstate.h"
+#include "g_level.h"
 #include "m_wdlstats.h"
 #include "svc_message.h"
 #include "g_gametype.h"
 #include "p_hordespawn.h"
 #include "g_episode.h"
+#include "resources/res_filelib.h"
+
+// FIXME: Remove this as soon as the JoinString is gone from G_ChangeMap()
+#include "cmdlib.h"
 #include "g_skill.h"
 #include "g_spree.h"
 #include "g_deathspot.h"
@@ -208,7 +212,7 @@ OLumpName G_NextMap()
 		// [ML] 1/25/10: OR if next is empty
 		next = level.mapname;
 	}
-	else if (secretexit && W_CheckNumForName(level.secretmap) != -1)
+	else if (secretexit and Res_CheckMap(OString(level.secretmap.c_str())))
 	{
 		// if we hit a secret exit switch, go there instead.
 		next = level.secretmap;
@@ -285,9 +289,11 @@ void G_ChangeMap()
 }
 
 // Change to a map based on a maplist index.
-void G_ChangeMap(size_t index) {
+void G_ChangeMap(size_t index)
+{
 	maplist_entry_t maplist_entry;
-	if (!Maplist::instance().get_map_by_index(index, maplist_entry)) {
+	if (not Maplist::instance().get_map_by_index(index, maplist_entry))
+	{
 		// That maplist index doesn't actually exist
 		PrintFmt(PRINT_HIGH, "{}\n", Maplist::instance().get_error());
 		return;
@@ -352,7 +358,8 @@ void G_ChangeMapStartup()
 }
 
 // Restart the current map.
-void G_RestartMap() {
+void G_RestartMap()
+{
 	// Restart the current map.
 	G_DeferedInitNew(level.mapname);
 
@@ -395,6 +402,8 @@ void G_DoNewGame()
 
 		player.client.messenger->Reliable().Write (
 		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname.c_str(), 0));
+
+		SV_ExpectResourceDigests(player.client);
 
 		// We're going to disable the write-and-send of any new messages to the clients
 		// until after they acknowledge everything.  We do this because we don't want to
@@ -459,7 +468,7 @@ void G_InitNew(const char *mapname)
 	const auto previousLevelFlags = level.flags;
 
 	if (!savegamerestore)
-		G_ClearSnapshots ();
+		G_ClearSnapshots();
 
 	// [RH] Mark all levels as not visited
 	if (!savegamerestore)
@@ -474,7 +483,7 @@ void G_InitNew(const char *mapname)
 
 	const int old_gametype = sv_gametype.asInt();
 
-	cvar_t::UnlatchCVars ();
+	cvar_t::UnlatchCVars();
 
 	SpreeManager::getInstance().clearSprees();
 
@@ -489,10 +498,9 @@ void G_InitNew(const char *mapname)
 	paused = false;
 
 	// [RH] If this map doesn't exist, bomb out
-	if (W_CheckNumForName (mapname) == -1)
-	{
-		I_Error("Could not find map {}\n", mapname);
-	}
+	if (not Res_CheckMap(OString(StdStringToUpper(mapname))))
+		I_Error("{}\n", G_MissingMapMessage(mapname));
+	G_WarnHiddenUDMFMap(mapname);
 
 	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
 	G_SetFast(wantFast);
@@ -611,8 +619,7 @@ void G_SecretExitLevel (int position, int drawscores, bool resetinv)
 	mapchange = TICRATE * sv_intermissionlimit;  // wait n seconds, defaults to 10
 
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
-	if ( (gameinfo.flags & GI_MAPxx)
-		&& (W_CheckNumForName("map31")<0))
+	if (gameinfo.flags & GI_MAPxx and not Res_CheckMap(OString("MAP31")))
 		secretexit = false;
 	else
 		secretexit = true;
@@ -838,22 +845,12 @@ void G_DoLoadLevel (int position)
 	for (size_t j = 0; j < NUMCARDS; j++)
 		keysfound[j] = false;
 
-	// Set the sky map.
-	// First thing, we have a dummy sky texture name,
-	//	a flat. The data is in the WAD only because
-	//	we look for an actual index, instead of simply
-	//	setting one.
-	skyflatnum = R_FlatNumForName(SKYFLATNAME);
-
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
 	// [RH] Fetch sky parameters from level_locals_t.
 	// [ML] 5/11/06 - remove sky2 remenants
 	// [SL] 2012-03-19 - Add sky2 back
-	if (!level.skypic2.empty())
-		sky2texture = R_TextureNumForName(level.skypic2);
-	else
-		sky2texture = 0;
+	R_SetSkyTextures(level.skypic.c_str(), level.skypic2.c_str());
 
 	// Clear death spots as we're on a new map.
 	DeathSpotManager::getInstance().clearDeathSpots();
@@ -924,7 +921,7 @@ void G_DoLoadLevel (int position)
 
 	specialdoors.clear();
 
-	P_SetupLevel (level.mapname.c_str(), position);
+	P_SetupLevel (OString(level.mapname.c_str()), position);
 
 	// Nes - CTF Post flag setup
 	if (sv_gametype == GM_CTF)

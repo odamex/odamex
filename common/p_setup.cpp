@@ -52,6 +52,10 @@
 #include "p_setup.h"
 #include "p_hordespawn.h"
 #include "p_mapformat.h"
+
+#include "resources/res_main.h"
+#include "resources/res_resourcepath.h"
+#include "resources/res_texture.h"
 #include "g_musinfo.h"
 #include "r_sky.h"
 #include "p_compdb.h"
@@ -62,6 +66,20 @@
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t& mthing, int position);
+
+//
+// Local helpers that map the old lump API onto the resource manager.
+//
+static uint32_t P_MapLumpLength(const ResourceId res_id)
+{
+	return Res_CheckResource(res_id) ? Res_GetResourceSize(res_id) : 0;
+}
+
+template <typename T>
+static T* P_CacheMapLump(const ResourceId res_id, zoneTag_e tag = PU_STATIC)
+{
+	return const_cast<T*>(Res_LoadResource<T>(res_id, tag));
+}
 void P_SpawnAvatars();
 void P_TranslateTeleportThings();
 
@@ -234,17 +252,17 @@ namespace {
 //
 // P_LoadVertexes
 //
-void P_LoadVertexes (int lump)
+void P_LoadVertexes (const ResourceId lump)
 {
 	// Determine number of vertices:
 	//	total lump length / vertex record length.
-	numvertexes = W_LumpLength (lump) / sizeof(mapvertex_t);
+	numvertexes = P_MapLumpLength(lump) / sizeof(mapvertex_t);
 
 	// Allocate zone memory for buffer.
 	vertexes = Z_Malloc<vertex_t>(numvertexes, PU_LEVEL);
 
 	// Load data into cache.
-	mapvertex_t* data = W_CacheLumpNum<mapvertex_t>(lump, PU_STATIC);
+	mapvertex_t* data = P_CacheMapLump<mapvertex_t>(lump, PU_STATIC);
 
 	// Copy and convert vertex coordinates,
 	// internal representation as fixed.
@@ -255,7 +273,7 @@ void P_LoadVertexes (int lump)
 	}
 
 	// Free buffer memory.
-	Z_Free (data);
+	Res_ReleaseResource(lump);
 }
 
 bool P_UseHorizonEffect(const seg_t& seg, bool segs_have_angles = false)
@@ -329,17 +347,17 @@ void P_LoadSegsHelper(int side, short angle, int linedef, seg_t *li)
 // P_LoadSegs
 //
 template <typename MapSegType>
-void P_LoadSegs(int lump)
+void P_LoadSegs(const ResourceId lump)
 {
-	if (!W_LumpLength(lump))
+	if (not P_MapLumpLength(lump))
 	{
 		I_Error(
 		    "P_LoadSegs: SEGS lump is empty - levels without nodes are not supported.");
 	}
 
-	numsegs = W_LumpLength (lump) / sizeof(MapSegType);
+	numsegs = P_MapLumpLength(lump) / sizeof(MapSegType);
 	segs = Z_Calloc<seg_t>(numsegs, PU_LEVEL);
-	MapSegType* const data = W_CacheLumpNum<MapSegType>(lump, PU_STATIC);
+	MapSegType* const data = P_CacheMapLump<MapSegType>(lump, PU_STATIC);
 
 	for (int i = 0; i < numsegs; i++)
 	{
@@ -362,24 +380,24 @@ void P_LoadSegs(int lump)
 		P_LoadSegsHelper(LESHORT(ml.side), LESHORT(ml.angle), LESHORT(ml.linedef), li);
 	}
 
-	Z_Free(data);
+	Res_ReleaseResource(lump);
 }
 
 //
 // P_LoadSubsectors
 //
 template <typename MapSubsectorType>
-void P_LoadSubsectors(int lump)
+void P_LoadSubsectors(const ResourceId lump)
 {
-	if (!W_LumpLength(lump))
+	if (not P_MapLumpLength(lump))
 	{
 		I_Error(
 		    "P_LoadSubsectors: SSECTORS lump is empty - levels without nodes are not supported.");
 	}
 
-	numsubsectors = W_LumpLength (lump) / sizeof(MapSubsectorType);
+	numsubsectors = P_MapLumpLength(lump) / sizeof(MapSubsectorType);
 	subsectors = Z_Calloc<subsector_t>(numsubsectors, PU_LEVEL);
-	MapSubsectorType* data = W_CacheLumpNum<MapSubsectorType>(lump, PU_STATIC);
+	MapSubsectorType* data = P_CacheMapLump<MapSubsectorType>(lump, PU_STATIC);
 
 	for (int i = 0; i < numsubsectors; i++)
 	{
@@ -387,7 +405,7 @@ void P_LoadSubsectors(int lump)
 		subsectors[i].firstline = LESWAP(data[i].firstseg);
 	}
 
-	Z_Free(data);
+	Res_ReleaseResource(lump);
 }
 
 
@@ -395,18 +413,18 @@ void P_LoadSubsectors(int lump)
 //
 // P_LoadSectors
 //
-void P_LoadSectors (int lump)
+void P_LoadSectors (const ResourceId lump)
 {
 	// denis - properly destroy sectors so that smart pointers they contain don't get screwed
 	delete[] sectors;
 	originalLightLevels.clear();
 
-	numsectors = W_LumpLength(lump) / sizeof(mapsector_t);
+	numsectors = P_MapLumpLength(lump) / sizeof(mapsector_t);
 
 	// denis - properly construct sectors so that smart pointers they contain don't get screwed
 	sectors = new sector_t[numsectors];
 
-	mapsector_t* data = W_CacheLumpNum<mapsector_t>(lump, PU_STATIC);
+	mapsector_t* data = P_CacheMapLump<mapsector_t>(lump, PU_STATIC);
 
 	const int defSeqType = (level.flags & LEVEL_SNDSEQTOTALCTRL) ? 0 : -1;
 
@@ -416,8 +434,8 @@ void P_LoadSectors (int lump)
 	{
 		ss->floortexz = LESHORT(ms->floorheight)<<FRACBITS;
 		ss->ceilingtexz = LESHORT(ms->ceilingheight)<<FRACBITS;
-		ss->floorpic = static_cast<short>(R_FlatNumForName(ms->floorpic));
-		ss->ceilingpic = static_cast<short>(R_FlatNumForName(ms->ceilingpic));
+		ss->floor_res_id = Res_GetTextureResourceId(OStringToUpper(ms->floorpic, 8), FLOOR);
+		ss->ceiling_res_id = Res_GetTextureResourceId(OStringToUpper(ms->ceilingpic, 8), FLOOR);
 		ss->lightlevel = LESHORT(ms->lightlevel);
 		originalLightLevels.push_back(LESHORT(ms->lightlevel));
 		ss->special = LESHORT(ms->special);
@@ -472,7 +490,7 @@ void P_LoadSectors (int lump)
 		bool fog = level.outsidefog_color[0] != 0xFF || level.outsidefog_color[1] != 0 ||
 					level.outsidefog_color[2] != 0 || level.outsidefog_color[3] != 0;
 
-		if (fog && R_IsSkyFlat(ss->ceilingpic))
+		if (fog and R_ResourceIdIsSkyFlat(ss->ceiling_res_id))
 			ss->colormap = GetSpecialLights(255, 255, 255,
 									level.outsidefog_color[1], level.outsidefog_color[2], level.outsidefog_color[3]);
 		else
@@ -485,7 +503,7 @@ void P_LoadSectors (int lump)
 		ss->movefactor = ORIG_FRICTION_FACTOR;
 	}
 
-	Z_Free (data);
+	Res_ReleaseResource(lump);
 }
 
 enum class nodetype_t {
@@ -501,9 +519,8 @@ enum class nodetype_t {
 	STANDARD
 };
 
-nodetype_t P_CheckNodeType(int lump) {
-	byte *data = W_CacheLumpNum<byte>(lump, PU_STATIC);
-	const auto guard = nonstd::make_scope_exit([&]{ Z_ChangeTag(data, PU_CACHE); });
+nodetype_t P_CheckNodeType(const ResourceId lump) {
+	byte *data = P_CacheMapLump<byte>(lump, PU_STATIC);
 
 	static constexpr struct {
         std::string_view bytes;
@@ -537,9 +554,9 @@ nodetype_t P_CheckNodeType(int lump) {
 // P_LoadNodes
 //
 template <typename MapNodeType>
-void P_LoadNodes(int lump)
+void P_LoadNodes(const ResourceId lump)
 {
-	if (!W_LumpLength(lump))
+	if (not P_MapLumpLength(lump))
 	{
 		I_Error(
 		    "P_LoadNodes: NODES lump is empty - levels without nodes are not supported.");
@@ -548,9 +565,9 @@ void P_LoadNodes(int lump)
 	static constexpr size_t headerSize =
 		std::is_same_v<MapNodeType, mapnode_deepbsp_t> ? 8 : 0;
 
-	numnodes = (W_LumpLength(lump) - headerSize) / sizeof(MapNodeType);
-	nodes = Z_Malloc<node_t>(numnodes, PU_LEVEL);
-	byte* data = reinterpret_cast<byte*>(W_CacheLumpNum<MapNodeType>(lump, PU_STATIC));
+	numnodes = (P_MapLumpLength(lump) - headerSize) / sizeof(MapNodeType);
+	nodes = static_cast<node_t*>(Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL));
+	byte* data = reinterpret_cast<byte*>(P_CacheMapLump<MapNodeType>(lump, PU_STATIC));
 
 	const MapNodeType* mn = reinterpret_cast<const MapNodeType*>(data + headerSize);
 	node_t* no = nodes;
@@ -581,7 +598,7 @@ void P_LoadNodes(int lump)
 		}
 	}
 
-	Z_Free(data);
+	Res_ReleaseResource(lump);
 }
 
 byte* P_DecompressNodes(byte* data, size_t len) {
@@ -773,7 +790,7 @@ byte* P_LoadSegs_XGL(byte* p)
 // P_LoadXNOD - load ZDBSP extended nodes
 // returns false if nodes are not extended to fall back to original nodes
 //
-void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
+void P_LoadExtendedNodes(const ResourceId lump, nodetype_t nodetype)
 {
 	const bool compressed = [&](){
 		switch (nodetype)
@@ -787,11 +804,11 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 				return false;
 		}
 	}();
-	byte *data = W_CacheLumpNum<byte>(lump, PU_STATIC);
+	byte *data = P_CacheMapLump<byte>(lump, PU_STATIC);
 	byte* data_decompressed = nullptr;
 
 	const auto guard = nonstd::make_scope_exit([&]{
-		Z_Free(data);
+		Res_ReleaseResource(lump);
 		Z_Free(data_decompressed);
 	});
 
@@ -800,7 +817,7 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 	// adapted from Crispy Doom
 	if (compressed)
 	{
-		p = data_decompressed = P_DecompressNodes(data, W_LumpLength(lump));
+		p = data_decompressed = P_DecompressNodes(data, P_MapLumpLength(lump));
 	}
 	else
 	{
@@ -902,11 +919,11 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 //
 // P_LoadThings
 //
-void P_LoadThings (int lump)
+void P_LoadThings (const ResourceId lump)
 {
-	mapthing_t* data = W_CacheLumpNum<mapthing_t>(lump, PU_STATIC);
-	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
-	size_t count = W_LumpLength(lump) / sizeof(mapthing_t);
+	mapthing_t* data = P_CacheMapLump<mapthing_t>(lump, PU_STATIC);
+	const auto guard = nonstd::make_scope_exit([&]{ Res_ReleaseResource(lump); });
+	size_t count = P_MapLumpLength(lump) / sizeof(mapthing_t);
 
 	P_HordeClearSpawns();
 	playerstarts.clear();
@@ -979,11 +996,11 @@ void P_LoadThings (int lump)
 // player start spots are spawned by filtering out those
 // whose first parameter don't match position.
 //
-void P_LoadThings2 (int lump, int position)
+void P_LoadThings2 (const ResourceId lump, int position)
 {
-	auto* data = W_CacheLumpNum<mapthing2_t>(lump, PU_STATIC);
-	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
-	size_t count = W_LumpLength(lump) / sizeof(mapthing2_t);
+	mapthing2_t* data = P_CacheMapLump<mapthing2_t>(lump, PU_STATIC);
+	const auto guard = nonstd::make_scope_exit([&]{ Res_ReleaseResource(lump); });
+	size_t count = P_MapLumpLength(lump) / sizeof(mapthing2_t);
 	auto things = std::span{data, count};
 
 	P_HordeClearSpawns();
@@ -1197,12 +1214,12 @@ void P_FinishLoadingLineDefs (void)
 	}
 }
 
-void P_LoadLineDefs(const int lump)
+void P_LoadLineDefs(const ResourceId lump)
 {
-	numlines = W_LumpLength(lump) / sizeof(maplinedef_t);
+	numlines = P_MapLumpLength(lump) / sizeof(maplinedef_t);
 	lines = Z_Calloc<line_t>(numlines, PU_LEVEL);
-	maplinedef_t* data = W_CacheLumpNum<maplinedef_t>(lump, PU_STATIC);
-	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
+	maplinedef_t* data = P_CacheMapLump<maplinedef_t>(lump, PU_STATIC);
+	const auto guard = nonstd::make_scope_exit([&]{ Res_ReleaseResource(lump); });
 
 	const bool reservedLine = P_GetLevelCompData(::level.level_fingerprint).reservedLineFlag;
 
@@ -1249,11 +1266,11 @@ void P_LoadLineDefs(const int lump)
 }
 
 // [RH] Same as P_LoadLineDefs() except it uses Hexen-style LineDefs.
-void P_LoadLineDefs2 (int lump)
+void P_LoadLineDefs2 (const ResourceId lump)
 {
-	numlines = W_LumpLength (lump) / sizeof(maplinedef2_t);
+	numlines = P_MapLumpLength(lump) / sizeof(maplinedef2_t);
 	lines = Z_Calloc<line_t>(numlines, PU_LEVEL);
-	maplinedef2_t* data = W_CacheLumpNum<maplinedef2_t>(lump, PU_STATIC);
+	maplinedef2_t* data = P_CacheMapLump<maplinedef2_t>(lump, PU_STATIC);
 
 	const maplinedef2_t* mld = data;
 	line_t* ld = lines;
@@ -1292,16 +1309,16 @@ void P_LoadLineDefs2 (int lump)
 		P_AdjustLine (ld);
 	}
 
-	Z_Free (data);
+	Res_ReleaseResource(lump);
 }
 
 //
 // P_LoadSideDefs
 //
 // killough 4/4/98: split into two functions
-void P_LoadSideDefs (int lump)
+void P_LoadSideDefs (const ResourceId lump)
 {
-	numsides = W_LumpLength (lump) / sizeof(mapsidedef_t);
+	numsides = P_MapLumpLength(lump) / sizeof(mapsidedef_t);
 	sides = Z_Calloc<side_t>(numsides, PU_LEVEL);
 }
 
@@ -1332,9 +1349,9 @@ argb_t P_GetColorFromTextureName(const char* name)
 // after linedefs are loaded, to allow overloading.
 // killough 5/3/98: reformatted, cleaned up
 
-void P_LoadSideDefs2 (int lump)
+void P_LoadSideDefs2 (const ResourceId lump)
 {
-	mapsidedef_t* data = W_CacheLumpNum<mapsidedef_t>(lump, PU_STATIC);
+	mapsidedef_t* data = P_CacheMapLump<mapsidedef_t>(lump, PU_STATIC);
 
 	for (int i = 0; i < numsides; i++)
 	{
@@ -1353,7 +1370,7 @@ void P_LoadSideDefs2 (int lump)
 
 		map_format.post_process_sidedef_special(sd, msd, sec, i);
 	}
-	Z_Free (data);
+	Res_ReleaseResource(lump);
 }
 
 //
@@ -1361,7 +1378,7 @@ void P_LoadSideDefs2 (int lump)
 //
 // [RH] Changed this some
 //
-void P_LoadBlockMap (int lump)
+void P_LoadBlockMap (const ResourceId lump)
 {
 	blockmap = blockmap_t::load(lump);
 
@@ -1378,33 +1395,34 @@ void P_LoadBlockMap (int lump)
 * @param maplumpnum - Lump offset number of the specified map
 * If it is, use it as part of the map calculation.
 */
-void P_GenerateUniqueMapFingerPrint(int maplumpnum)
+void P_GenerateUniqueMapFingerPrint(const OString& mapname)
 {
 	unsigned int length = 0;
 
 	typedef std::vector<byte> LevelLumps;
 	LevelLumps levellumps;
 
-	const byte* thingbytes    = W_CacheLumpNum<const byte>(maplumpnum+ML_THINGS, PU_STATIC);
-	const byte* lindefbytes   = W_CacheLumpNum<const byte>(maplumpnum+ML_LINEDEFS, PU_STATIC);
-	const byte* sidedefbytes  = W_CacheLumpNum<const byte>(maplumpnum+ML_SIDEDEFS, PU_STATIC);
-	const byte* vertexbytes   = W_CacheLumpNum<const byte>(maplumpnum+ML_VERTEXES, PU_STATIC);
-	const byte* segsbytes     = W_CacheLumpNum<const byte>(maplumpnum+ML_SEGS, PU_STATIC);
-	const byte* ssectorsbytes = W_CacheLumpNum<const byte>(maplumpnum+ML_SSECTORS, PU_STATIC);
-	const byte* sectorsbytes  = W_CacheLumpNum<const byte>(maplumpnum+ML_SECTORS, PU_STATIC);
+	static const char* const fingerprint_lumps[] = {
+		"THINGS", "LINEDEFS", "SIDEDEFS", "VERTEXES", "SEGS", "SSECTORS", "SECTORS"
+	};
 
-	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_THINGS), *thingbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_LINEDEFS), *lindefbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SIDEDEFS), *sidedefbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_VERTEXES), *vertexbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SEGS), *segsbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SSECTORS), *ssectorsbytes);
-	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_SECTORS), *sectorsbytes);
+	for (const char* lumpname : fingerprint_lumps)
+	{
+		const ResourceId res_id = Res_GetMapResourceId(lumpname, mapname);
+		if (not Res_CheckResource(res_id))
+			continue;
 
-	length = W_LumpLength(maplumpnum+ML_THINGS) + W_LumpLength(maplumpnum+ML_LINEDEFS) +
-	         W_LumpLength(maplumpnum+ML_SIDEDEFS) + W_LumpLength(maplumpnum+ML_VERTEXES) +
-			 W_LumpLength(maplumpnum + ML_SEGS) + W_LumpLength(maplumpnum + ML_SSECTORS) +
-			 W_LumpLength(maplumpnum + ML_SECTORS);
+		const uint32_t size = Res_GetResourceSize(res_id);
+		const byte* bytes = P_CacheMapLump<const byte>(res_id, PU_STATIC);
+
+		// Note: this replicates the upstream behavior of repeating the first
+		// byte of each lump rather than appending the whole lump; changing it
+		// would change every map fingerprint and break compat databases.
+		levellumps.insert(levellumps.end(), size, *bytes);
+		length += size;
+
+		Res_ReleaseResource(res_id);
+	}
 
 	fhfprint_t fingerprint = W_FarmHash128(levellumps.data(), length);
 
@@ -1566,11 +1584,11 @@ void P_RemoveSlimeTrails()
 //
 // [RH] P_LoadBehavior
 //
-void P_LoadBehavior (int lumpnum)
+void P_LoadBehavior (const ResourceId lumpnum)
 {
-	byte *behavior = W_CacheLumpNum<byte>(lumpnum, PU_LEVEL);
+	byte *behavior = P_CacheMapLump<byte>(lumpnum, PU_LEVEL);
 
-	level.behavior = std::make_unique<FBehavior>(behavior, lumpinfo[lumpnum].size);
+	level.behavior = std::make_unique<FBehavior>(behavior, P_MapLumpLength(lumpnum));
 
 	if (!level.behavior->IsGood ())
 	{
@@ -2130,13 +2148,13 @@ void P_SetupThingSlopes(std::span<MapThing> things)
 	}
 }
 
-void P_LoadReject(int lumpnum, int totallines)
+void P_LoadReject(const ResourceId lumpnum, int totallines)
 {
 	// [SL] 2011-07-01 - Check to see if the reject table is of the proper size
 	// If it's empty, the reject table should be ignored when
 	// calling P_CheckSight
 	// [EB] and if exists, but is too small, pad it with 0s until its the right size
-	const auto lumpsize = W_LumpLength(lumpnum);
+	const auto lumpsize = P_MapLumpLength(lumpnum);
 	const uint32_t correctsize = (numsectors * numsectors + 7) / 8;
 	// TODO: if we end up using reject to optimize netcodea and it makes a significant difference,
 	// build reject lumps when its completely empty
@@ -2149,7 +2167,9 @@ void P_LoadReject(int lumpnum, int totallines)
 	{
 		DPrintFmt("Reject matrix is not valid. It will be padded to the correct size.\n");
 		rejectmatrix = Z_Malloc<byte>(correctsize, PU_LEVEL);
-		W_ReadLump(lumpnum, rejectmatrix);
+		byte* rejectdata = P_CacheMapLump<byte>(lumpnum, PU_STATIC);
+		memcpy(rejectmatrix, rejectdata, lumpsize);
+		Res_ReleaseResource(lumpnum);
 		memset(rejectmatrix + lumpsize, 0, correctsize - lumpsize);
 		// vanilla doom just reads pass the edge of the reject table if its too small
 		// so we replace the start of the padding with what would likely have been in memory
@@ -2176,32 +2196,90 @@ void P_LoadReject(int lumpnum, int totallines)
 	}
 	else
 	{
-		rejectmatrix = W_CacheLumpNum<byte>(lumpnum, PU_LEVEL);
+		rejectmatrix = P_CacheMapLump<byte>(lumpnum, PU_LEVEL);
 	}
 }
 
-void P_ValidateMap(const int lumpnum)
+void P_ValidateMap(const OString& mapname)
 {
 	// TODO: this will need to be updated for UDMF and/or an internal nodebuilder
 	// UDMF has a different set of lumps, and a nodebuilder could create some of the missing lumps
-	auto checkMapLump = [lumpnum](int offset, const char* name) {
-		if (!W_CheckLumpName(lumpnum + offset, name))
+	auto checkMapLump = [&mapname](const char* name) {
+		if (not Res_CheckResource(Res_GetMapResourceId(name, mapname)))
 			I_Error("{} lump is missing for map {}\n", name, level.mapname);
 	};
 
-	checkMapLump(ML_THINGS,   "THINGS"  );
-	checkMapLump(ML_LINEDEFS, "LINEDEFS");
-	checkMapLump(ML_SIDEDEFS, "SIDEDEFS");
-	checkMapLump(ML_VERTEXES, "VERTEXES");
-	checkMapLump(ML_SEGS,     "SEGS"    );
-	checkMapLump(ML_SSECTORS, "SSECTORS");
-	checkMapLump(ML_NODES,    "NODES"   );
-	checkMapLump(ML_SECTORS,  "SECTORS" );
-	checkMapLump(ML_REJECT,   "REJECT"  );
-	checkMapLump(ML_BLOCKMAP, "BLOCKMAP");
+	checkMapLump("THINGS"  );
+	checkMapLump("LINEDEFS");
+	checkMapLump("SIDEDEFS");
+	checkMapLump("VERTEXES");
+	checkMapLump("SEGS"    );
+	checkMapLump("SSECTORS");
+	checkMapLump("NODES"   );
+	checkMapLump("SECTORS" );
+	checkMapLump("REJECT"  );
+	checkMapLump("BLOCKMAP");
 }
 
 } // namespace
+
+
+//
+// P_FitNodeBox
+//
+// Widens box to cover every seg vertex under child, fitting the boxes of the
+// nodes beneath it on the way.
+//
+void P_FitNodeBox(unsigned int child, fixed_t* box)
+{
+	if (child & NF_SUBSECTOR)
+	{
+		const subsector_t& sub = subsectors[child == static_cast<unsigned int>(-1) ? 0 : child & ~NF_SUBSECTOR];
+		for (unsigned int i = 0; i < sub.numlines; i++)
+		{
+			const seg_t& seg = segs[sub.firstline + i];
+			for (const vertex_t* v : { seg.v1, seg.v2 })
+			{
+				box[BOXLEFT] = std::min(box[BOXLEFT], v->x);
+				box[BOXRIGHT] = std::max(box[BOXRIGHT], v->x);
+				box[BOXBOTTOM] = std::min(box[BOXBOTTOM], v->y);
+				box[BOXTOP] = std::max(box[BOXTOP], v->y);
+			}
+		}
+		return;
+	}
+
+	node_t& node = nodes[child];
+	for (int side = 0; side < 2; side++)
+	{
+		P_FitNodeBox(node.children[side], node.bbox[side]);
+
+		box[BOXLEFT] = std::min(box[BOXLEFT], node.bbox[side][BOXLEFT]);
+		box[BOXRIGHT] = std::max(box[BOXRIGHT], node.bbox[side][BOXRIGHT]);
+		box[BOXBOTTOM] = std::min(box[BOXBOTTOM], node.bbox[side][BOXBOTTOM]);
+		box[BOXTOP] = std::max(box[BOXTOP], node.bbox[side][BOXTOP]);
+	}
+}
+
+//
+// P_FitNodeBoundingBoxes
+//
+// Widens every node's child bounding boxes to contain the seg vertices beneath
+// them.
+//
+void P_FitNodeBoundingBoxes()
+{
+	if (numnodes <= 0)
+		return;
+
+	fixed_t root[4];
+	root[BOXTOP] = std::numeric_limits<fixed_t>::min();
+	root[BOXBOTTOM] = std::numeric_limits<fixed_t>::max();
+	root[BOXLEFT] = std::numeric_limits<fixed_t>::max();
+	root[BOXRIGHT] = std::numeric_limits<fixed_t>::min();
+
+	P_FitNodeBox(numnodes - 1, root);
+}
 
 //
 // P_SetupLevel
@@ -2209,7 +2287,7 @@ void P_ValidateMap(const int lumpnum)
 extern polyblock_t **PolyBlockMap;
 
 // [RH] position indicates the start spot to spawn at
-void P_SetupLevel (const char *lumpname, int position)
+void P_SetupLevel (const OString& lumpname, int position)
 {
 	level.total_monsters = level.respawned_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
@@ -2256,6 +2334,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	shootthing = NULL;
 
 	DThinker::DestroyAllThinkers ();
+	Res_ReleaseLevelResources();
 	Z_FreeTags (PU_LEVEL, PU_LEVELMAX);
 	g_ValidLevel = false;		// [AM] False until the level is loaded.
 	NormalLight.next = NULL;	// [RH] Z_FreeTags frees all the custom colormaps
@@ -2267,13 +2346,25 @@ void P_SetupLevel (const char *lumpname, int position)
 
 	// UNUSED W_Profile ();
 
-	// find map num
-	const int lumpnum = W_GetNumForName (lumpname);
+	// find map lumps through the resource manager
+	const OString mapname(OStringToUpper(lumpname));
+
+	const ResourceId things_res_id   = Res_GetMapResourceId("THINGS", mapname);
+	const ResourceId linedefs_res_id = Res_GetMapResourceId("LINEDEFS", mapname);
+	const ResourceId sidedefs_res_id = Res_GetMapResourceId("SIDEDEFS", mapname);
+	const ResourceId vertexes_res_id = Res_GetMapResourceId("VERTEXES", mapname);
+	const ResourceId segs_res_id     = Res_GetMapResourceId("SEGS", mapname);
+	const ResourceId ssectors_res_id = Res_GetMapResourceId("SSECTORS", mapname);
+	const ResourceId nodes_res_id    = Res_GetMapResourceId("NODES", mapname);
+	const ResourceId sectors_res_id  = Res_GetMapResourceId("SECTORS", mapname);
+	const ResourceId reject_res_id   = Res_GetMapResourceId("REJECT", mapname);
+	const ResourceId blockmap_res_id = Res_GetMapResourceId("BLOCKMAP", mapname);
+	const ResourceId behavior_res_id = Res_GetMapResourceId("BEHAVIOR", mapname);
 
 	// [RH] Check if this map is Hexen-style.
 	//		LINEDEFS and THINGS need to be handled accordingly.
 	//		If it is, we also need to distinguish between projectile cross and hit
-	HasBehavior = W_CheckLumpName (lumpnum+ML_BEHAVIOR, "BEHAVIOR");
+	HasBehavior = Res_CheckResource(behavior_res_id);
 	//oldshootactivation = !HasBehavior;
 
 	// note: most of this ordering is important
@@ -2285,15 +2376,15 @@ void P_SetupLevel (const char *lumpname, int position)
 	}
 
 	// [Blair] Create map fingerprint
-	P_GenerateUniqueMapFingerPrint(lumpnum);
+	P_GenerateUniqueMapFingerPrint(mapname);
 
 	// [EB] check that all lumps are present and in the correct order
 	// so we can give useful error messages
-	P_ValidateMap(lumpnum);
+	P_ValidateMap(mapname);
 
 	if (HasBehavior)
 	{
-		P_LoadBehavior (lumpnum+ML_BEHAVIOR);
+		P_LoadBehavior (behavior_res_id);
 		map_format.P_ApplyZDoomMapFormat();
 	}
 	else
@@ -2303,25 +2394,30 @@ void P_SetupLevel (const char *lumpname, int position)
 
     level.time = 0;
 
-	P_LoadVertexes (lumpnum+ML_VERTEXES);
-	P_LoadSectors (lumpnum+ML_SECTORS);
-	P_LoadSideDefs (lumpnum+ML_SIDEDEFS);
+	P_LoadVertexes (vertexes_res_id);
+	P_LoadSectors (sectors_res_id);
+	P_LoadSideDefs (sidedefs_res_id);
 	if (!HasBehavior)
-		P_LoadLineDefs (lumpnum+ML_LINEDEFS);
+		P_LoadLineDefs (linedefs_res_id);
 	else
-		P_LoadLineDefs2 (lumpnum+ML_LINEDEFS);	// [RH] Load Hexen-style linedefs
-	P_LoadSideDefs2 (lumpnum+ML_SIDEDEFS);
+		P_LoadLineDefs2 (linedefs_res_id);	// [RH] Load Hexen-style linedefs
+	P_LoadSideDefs2 (sidedefs_res_id);
 	P_FinishLoadingLineDefs ();
-	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
+	P_LoadBlockMap (blockmap_res_id);
 
-	const nodetype_t nodetype = W_LumpLength(lumpnum+ML_NODES) > 0 ?
-	                            P_CheckNodeType(lumpnum+ML_NODES) :
-	                            P_CheckNodeType(lumpnum+ML_SSECTORS);
+	const nodetype_t nodetype = P_MapLumpLength(nodes_res_id) > 0 ?
+	                            P_CheckNodeType(nodes_res_id) :
+	                            P_CheckNodeType(ssectors_res_id);
+
+	// Extended and GL nodes store their split vertices in fixed point, already on
+	// their linedefs, where vanilla nodes round them to whole map units.
+	bool extendednodes = false;
 
 	switch (nodetype) {
 		case nodetype_t::XNOD:
 		case nodetype_t::ZNOD:
-			P_LoadExtendedNodes(lumpnum+ML_NODES, nodetype);
+			P_LoadExtendedNodes(nodes_res_id, nodetype);
+			extendednodes = true;
 			break;
 
 		case nodetype_t::XGLN:
@@ -2330,26 +2426,32 @@ void P_SetupLevel (const char *lumpname, int position)
 		case nodetype_t::ZGL2:
 		case nodetype_t::XGL3:
 		case nodetype_t::ZGL3:
-			P_LoadExtendedNodes(lumpnum+ML_SSECTORS, nodetype);
+			P_LoadExtendedNodes(ssectors_res_id, nodetype);
+			extendednodes = true;
 			break;
 
 		case nodetype_t::DEEP:
-			P_LoadSubsectors<mapsubsector_deepbsp_t>(lumpnum+ML_SSECTORS);
-			P_LoadNodes<mapnode_deepbsp_t>(lumpnum+ML_NODES);
-			P_LoadSegs<mapseg_deepbsp_t>(lumpnum+ML_SEGS);
+			P_LoadSubsectors<mapsubsector_deepbsp_t>(ssectors_res_id);
+			P_LoadNodes<mapnode_deepbsp_t>(nodes_res_id);
+			P_LoadSegs<mapseg_deepbsp_t>(segs_res_id);
 			break;
 
 		default:
-			P_LoadSubsectors<mapsubsector_t>(lumpnum+ML_SSECTORS);
-			P_LoadNodes<mapnode_t>(lumpnum+ML_NODES);
-			P_LoadSegs<mapseg_t>(lumpnum+ML_SEGS);
+			P_LoadSubsectors<mapsubsector_t>(ssectors_res_id);
+			P_LoadNodes<mapnode_t>(nodes_res_id);
+			P_LoadSegs<mapseg_t>(segs_res_id);
 	}
 
-	P_LoadReject(lumpnum + ML_REJECT, P_GroupLines());
+	P_LoadReject(reject_res_id, P_GroupLines());
 
-	// [SL] don't move seg vertices if compatibility is cruical
-	if (!demoplayback)
+	// [SL] don't move seg vertices if compatibility is cruical. Extended nodes
+	// have no slime trails to remove: their split vertices were never rounded off
+	// their linedefs.
+	if (not demoplayback and not extendednodes)
 		P_RemoveSlimeTrails();
+
+	// After the slime trail fix, which moves seg vertices.
+	P_FitNodeBoundingBoxes();
 
 	P_SetupLineSlopes();
 
@@ -2361,9 +2463,9 @@ void P_SetupLevel (const char *lumpname, int position)
 	P_ClearStackLinks();
 
 	if (!HasBehavior)
-		P_LoadThings (lumpnum+ML_THINGS);
+		P_LoadThings (things_res_id);
 	else
-		P_LoadThings2 (lumpnum+ML_THINGS, position);	// [RH] Load Hexen-style things
+		P_LoadThings2 (things_res_id, position);	// [RH] Load Hexen-style things
 
 	// Sky pickers and stacked-sector pairs can only be resolved once every
 	// SkyViewpoint / stack point has spawned.
@@ -2439,7 +2541,7 @@ static std::vector<spriteinfo_t*> P_GetSpriteInfos ()
 void P_Init (void)
 {
 	P_InitSwitchList ();
-	P_InitPicAnims ();
+	Res_ReadAnimationDefinitions ();
 	// code below ASSUMES the sprites are in-order rather than passing an order down-ward
 	std::vector<spriteinfo_t*> infos = P_GetSpriteInfos ();
 	R_InitSprites(infos);
@@ -2464,47 +2566,46 @@ void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 	// for each of the texture tiers (bottom, middle, and top)
 	for (int i = 0; i < 3; i++)
 	{
-		short* texture_num;
+		ResourceId* res_id_ptr = nullptr;
 		argb_t* blend_color;
-		const char* texture_name;
+		OString texture_name;
 
 		if (i == 0)				// bottom textures
 		{
-			texture_num = &sd->bottomtexture;
+			res_id_ptr = &sd->bottomtexture;
 			blend_color = &sec->bottommap;
-			texture_name = msd->bottomtexture;
+			texture_name = OStringToUpper(msd->bottomtexture, 8);
 		}
 		else if (i == 1)		// mid textures
 		{
-			texture_num = &sd->midtexture;
+			res_id_ptr = &sd->midtexture;
 			blend_color = &sec->midmap;
-			texture_name = msd->midtexture;
+			texture_name = OStringToUpper(msd->midtexture, 8);
 		}
 		else					// top textures
 		{
-			texture_num = &sd->toptexture;
+			res_id_ptr = &sd->toptexture;
 			blend_color = &sec->topmap;
-			texture_name = msd->toptexture;
+			texture_name = OStringToUpper(msd->toptexture, 8);
 		}
 
 		*blend_color = argb_t(0, 255, 255, 255);
-		*texture_num = 0;
+		*res_id_ptr = ResourceId::INVALID_ID;
 
-		int colormap_index = R_ColormapNumForName(texture_name);
+		int colormap_index = R_ColormapNumForName(texture_name.c_str());
 		if (colormap_index != 0)
 		{
 			*blend_color = R_BlendForColormap(colormap_index);
 		}
 		else
 		{
-			*texture_num = R_CheckTextureNumForName(texture_name);
-			if (*texture_num == -1)
+			*res_id_ptr = Res_GetTextureResourceId(texture_name, WALL, false);
+			if (not Res_CheckResource(*res_id_ptr))
 			{
-				*texture_num = 0;
-				if (strnicmp(texture_name, "WATERMAP", 8) == 0)
+				if (strnicmp(texture_name.c_str(), "WATERMAP", 8) == 0)
 					*blend_color = argb_t(0x80, 0, 0x4F, 0xA5);
 				else
-					*blend_color = P_GetColorFromTextureName(texture_name);
+					*blend_color = P_GetColorFromTextureName(texture_name.c_str());
 			}
 		}
 	}
@@ -2512,15 +2613,24 @@ void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
 
 //
 
-void SetTextureNoErr (short *texture, unsigned int *color, char *name)
+void P_SetTextureNoErr(ResourceId* texture, unsigned int *color, const OString& name)
 {
-	if ((*texture = R_CheckTextureNumForName (name)) == -1) {
+	*texture = Res_GetTextureResourceId(name, WALL, false);
+	if (not Res_CheckResource(*texture))
+	{
+		*texture = ResourceId::INVALID_ID;
+
+		// Res_GetTextureResourceId treats "-" as no texture,
+		// and parsing it as hex would turn blank tiers on Static_Init
+		// lines into a black light color (0 brightness sectors).
+		if (name.size() == 1 and name.c_str()[0] == '-')
+			return;
+
 		char name2[9];
 		char *stop;
-		strncpy (name2, name, 8);
+		strncpy (name2, name.c_str(), 8);
 		name2[8] = 0;
 		*color = strtoul (name2, &stop, 16);
-		*texture = 0;
 	}
 }
 

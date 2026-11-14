@@ -25,6 +25,7 @@
 #pragma once
 
 #include "m_resfile.h"
+#include "resources/res_main.h"
 
 // Sound equivalences. When a patch tries to change a sound,
 // use these sound names.
@@ -230,5 +231,6 @@ static const char* odamex_SoundMap[] =
 inline DoomObjectContainer<std::string> SoundMap(ARRAY_LENGTH(doom_SoundMap) + ARRAY_LENGTH(odamex_SoundMap));
 
 void D_UndoDehPatch();
-bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool textonly, bool notext = false);
+void D_PostProcessDeh();
+bool D_DoDehPatch(const OResFile* patchfile, const ResourceId lump, bool textonly, bool notext = false);
 bool CheckIfDehActorDefined(const mobjtype_t mobjtype);

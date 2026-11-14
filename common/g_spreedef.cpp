@@ -23,7 +23,7 @@
 
 #include "odamex.h"
 
-#include "w_wad.h"
+#include "resources/res_main.h"
 #include "g_multikill.h"
 #include "g_spree.h"
 #include "oscanner.h"
@@ -297,19 +297,19 @@ void G_ParseSpreeDefBuffer(const char* buffer, const size_t length)
 
 void G_ParseSpreeDef()
 {
-	int lump = -1;
+	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/SPREEDEF"));
 
 	// No SPREEDEF? Load defaults and continue.
-	if (W_FindLump("SPREEDEF", lump) == -1)
+	if (res_ids.empty())
 	{
 		MultiKillManager::getInstance().loadMultiKillDefaults();
 		SpreeManager::getInstance().loadSpreeDefaults();
 		return;
 	}
 
-	while ((lump = W_FindLump("SPREEDEF", lump)) != -1)
+	for (size_t i = 0; i < res_ids.size(); i++)
 	{
-		const char* buffer = W_CacheLumpNum<char>(lump, PU_CACHE);
-		G_ParseSpreeDefBuffer(buffer, W_LumpLength(lump));
+		const char* buffer = Res_LoadResource<char>(res_ids[i], PU_CACHE);
+		G_ParseSpreeDefBuffer(buffer, Res_GetResourceSize(res_ids[i]));
 	}
 }

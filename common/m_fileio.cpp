@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*-
+
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -37,7 +37,23 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "i_system.h"
+#include "resources/res_filelib.h"
 
+// unfortunately, we still need you
+#include "cmdlib.h"
+
+#include <sys/stat.h>
+
+#include "win32inc.h"
+#ifdef UNIX
+  #include <dirent.h>
+#endif
+
+#if defined(_WIN32)
+#include <direct.h> // getcwd
+#else
+#include <unistd.h> // getcwd
+#endif
 #include <filesystem>
 namespace fs = std::filesystem;
 
@@ -158,6 +174,25 @@ uintmax_t M_FileLength (std::istream& f)
 	return fileSize;
 }
 
+int32_t M_FileLength (FILE* f)
+{
+	const long savedpos = ftell(f);
+	fseek(f, 0, SEEK_END);
+	const long filelen = ftell(f);
+	fseek(f, savedpos, SEEK_SET);
+	return static_cast<int32_t>(filelen);
+}
+
+int32_t M_FileLength(const std::string& filename)
+{
+	FILE *f = fopen(filename.c_str(), "rb");
+	if (f == nullptr)
+		return -1;
+	int32_t length = M_FileLength(f);
+	fclose(f);
+	return length;
+}
+
 
 /**
  * @brief Checks to see whether a file exists or not
@@ -271,7 +306,7 @@ size_t M_ReadFile(const std::string& filename, byte **buffer)
 // if_needed detects if an extension is not present in path, if it isn't, it is
 // added.
 // The extension must contain a . at the beginning
-bool M_AppendExtension (std::string &filename, std::string extension, bool if_needed)
+static bool AppendExtensionInPlace(std::string& filename, const std::string& extension, bool if_needed)
 {
 	M_FixPathSep(filename);
 
@@ -291,6 +326,14 @@ bool M_AppendExtension (std::string &filename, std::string extension, bool if_ne
 	filename.append(extension);
 
 	return true;
+}
+
+
+std::string M_AppendExtension(const std::string& filename, const std::string& ext, bool if_needed)
+{
+	std::string output(filename);
+	AppendExtensionInPlace(output, ext, if_needed);
+	return output;
 }
 
 //
@@ -565,7 +608,7 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
 			if (this_it < found_it)
 			{
 				const std::string local_file = (path / filename).string();
-				const OMD5Hash local_hash = W_MD5(local_file);
+				const OMD5Hash local_hash = Res_MD5(local_file);
 
 				if (hash.empty() || hash == local_hash)
 				{
@@ -635,7 +678,7 @@ std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString
 	return rvo;
 }
 
-// Scan for PWADs and DEH and BEX files
+// Scan for PWADs, PK3s, ZIPs and DEH and BEX files
 std::vector<std::string> M_PWADFilesScanDir(std::string dir)
 {
 	std::vector<std::string> rvo;
@@ -653,7 +696,8 @@ std::vector<std::string> M_PWADFilesScanDir(std::string dir)
 
 			// Only return files with correct extensions
 			const std::string check = entry.path().extension().string();
-			if (iequals(check, ".WAD") || iequals(check, ".DEH") || iequals(check, ".BEX"))
+			if (iequals(check, ".WAD") or iequals(check, ".PK3") or iequals(check, ".ZIP") or
+			    iequals(check, ".DEH") or iequals(check, ".BEX"))
 			{
 				rvo.push_back(entry.path().filename().string());
 			}
@@ -687,4 +731,93 @@ bool M_GetAbsPath(const std::string& path, std::string& out)
 #endif
 }
 
-VERSION_CONTROL(m_fileio_cpp, "$Id$")
+//
+// M_IsDirectory
+//
+bool M_IsDirectory(const std::string& path)
+{
+	#ifndef S_ISDIR
+	#define S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
+	#endif
+
+	struct stat sb;
+	return (stat(path.c_str(), &sb) == 0) and S_ISDIR(sb.st_mode);
+}
+
+
+//
+// M_IsFile
+//
+bool M_IsFile(const std::string& path)
+{
+	#ifndef S_ISREG
+	#define S_ISREG(mode)  (((mode) & S_IFMT) == S_IFREG)
+	#endif
+
+	struct stat sb;
+	return (stat(path.c_str(), &sb) == 0) and S_ISREG(sb.st_mode);
+}
+
+
+//
+// M_ListDirectoryContents
+//
+// Returns a vector of strings containing the recursive contents
+// of a directory, in alphabetical order.
+//
+std::vector<std::string> M_ListDirectoryContents(const std::string& base_path, size_t max_depth)
+{
+	std::vector<std::string> files;
+	if (max_depth > 0)
+	{
+	#if defined(_WIN32)
+	    std::string path = base_path + PATHSEPCHAR + '*';
+
+		WIN32_FIND_DATA find_data;
+		HANDLE h_find = FindFirstFile(TEXT(path.c_str()), &find_data);
+		for (bool valid = h_find != INVALID_HANDLE_VALUE; valid; valid = FindNextFile(h_find, &find_data))
+		{
+			std::string name(find_data.cFileName);
+			std::string path = base_path + PATHSEPCHAR + name;
+			if (M_IsDirectory(path) and name != "." and name != "..")
+			{
+				std::vector<std::string> child_files = M_ListDirectoryContents(path, max_depth - 1);
+				files.insert(files.end(), child_files.begin(), child_files.end());
+			}
+			else if (M_IsFile(path))
+			{
+				files.push_back(path);
+			}
+		}
+
+		FindClose(h_find);
+
+	#else
+		DIR *dir = opendir(base_path.c_str());
+		if (dir != NULL)
+		{
+			struct dirent* ent;
+			while ((ent = readdir(dir)) != NULL)
+			{
+				std::string name(ent->d_name);
+				std::string path = base_path + PATHSEPCHAR + name;
+				if (M_IsDirectory(path) and name != "." and name != "..")
+				{
+					std::vector<std::string> child_files = M_ListDirectoryContents(path, max_depth - 1);
+					files.insert(files.end(), child_files.begin(), child_files.end());
+				}
+				else if (M_IsFile(path))
+				{
+					files.push_back(path);
+				}
+			}
+			closedir(dir);
+		}
+	#endif
+	}
+	std::sort(files.begin(), files.end());
+	return files;
+}
+
+
+VERSION_CONTROL (m_fileio_cpp, "$Id$")

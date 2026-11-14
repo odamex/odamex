@@ -176,8 +176,8 @@ int __cdecl main(int argc, char *argv[])
 
 		if(hIcon)
 		{
-			SendMessage(GetConsoleWindow(), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
-			SendMessage(GetConsoleWindow(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+			SendMessage(GetConsoleWindow(), WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIcon));
+			SendMessage(GetConsoleWindow(), WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hIcon));
 		}
 
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!

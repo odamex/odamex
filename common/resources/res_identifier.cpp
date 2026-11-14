@@ -1,0 +1,267 @@
+// Emacs style mode select   -*- C++ -*-
+//-----------------------------------------------------------------------------
+//
+// $Id$
+//
+// Copyright (C) 2006-2015 by The Odamex Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//
+//-----------------------------------------------------------------------------
+
+#include "odamex.h"
+#include <stdlib.h>
+#include <string.h>
+#include "resources/res_identifier.h"
+#include "resources/res_main.h"
+
+//
+// Res_ValidateWadData
+//
+// Returns true if the given lump data appears to be a valid WAD file.
+// TODO: test more than just identifying string.
+//
+bool Res_ValidateWadData(const uint8_t* data, size_t length)
+{
+	if (length >= 4)
+		return memcmp(data, "IWAD", 4) == 0 or memcmp(data, "PWAD", 4) == 0;
+	return false;
+}
+
+
+//
+// Res_ValidateZipData
+//
+// Returns true if the given lump data appears to be a valid zip file.
+//
+bool Res_ValidateZipData(const uint8_t* data, size_t length)
+{
+	if (length >= 4)
+		return memcmp(data, "PK\x03\x04", 4) == 0;
+	return false;
+}
+
+
+//
+// Res_ValidateDehackedData
+//
+// Returns true if the given lump data appears to be a valid DeHackEd file.
+//
+bool Res_ValidateDehackedData(const uint8_t* data, size_t length)
+{
+	const char magic_str[] = "Patch File for DeHackEd v";
+	uint32_t magic_len = strlen(magic_str);
+
+	return length >= magic_len and strnicmp(reinterpret_cast<const char*>(data), magic_str, magic_len) == 0;
+}
+
+
+//
+// Res_ValidatePatchData
+//
+// Returns true if the given lump data appears to be a valid patch_t graphic.
+//
+bool Res_ValidatePatchData(const uint8_t* data, size_t length)
+{
+	if (length > 8)
+	{
+		const int16_t width = LESHORT(*reinterpret_cast<const int16_t*>(data + 0));
+		const int16_t height = LESHORT(*reinterpret_cast<const int16_t*>(data + 2));
+
+		const uint32_t column_table_offset = 8;
+		const uint32_t column_table_length = sizeof(int32_t) * width;
+
+		if (width > 0 and height > 0 and length >= column_table_offset + column_table_length)
+		{
+			const int32_t* column_offset = reinterpret_cast<const int32_t*>(data + column_table_offset);
+			const int32_t min_column_offset = column_table_offset + column_table_length;
+			const int32_t max_column_offset = length - 1;
+
+			for (int i = 0; i < width; i++, column_offset++)
+				if (*column_offset < min_column_offset or *column_offset > max_column_offset)
+					return false;
+			return true;
+		}
+	}
+	return false;
+}
+
+
+//
+// Res_ValidateFlatData
+//
+// Returns true if the given lump data appears to be a valid flat graphic.
+//
+bool Res_ValidateFlatData(const uint8_t* data, size_t length)
+{
+	return (length == 64 * 64 or length == 128 * 128 or length == 256 * 256);
+}
+
+
+//
+// Res_ValidatePngData
+//
+// Returns true if the given lump data appears to be a valid PNG graphic.
+//
+bool Res_ValidatePngData(const uint8_t* data, size_t length)
+{
+	if (length >= 16)
+		return memcmp(data, "\x89PNG\x0D\x0A\x1A\x0A\x00\x00\x00\x0DIHDR", 16) == 0;
+	return false;
+}
+
+
+//
+// Res_ValidatePCSpeakerSoundData
+//
+// Returns true if the given lump data appears to be a valid PC speaker
+// sound effect. The lump starts with a 4 byte header indicating the length
+// of the sound effect in bytes and then is followed by that number of bytes
+// of sound data.
+//
+bool Res_ValidatePCSpeakerSoundData(const uint8_t* data, size_t length)
+{
+	if (length > 4)
+	{
+		int16_t magic = LESHORT(*reinterpret_cast<int16_t*>(const_cast<uint8_t*>(data) + 0));
+		int16_t sample_length = LESHORT(*reinterpret_cast<int16_t*>(const_cast<uint8_t*>(data) + 2));
+		return magic == 0x0000 and static_cast<size_t>(sample_length) + 4 == length;
+	}
+	return false;
+}
+
+
+//
+// Res_ValidateSoundData
+//
+// Returns true if the given lump data appears to be a valid DMX sound effect.
+// The lump starts with a two byte version number (0x0003).
+//
+// User-created tools to convert to the DMX sound effect format typically
+// do not use the correct number of padding bytes in the header and as such
+// cannot be used to validate a sound lump.
+//
+bool Res_ValidateSoundData(const uint8_t* data, size_t length)
+{
+	if (length > 8)
+	{
+		if (LESHORT(*reinterpret_cast<uint16_t*>(const_cast<uint8_t*>(data) + 0)) == 0x0003)
+			return true;		// DMX sound effect
+		if (data[0] == 'R' and data[1] == 'I' and data[2] == 'F' and data[3] == 'F')
+			return true;		// WAVE sound effect
+	}
+	return false;
+}
+
+
+//
+// Res_MusicIsMus()
+//
+// Determines if a music lump is in the MUS format based on its header.
+//
+bool Res_MusicIsMus(const uint8_t* data, size_t length)
+{
+	if (length > 4 and data[0] == 'M' and data[1] == 'U' and
+		data[2] == 'S' and data[3] == 0x1A)
+		return true;
+
+	return false;
+}
+
+
+//
+// Res_MusicIsMidi()
+//
+// Determines if a music lump is in the MIDI format based on its header.
+//
+bool Res_MusicIsMidi(const uint8_t* data, size_t length)
+{
+	if (length > 4 and data[0] == 'M' and data[1] == 'T' and
+		data[2] == 'h' and data[3] == 'd')
+		return true;
+
+	return false;
+}
+
+
+//
+// Res_MusicIsOgg()
+//
+// Determines if a music lump is in the OGG format based on its header.
+//
+bool Res_MusicIsOgg(const uint8_t* data, size_t length)
+{
+	if (length > 4 and data[0] == 'O' and data[1] == 'g' and
+		data[2] == 'g' and data[3] == 'S')
+		return true;
+
+	return false;
+}
+
+
+//
+// Res_MusicIsMp3()
+//
+// Determines if a music lump is in the MP3 format based on its header.
+//
+bool Res_MusicIsMp3(const uint8_t* data, size_t length)
+{
+	// ID3 tag starts the file
+	if (length > 4 and data[0] == 'I' and data[1] == 'D' and
+		data[2] == '3' and data[3] == 0x03)
+		return true;
+
+	// MP3 frame sync starts the file
+	if (length > 2 and data[0] == 0xFF and (data[1] & 0xE0))
+		return true;
+
+	return false;
+}
+
+
+//
+// Res_ValidateMusicData
+//
+// Returns true if the given lump data appears to be a supported
+// music resource format.
+//
+bool Res_ValidateMusicData(const uint8_t* data, size_t length)
+{
+	return Res_MusicIsMus(data, length) or Res_MusicIsMidi(data, length) or
+			Res_MusicIsOgg(data, length) or Res_MusicIsMp3(data, length);
+}
+
+
+
+
+// ============================================================================
+//
+// WadResourceIdentifer class implementation
+//
+// ============================================================================
+
+const ResourcePath& WadResourceIdentifier::identifyByContents(const ResourcePath& path, const uint8_t* data, size_t length) const
+{
+	const OString& lump_name = path.last();
+	if (Res_ValidatePngData(data, length))
+		return graphics_directory_name;
+	if (Res_ValidatePatchData(data, length))
+		return patches_directory_name;
+	if (Res_ValidateMusicData(data, length))
+		return music_directory_name;
+	if (lump_name.compare(0, 2, "DP") == 0 and Res_ValidatePCSpeakerSoundData(data, length))
+		return sounds_directory_name;
+	if (Res_ValidateSoundData(data, length))
+		return sounds_directory_name;
+	return global_directory_name;
+}

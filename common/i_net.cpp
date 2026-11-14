@@ -73,6 +73,7 @@ typedef int SOCKET;
 #include "i_net.h"
 #include "msg_pack.h"
 #include "d_player.h"
+#include "resources/res_main.h"
 #include "m_alloc.h"
 
 BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
@@ -613,6 +614,17 @@ void MSG_WriteLong (buf_t *b, int c)
 	b->WriteLong(c);
 }
 
+
+void MSG_WriteResourceId(buf_t* b, const ResourceId res_id)
+{
+	if (simulated_connection)
+		return;
+	if (not Res_CheckResource(res_id))
+		b->WriteShort(0xFFFF);
+	else
+		b->WriteShort(static_cast<uint32_t>(res_id) & 0xFFFF);
+}
+
 void MSG_WriteUnVarint(buf_t* b, unsigned int uv)
 {
 	if (simulated_connection)
@@ -811,6 +823,14 @@ int MSG_ReadVarint()
 	return net_message.ReadVarint();
 }
 
+const ResourceId MSG_ReadResourceId()
+{
+	uint16_t value = net_message.ReadShort();
+	if (value == 0xFFFF)
+		return ResourceId::INVALID_ID;
+	return ResourceId(value);
+}
+
 //
 // MSG_ReadBool
 //
@@ -986,6 +1006,8 @@ static void InitNetMessageFormats()
 	MSG_INFO(clc_spy);
 	MSG_INFO(clc_privmsg);
 	MSG_INFO(clc_sendmobjupdate);
+	MSG_INFO(clc_resourcedigests);
+	MSG_INFO(svc_resourcedigestsack);
 }
 
 #undef MSG_INFO
@@ -1052,7 +1074,7 @@ bool NET_GetSockaddr(sockaddr_in& io_sockaddr)
 //
 bool NetWaitOrTimeout(size_t ms)
 {
-	struct timeval timeout = {0, int(1000*ms) + 1};
+	struct timeval timeout = {0, static_cast<int>(1000*ms) + 1};
 	fd_set fds;
 
 	FD_ZERO(&fds);

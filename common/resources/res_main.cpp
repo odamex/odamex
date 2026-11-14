@@ -1,0 +1,927 @@
+// Emacs style mode select   -*- C++ -*-
+//-----------------------------------------------------------------------------
+//
+// $Id$
+//
+// Copyright (C) 2006-2015 by The Odamex Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//
+// Game resource file management, including WAD files.
+//
+// NOTES:
+// Resource names must be unique within the same resource file and namespace.
+// This allows for resource names to be duplicated in different resource files
+// so that resources may override those in previously loaded files. Resource
+// names may also be duplicated within the same file if the resources belong
+// to different namespaces. This allows a texture and a flat to have the same
+// name without ambiguity.
+//
+//-----------------------------------------------------------------------------
+
+#include "odamex.h"
+
+#include <algorithm>
+
+#include <filesystem>
+#include <fstream>
+
+#include "resources/res_main.h"
+#include "resources/res_texture.h"
+#include "resources/res_fileaccessor.h"
+#include "resources/res_filelib.h"
+#include "resources/res_identifier.h"
+#include "resources/res_cache.h"
+#include "resources/res_resourceloader.h"
+
+#include "c_dispatch.h"
+
+#include "i_system.h"
+
+static ResourceManager resource_manager;
+
+//
+// Res_CheckFileHelper
+//
+// Helper function that opens a file and reads the first length bytes of
+// the file and then passes the data to the function func and returns the
+// result.
+//
+static bool Res_CheckFileHelper(const OString& filename, bool (*func)(const uint8_t*, size_t), size_t length=0)
+{
+	const std::filesystem::path path(filename.c_str());
+
+	std::error_code ec;
+	const std::uintmax_t file_size = std::filesystem::file_size(path, ec);
+	if (ec)
+		return false;
+
+	if (length > file_size)
+		return false;
+
+	if (length == 0)
+		length = static_cast<size_t>(file_size);
+
+	std::ifstream ifs(path, std::ios::in | std::ios::binary);
+	if (not ifs.good())
+		return false;
+
+	std::vector<uint8_t> data(length);
+	ifs.read(reinterpret_cast<char*>(data.data()), length);
+	if (static_cast<size_t>(ifs.gcount()) != length)
+		return false;
+
+	return func(data.data(), length);
+}
+
+
+//
+// Res_IsWadFile
+//
+// Checks that the first four bytes of a file are "IWAD" or "PWAD"
+//
+bool Res_IsWadFile(const OString& filename)
+{
+	const size_t length = 4;	// length of WAD identifier ("IWAD" or "PWAD")
+	return Res_CheckFileHelper(filename, &Res_ValidateWadData, length);
+}
+
+
+//
+// Res_IsZipFile
+//
+// Checks that the first four bytes of a file matches a zip file signature
+//
+bool Res_IsZipFile(const OString& filename)
+{
+	const size_t length = 4;	// length of zip identifier
+	return Res_CheckFileHelper(filename, &Res_ValidateZipData, length);
+}
+
+
+//
+// Res_IsDehackedFile
+//
+// Checks that the first line of the file contains a DeHackEd header.
+//
+bool Res_IsDehackedFile(const OString& filename)
+{
+	const size_t length = 32; 	// long enough for DeHackEd identifier
+	return Res_CheckFileHelper(filename, &Res_ValidateDehackedData, length);
+}
+
+
+// ============================================================================
+//
+// RawResourceAccessor class implementations
+//
+// ============================================================================
+
+
+const ResourcePath& RawResourceAccessor::getResourcePath(const ResourceId res_id) const
+{
+	return mResourceManager->getResourcePath(res_id);
+}
+
+uint32_t RawResourceAccessor::getResourceSize(const ResourceId res_id) const
+{
+	const ResourceContainer* container = mResourceManager->getResourceContainer(res_id);
+	return container->getResourceSize(res_id);
+}
+
+void RawResourceAccessor::loadResource(const ResourceId res_id, uint8_t* data, uint32_t size) const
+{
+	const ResourceContainer* container = mResourceManager->getResourceContainer(res_id);
+	container->loadResource(data, res_id, size);
+}
+
+
+// ============================================================================
+//
+// ResourceManager class implementation
+//
+// ============================================================================
+
+//
+// ResourceManager::ResourceManager
+//
+// Set up the resource lookup tables.
+//
+ResourceManager::ResourceManager() :
+	mRawResourceAccessor(this),
+	mCache(nullptr)
+{ }
+
+
+//
+// ResourceManager::~ResourceManager
+//
+ResourceManager::~ResourceManager()
+{
+	closeAllResourceContainers();
+}
+
+
+//
+// ResourceManager::addResourceContainer
+//
+void ResourceManager::addResourceContainer(
+				ResourceContainer* container,
+				ResourceContainer* parent,
+				const ResourcePath& base_path,
+				const std::string& filename)
+{
+	mResourceContainers.push_back(ResourceContainerRecord());
+	ResourceContainerRecord& record = mResourceContainers.back();
+
+	record.mResourceContainer = container;
+	record.mParent = parent;
+	record.mBasePath = base_path;
+	if (parent)
+		record.mFileName = getResourceContainerRecord(parent)->mFileName + ":" + filename;
+	else
+		record.mFileName = filename;
+
+	PrintFmt(PRINT_HIGH, "adding {} ({} {})\n",
+					record.mFileName.c_str(),
+					container->getResourceCount(),
+					container->getResourceCount() == 1 ? "lump" : "lumps");
+
+	const size_t needed = mResources.size() + container->getResourceCount();
+	if (mResources.capacity() < needed)
+		mResources.reserve(std::max(needed, mResources.capacity() * 2));
+
+	container->addResources(this);
+}
+
+
+//
+// ResourceManager::openResourceFile
+//
+// Opens a resource file and caches the directory of lump names for queries.
+//
+void ResourceManager::openResourceFile(const OString& path)
+{
+	ResourceContainer* container = nullptr;
+
+	if (M_IsFile(path))
+	{
+		std::string ext;
+		M_ExtractFileExtension(path, ext);
+
+		if (Res_IsWadFile(path))
+			container = new WadResourceContainer(path);
+		else if (Res_IsZipFile(path))
+			container = new ZipResourceContainer(path);
+		else
+			container = new SingleLumpResourceContainer(path);
+	}
+	else if (M_IsDirectory(path))
+	{
+		container = new DirectoryResourceContainer(path);
+	}
+
+	if (not container)
+		return;
+
+	addResourceContainer(container, nullptr, global_directory_name, path);
+
+	mResourceContainerFileNames.insert(std::make_pair(reinterpret_cast<size_t>(container), path));
+	mResourceFileNames.push_back(path);
+
+}
+
+
+//
+// ResourceManager::openResourceFiles
+//
+// Opens a set of resource files and creates a directory of resource path names
+// for queries.
+//
+void ResourceManager::openResourceFiles(const std::vector<std::string>& filenames)
+{
+	assert(mResourceContainers.empty());
+	mResourceContainers.reserve(filenames.size() + 1);
+
+	for (auto &name : filenames)
+		openResourceFile(OString(name));
+
+	ResourceContainer* container = new TextureManager(this);
+	addResourceContainer(container, nullptr, global_directory_name, "Unified Texture System");
+
+	mCache = new ResourceCache(mResources.size());
+}
+
+
+//
+// ResourceManager::closeAllResourceContainers
+//
+// Closes all open resource files. This should be called prior to switching
+// to a new set of resource files.
+//
+void ResourceManager::closeAllResourceContainers()
+{
+	for (auto& resource : mResources)
+		releaseResourceData(getResourceId(resource.mPath));
+	mResources.clear();
+
+	for (auto& container : mResourceContainers)
+		delete container.mResourceContainer;
+	mResourceContainers.clear();
+
+	mResourceContainerFileNames.clear();
+
+	mResourceFileNames.clear();
+	mResourceFileHashes.clear();
+
+	delete mCache;
+	mCache = nullptr;
+
+	mNameTranslator.clear();
+}
+
+
+//
+// ResourceManager::addResource
+//
+// Adds a resource lump to the lookup tables and assigns it a new ResourceId.
+//
+const ResourceId ResourceManager::addResource(
+		const ResourcePath& path,
+		const ResourceContainer* container,
+		const ResourceLoader* loader)
+{
+	mResources.push_back(ResourceRecord());
+	ResourceRecord& res_rec = mResources.back();
+	const ResourceId res_id = getResourceId(&res_rec);
+
+	res_rec.mPath = path;
+	res_rec.mResourceContainer = container;
+	res_rec.mResourceLoader = loader;
+
+	mNameTranslator.addTranslation(path, res_id);
+
+	return res_id;
+}
+
+
+//
+// ResourceManager::addResourceAlias
+//
+// Registers an additional path that translates to an existing resource
+// without creating a new resource record. Used to make archive and
+// directory files addressable by their full "long" path alongside their
+// classic 8-character lump name.
+//
+void ResourceManager::addResourceAlias(const ResourcePath& path, const ResourceId res_id)
+{
+	mNameTranslator.addTranslation(path, res_id);
+}
+
+
+//
+// ResourceManager::getAllResourceIds
+//
+const ResourceIdList ResourceManager::getAllResourceIds() const
+{
+	ResourceIdList res_id_list;
+	res_id_list.reserve(mResources.size());
+	for (size_t i = 0; i < mResources.size(); i++)
+		res_id_list.push_back(ResourceId(i));
+	return res_id_list;
+}
+
+
+//
+// ResourceManager::listResourceDirectory
+//
+// Lists the path of all resources which reside in the provided path.
+//
+const ResourcePathList ResourceManager::listResourceDirectory(const ResourcePath& path) const
+{
+	ResourcePathList path_list;
+	for (size_t i = 0; i < mResources.size(); i++)
+	{
+		const ResourcePath& this_path = mResources[i].mPath;
+		if (Res_DoesPathStartWithBase(path, this_path))
+			path_list.push_back(this_path);
+	}
+	return path_list;
+}
+
+
+//
+// ResourceManager::getResourceContainerFileName
+//
+const std::string& ResourceManager::getResourceContainerFileName(const ResourceId res_id) const
+{
+	const ResourceContainer* container = getResourceContainer(res_id);
+	if (container)
+		return getResourceContainerRecord(container)->mFileName;
+	static std::string empty_string;
+	return empty_string;
+}
+
+
+//
+// ResourceManager::getResourceContainerIndex
+//
+std::optional<size_t> ResourceManager::getResourceContainerIndex(const ResourceId res_id) const
+{
+	const ResourceContainer* container = getResourceContainer(res_id);
+	if (not container)
+		return std::nullopt;
+
+	// A WAD embedded in a zip, such as maps/MAP01.wad, is a container of its own,
+	// registered while the zip is being added.
+	// It belongs to the file holding it.
+	const ResourceContainerRecord* record = getResourceContainerRecord(container);
+	while (record and record->mParent)
+		record = getResourceContainerRecord(record->mParent);
+	if (not record)
+		return std::nullopt;
+
+	// The containers without a parent are the files, in the order they were
+	// opened, followed by the unified texture system, which is no file on disk.
+	size_t index = 0;
+	for (const ResourceContainerRecord& file : mResourceContainers)
+	{
+		if (file.mParent)
+			continue;
+
+		if (file.mResourceContainer == record->mResourceContainer)
+		{
+			if (index >= mResourceFileNames.size())
+				return std::nullopt;
+			return index;
+		}
+
+		index++;
+	}
+
+	return std::nullopt;
+}
+
+
+//
+// ResourceManager::getResourceSize
+//
+uint32_t ResourceManager::getResourceSize(const ResourceId res_id) const
+{
+	const ResourceRecord* res_rec = getResourceRecord(res_id);
+	if (res_rec)
+	{
+		if (res_rec->mResourceLoader)
+			return res_rec->mResourceLoader->size();
+
+		// default implementation
+		const ResourceContainer* container = getResourceContainer(res_id);
+		return container->getResourceSize(res_id);
+	}
+	return 0;
+}
+
+
+//
+// ResourceManager::loadResourceData
+//
+// Utilizes the resource cache to quickly return resources that have
+// previously been cached. Initially, resource data is loaded from its
+// container and then post-processed. Then the post-processed resource data
+// is cached for re-use.
+//
+const uint8_t* ResourceManager::loadResourceData(const ResourceId res_id, zoneTag_e tag)
+{
+	if (not validateResourceId(res_id))
+		return nullptr;
+
+	// cache hit, which render workers take concurrently without locking
+	if (const uint8_t* data = mCache->getData(res_id))
+		return data;
+
+	// A cache miss: load under the lock.
+	std::lock_guard<std::recursive_mutex> lock(Res_LoadMutex());
+
+	// Another thread may have loaded it while this one waited.
+	if (const uint8_t* data = mCache->getData(res_id))
+		return data;
+
+	// A slot is published only once its load finishes, so a loader that asked
+	// for its own resource would start loading it again, without end.
+	if (std::find(mLoadsInProgress.begin(), mLoadsInProgress.end(), res_id) != mLoadsInProgress.end())
+		I_Error("Resource {} requested while it is being loaded", OString(getResourcePath(res_id)).c_str());
+
+	if (not mLoadingResource)
+	{
+		mLoadingResource = true;
+		DPrintFmt("Resource cache miss for {}\n", OString(getResourcePath(res_id)).c_str());
+		mLoadingResource = false;
+	}
+
+	const ResourceRecord* res_rec = getResourceRecord(res_id);
+	const uint32_t size = res_rec->mResourceLoader ? res_rec->mResourceLoader->size()
+	                                               : res_rec->mResourceContainer->getResourceSize(res_id);
+
+	// Nothing is cached for an empty resource, it reads as NULL.
+	if (size == 0)
+		return nullptr;
+
+	I_BeginRead();			// indicate to the HUD to draw the loading icon (STDISK)
+	mLoadsInProgress.push_back(res_id);
+
+	std::unique_ptr<ResourceBlock> block = std::make_unique<ResourceBlock>(size);
+	if (res_rec->mResourceLoader)
+		res_rec->mResourceLoader->load(block->data());		// special loading strategy
+	else
+		res_rec->mResourceContainer->loadResource(block->data(), res_id, size);
+
+	mLoadsInProgress.pop_back();
+	I_EndRead();			// indicate to the HUD to stop drawing the loading icon (STDISK)
+
+	return mCache->cacheData(res_id, std::move(block), tag);
+}
+
+
+//
+// ResourceManager::releaseResourceData
+//
+void ResourceManager::releaseResourceData(const ResourceId res_id)
+{
+	if (validateResourceId(res_id))
+		mCache->releaseData(res_id);
+}
+
+
+//
+// ResourceManager::releaseLevelResourceData
+//
+void ResourceManager::releaseLevelResourceData()
+{
+	if (mCache)
+		mCache->releaseLevelData();
+}
+
+
+//
+// ResourceManager::releaseResourceData
+//
+const std::vector<OMD5Hash>& ResourceManager::getResourceFileHashes() const
+{
+	if (mResourceFileHashes.size() != mResourceFileNames.size())
+	{
+		mResourceFileHashes.clear();
+		mResourceFileHashes.reserve(mResourceFileNames.size());
+		for (size_t i = 0; i < mResourceFileNames.size(); i++)
+			mResourceFileHashes.push_back(Res_MD5(mResourceFileNames[i]));
+	}
+	return mResourceFileHashes;
+}
+
+
+//
+// ResourceManager::dump
+//
+// Print information about each resource in all of the open resource
+// files.
+//
+void ResourceManager::dump() const
+{
+	for (ResourceRecordTable::const_iterator it = mResources.begin(); it != mResources.end(); ++it)
+	{
+		const ResourceRecord& res_rec = *it;
+		const ResourceId res_id = getResourceId(&res_rec);
+
+		const ResourcePath& path = res_rec.mPath;
+		assert(not OString(path).empty());
+
+		assert(res_rec.mResourceContainer != nullptr);
+
+		bool cached = mCache->getData(res_id) != nullptr;
+		bool visible = mNameTranslator.checkNameVisibility(path, res_id);
+
+		PrintFmt(PRINT_HIGH,"0x{:08X} {} {} [{}] [{}]\n",
+				static_cast<uint32_t>(res_id),
+				cached ? '$' : visible ? '*' : '-',
+				OString(path).c_str(),
+				static_cast<uint32_t>(getResourceSize(res_id)),
+				getResourceContainerFileName(res_id).c_str());
+	}
+}
+
+
+// ============================================================================
+//
+// Externally visible functions
+//
+// ============================================================================
+
+//
+// Res_OpenResourceFiles
+//
+// Opens a set of resource files and creates a directory of resource path names
+// for queries.
+//
+void Res_OpenResourceFiles(const std::vector<std::string>& filenames)
+{
+	PrintFmt(PRINT_HIGH, "Res_OpenResourceFiles: Init resource data.\n");
+	resource_manager.openResourceFiles(filenames);
+}
+
+
+//
+// Res_CloseAllResourceFiles
+//
+// Closes all open resource files and clears the cache. This should be called prior to switching
+// to a new set of resource files.
+//
+void Res_CloseAllResourceFiles()
+{
+	resource_manager.closeAllResourceContainers();
+}
+
+
+//
+// Res_GetResourceFileNames
+//
+// Returns a vector of file names of the currently open resource files. The
+// file names include the full path.
+//
+const std::vector<std::string>& Res_GetResourceFileNames()
+{
+	return resource_manager.getResourceFileNames();
+}
+
+
+//
+// Res_GetResourceFileHashes
+//
+// Returns a vector of string representations of the MD5SUM for each of the
+// currently open resource files.
+//
+const std::vector<OMD5Hash>& Res_GetResourceFileHashes()
+{
+	return resource_manager.getResourceFileHashes();
+}
+
+
+//
+// Res_ContentDigest
+//
+// Returns the content manifest digest for an archive or directory resource
+// at the given path, identifying its logical contents independent of
+// storage form. Returns an empty digest for any other file type - plain
+// WADs are identified by their whole-file MD5 instead.
+//
+OMD5Hash Res_ContentDigest(const std::string& path)
+{
+	const OString ospath(path);
+
+	if (M_IsDirectory(path))
+	{
+		DirectoryResourceContainer container(ospath);
+		return container.getContentDigest();
+	}
+
+	if (M_IsFile(path) and Res_IsZipFile(ospath))
+	{
+		ZipResourceContainer container(ospath);
+		return container.getContentDigest();
+	}
+
+	return OMD5Hash();
+}
+
+
+//
+// Res_ListResourceDirectory
+//
+// Returns a list of all resource names in the given resource directory.
+//
+const ResourcePathList Res_ListResourceDirectory(const ResourcePath& path)
+{
+	return resource_manager.listResourceDirectory(path);
+}
+
+
+//
+// Res_GetResourceId
+//
+// Looks for the resource ID that matches the desired resource name in the given
+// directory name.
+//
+const ResourceId Res_GetResourceId(const OString& name, const ResourcePath& directory)
+{
+	const ResourcePath path = Res_MakeResourcePath(name, directory);
+	return resource_manager.getResourceId(path);
+}
+
+
+//
+// Res_GetResourceId
+//
+// Looks for the resource ID that matches the desired resource name in the given
+// resource namespace.
+//
+const ResourceId Res_GetResourceId(const OString& name, ResourceNamespace ns, bool exact_ns_match)
+{
+	return resource_manager.getResourceId(name, ns, exact_ns_match);
+}
+
+
+ //
+ // Res_GetAllResourceIds
+ //
+ // Fills the supplied vector with the ResourceId of any lump whose name matches the
+ // given path. An empty vector indicates that there were no matches.
+ //
+ const ResourceIdList Res_GetAllResourceIds(const ResourcePath& path)
+ {
+	return resource_manager.getAllResourceIds(path);
+ }
+
+
+//
+// Res_GetResourcePath
+//
+const ResourcePath& Res_GetResourcePath(const ResourceId res_id)
+{
+	return resource_manager.getResourcePath(res_id);
+}
+
+
+//
+// Res_GetResourceContainerFileName
+//
+const std::string& Res_GetResourceContainerFileName(const ResourceId res_id)
+{
+	return resource_manager.getResourceContainerFileName(res_id);
+}
+
+
+//
+// Res_IsResourceFromPWAD
+//
+bool Res_IsResourceFromPWAD(const ResourceId res_id)
+{
+	const std::optional<size_t> index = resource_manager.getResourceContainerIndex(res_id);
+
+	return index.has_value() and index.value() >= RESOURCE_FILE_FIRSTPWAD;
+}
+
+
+//
+// Res_IsResourceReplaced
+//
+// A resource is replaced when more than one file supplies its path and the one
+// the game resolves comes from a PWAD.
+//
+bool Res_IsResourceReplaced(const ResourcePath& path)
+{
+	const ResourceIdList res_ids = Res_GetAllResourceIds(path);
+
+	return res_ids.size() > 1 and Res_IsResourceFromPWAD(res_ids.back());
+}
+
+
+//
+// Res_GetResourceName
+//
+// Looks for the name of the resource lump that matches id. If the lump is not
+// found, an empty string is returned.
+//
+const OString& Res_GetResourceName(const ResourceId res_id)
+{
+	return resource_manager.getResourcePath(res_id).last();
+}
+
+
+//
+// Res_CheckResource
+//
+// Verifies that the given ResourceId matches a valid resource lump.
+//
+bool Res_CheckResource(const ResourceId res_id)
+{
+	return resource_manager.validateResourceId(res_id);
+}
+
+
+//
+// Res_GetResourceSize
+//
+// Returns the length of the resource lump that matches res_id. If the lump is
+// not found, 0 is returned.
+//
+uint32_t Res_GetResourceSize(const ResourceId res_id)
+{
+	return resource_manager.getResourceSize(res_id);
+}
+
+
+//
+// Res_CheckMap
+//
+// Checks if a given map name exists in the resource files. Internally, map
+// names are stored as marker lumps and put into their own namespace.
+//
+bool Res_CheckMap(const OString& mapname)
+{
+	ResourcePath directory = Res_MakeResourcePath(mapname, maps_directory_name);
+	const ResourceId res_id = Res_GetResourceId(mapname, directory);
+	return resource_manager.validateResourceId(res_id);
+}
+
+
+//
+// Res_IsUDMFMap
+//
+// True when a resource file holds a UDMF map of this name. Those can't be
+// loaded yet, so Res_CheckMap doesn't count them.
+//
+bool Res_IsUDMFMap(const OString& mapname)
+{
+	ResourcePath directory = Res_MakeResourcePath(mapname, udmf_maps_directory_name);
+	const ResourceId res_id = Res_GetResourceId(mapname, directory);
+	return resource_manager.validateResourceId(res_id);
+}
+
+
+//
+// Res_GetResourceFileBaseName
+//
+// The name, without its directory, of the file the resource was loaded
+// from. A WAD embedded in a zip gives the zip's name.
+//
+static std::string Res_GetResourceFileBaseName(const ResourceId res_id)
+{
+	const std::optional<size_t> index = resource_manager.getResourceContainerIndex(res_id);
+	const std::vector<std::string>& files = resource_manager.getResourceFileNames();
+	if (not index or *index >= files.size())
+		return std::string();
+	return std::filesystem::path(files[*index]).filename().string();
+}
+
+
+//
+// Res_FindHiddenUDMFMap
+//
+// True when a UDMF map was loaded after the playable map of the same name,
+// so it would be played instead if UDMF could be loaded. The names of the
+// files holding each map are returned.
+//
+bool Res_FindHiddenUDMFMap(const OString& mapname, std::string& udmf_file, std::string& map_file)
+{
+	const ResourceId map_res_id =
+	    Res_GetResourceId(mapname, Res_MakeResourcePath(mapname, maps_directory_name));
+	const ResourceId udmf_res_id =
+	    Res_GetResourceId(mapname, Res_MakeResourcePath(mapname, udmf_maps_directory_name));
+
+	if (not resource_manager.validateResourceId(map_res_id) or
+	    not resource_manager.validateResourceId(udmf_res_id))
+		return false;
+
+	// ResourceIds are given out in load order.
+	if (static_cast<uint32_t>(udmf_res_id) < static_cast<uint32_t>(map_res_id))
+		return false;
+
+	udmf_file = Res_GetResourceFileBaseName(udmf_res_id);
+	map_file = Res_GetResourceFileBaseName(map_res_id);
+	return true;
+}
+
+
+//
+// Res_IsMapFromPWAD
+//
+// True when the map marker the game resolves for this name came from a PWAD.
+//
+bool Res_IsMapFromPWAD(const OString& mapname)
+{
+	ResourcePath directory = Res_MakeResourcePath(mapname, maps_directory_name);
+
+	return Res_IsResourceFromPWAD(Res_GetResourceId(mapname, directory));
+}
+
+
+//
+// Res_GetMapResourceId
+//
+// Returns the ResourceId of a lump belonging to the given map. Internally, the
+// lumps for a particular map are stored in that map's namespace and
+// only the map lumps from the same resource file as the map marker
+// should be used.
+//
+const ResourceId Res_GetMapResourceId(const OString& lump_name, const OString& mapname)
+{
+	ResourcePath directory = Res_MakeResourcePath(mapname, maps_directory_name);
+	const ResourceId map_marker_res_id = Res_GetResourceId(mapname, directory);
+	const ResourceId map_lump_res_id = Res_GetResourceId(lump_name, directory);
+
+	if (resource_manager.checkForSameContainer(map_marker_res_id, map_lump_res_id))
+		return map_lump_res_id;
+	return ResourceId::INVALID_ID;
+}
+
+//
+// Res_LoadMutex
+//
+// Never destroyed, so loads during static destruction still find it.
+//
+std::recursive_mutex& Res_LoadMutex()
+{
+	static std::recursive_mutex* mutex = new std::recursive_mutex;
+	return *mutex;
+}
+
+//
+// Res_LoadResource
+//
+// Loads the resource that matches res_id into the resource cache, which owns
+// the memory, and returns it. Later requests are served from the cache until
+// the resource is released with Res_ReleaseResource.
+//
+// A level tag (PU_LEVEL to PU_LEVELMAX) has the resource released by
+// Res_ReleaseLevelResources with the level's memory,  any other tag
+// keeps it until it is released explicitly.
+//
+const uint8_t* Res_LoadResource(const ResourceId res_id, zoneTag_e tag)
+{
+	return resource_manager.loadResourceData(res_id, tag);
+}
+
+
+//
+// Res_ReleaseResource
+//
+// Frees the memory allocated for the lump's cached data.
+//
+void Res_ReleaseResource(const ResourceId res_id)
+{
+	resource_manager.releaseResourceData(res_id);
+}
+
+
+//
+// Res_ReleaseLevelResources
+//
+void Res_ReleaseLevelResources()
+{
+	resource_manager.releaseLevelResourceData();
+}
+
+
+BEGIN_COMMAND(dump_resources)
+{
+	resource_manager.dump();
+}
+END_COMMAND(dump_resources)

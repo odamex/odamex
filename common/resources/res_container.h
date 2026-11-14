@@ -1,0 +1,500 @@
+// Emacs style mode select   -*- C++ -*- 
+//-----------------------------------------------------------------------------
+//
+// $Id$
+//
+// Copyright (C) 2006-2015 by The Odamex Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//
+// Game resource file abstractions
+//
+//-----------------------------------------------------------------------------
+
+#pragma once
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+#include <vector>
+
+#include "resources/res_resourceid.h"
+#include "resources/res_resourcepath.h"
+
+#include "ohash.h"
+
+typedef uint32_t LumpId;
+
+
+// ============================================================================
+//
+// Content manifest
+//
+// ============================================================================
+//
+// Describes the logical contents of an archive or directory resource
+// container: one entry per file with a normalized path, uncompressed size,
+// and CRC32 of the uncompressed data. Two containers with equal manifests
+// hold the same content regardless of storage form (ZIP vs. directory) or
+// how the archive was compressed.
+//
+
+struct ContentManifestEntry
+{
+	std::string		path;		// forward slash separated, no leading separator, uppercase
+	uint32_t		length;		// uncompressed size in bytes
+	std::string		crc32;		// 8-digit uppercase hex CRC32 of uncompressed data
+};
+
+
+// forward declarations
+class FileAccessor;
+class ResourceManager;
+
+
+// ============================================================================
+//
+// ContainerDirectory class interface & implementation
+//
+// ============================================================================
+//
+// A generic resource container directory for querying information about
+// game resource lumps.
+//
+template <typename T>
+class ContainerDirectory
+{
+private:
+	typedef std::vector<T> EntryList;
+
+public:
+	typedef typename EntryList::iterator iterator;
+	typedef typename EntryList::const_iterator const_iterator;
+
+	static const LumpId INVALID_LUMP_ID = 0xFFFFFFFFu;
+
+	ContainerDirectory(const size_t initial_size = 4096) :
+		mPathLookup(2 * initial_size)
+	{
+		mEntries.reserve(initial_size);
+	}
+
+	void clear()
+	{
+		mPathLookup.clear();
+		mEntries.clear();
+	}
+
+	void reserve(const size_t new_size)
+	{
+		if (new_size > mEntries.size())
+		{
+			mEntries.reserve(new_size);
+			mPathLookup.reserve(new_size);
+		}
+	}
+
+	iterator begin()
+	{
+		return mEntries.begin();
+	}
+
+	const_iterator begin() const
+	{
+		return mEntries.begin();
+	}
+
+	iterator end()
+	{
+		return mEntries.end();
+	}
+
+	const_iterator end() const
+	{
+		return mEntries.end();
+	}
+
+	LumpId getLumpId(iterator it) const
+	{
+		return static_cast<LumpId>(it - begin());
+	}
+
+	LumpId getLumpId(const_iterator it) const
+	{
+		return static_cast<LumpId>(it - begin());
+	}
+
+	LumpId getLumpId(const OString& path) const
+	{
+		PathLookupTable::const_iterator it = mPathLookup.find(path);
+		if (it != mPathLookup.end())
+			return getLumpId(&mEntries[it->second]);
+		return INVALID_LUMP_ID;
+	}
+
+	LumpId getLumpId(const T* entry) const
+	{
+		if (not mEntries.empty() and static_cast<LumpId>(entry - &mEntries.front()) < mEntries.size())
+			return static_cast<LumpId>(entry - &mEntries.front());
+		return INVALID_LUMP_ID;
+	}
+
+	size_t size() const
+	{
+		return mEntries.size();
+	}
+
+	bool validate(const LumpId lump_id) const
+	{
+		return lump_id < mEntries.size();
+	}
+
+	void addEntry(const T& entry)
+	{
+		mEntries.push_back(entry);
+
+		const LumpId lump_id = getLumpId(&mEntries.back());
+		assert(lump_id != INVALID_LUMP_ID);
+		mPathLookup.insert(std::make_pair(entry.path, lump_id));
+	}
+
+	const T* getEntry(const LumpId lump_id) const
+	{
+		if (lump_id != INVALID_LUMP_ID and lump_id < mEntries.size())
+			return &mEntries[lump_id];
+		return nullptr;
+	}
+
+private:
+	EntryList mEntries;
+
+	typedef OHashTable<OString, LumpId> PathLookupTable;
+	PathLookupTable mPathLookup;
+};
+
+
+// ============================================================================
+//
+// ResourceContainer abstract base class interface
+//
+// ============================================================================
+
+class ResourceContainer
+{
+public:
+	ResourceContainer()
+	{ }
+
+	virtual ~ResourceContainer() { }
+
+	virtual uint32_t getResourceCount() const = 0;
+
+	virtual void addResources(ResourceManager* manager) = 0;
+
+	virtual uint32_t getResourceSize(const ResourceId res_id) const = 0;
+
+	virtual uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const = 0;
+
+	virtual OMD5Hash getContentDigest() const
+	{
+		return OMD5Hash();
+	}
+};
+
+
+// ============================================================================
+//
+// SingleLumpResourceContainer abstract base class interface
+//
+// ============================================================================
+
+class SingleLumpResourceContainer : public ResourceContainer
+{
+public:
+	SingleLumpResourceContainer(FileAccessor* file);
+
+	SingleLumpResourceContainer(const OString& path);
+
+	~SingleLumpResourceContainer() override;
+
+	uint32_t getResourceCount() const override;
+
+	void addResources(ResourceManager* manager) override;
+
+	uint32_t getResourceSize(const ResourceId res_id) const override;
+
+	uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const override;
+
+private:
+	void init(FileAccessor* file);
+
+	FileAccessor*			mFile;
+	ResourceId				mResourceId;
+};
+
+
+// ============================================================================
+//
+// WadResourceContainer abstract base class interface
+//
+// ============================================================================
+
+struct WadDirectoryEntry
+{
+	OString			path;
+	uint32_t		length;
+	uint32_t		offset;
+};
+
+
+class WadResourceContainer : public ResourceContainer
+{
+public:
+	WadResourceContainer(FileAccessor* file);
+
+	WadResourceContainer(const OString& path);
+	
+	~WadResourceContainer() override;
+
+	uint32_t getResourceCount() const override;
+
+	void addResources(ResourceManager* manager) override;
+
+	uint32_t getResourceSize(const ResourceId res_id) const override;
+		
+	uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const override;
+
+private:
+	void init(FileAccessor* file);
+
+protected:
+	FileAccessor* mFile;
+
+	ContainerDirectory<WadDirectoryEntry> mDirectory;
+
+	typedef OHashTable<ResourceId, LumpId> LumpIdLookupTable;
+	LumpIdLookupTable mLumpIdLookup;
+
+	LumpId getLumpId(const ResourceId res_id) const
+	{
+		LumpIdLookupTable::const_iterator it = mLumpIdLookup.find(res_id);
+		if (it != mLumpIdLookup.end())
+			return it->second;
+		return mDirectory.INVALID_LUMP_ID;
+	}
+
+	bool readWadDirectory();
+
+	bool isLumpMapMarker(LumpId lump_id) const;
+	bool isLumpUDMFMapMarker(LumpId lump_id) const;
+
+    typedef enum {START_MARKER, END_MARKER} MarkerType;
+
+	bool isMarker(const OString& lump_name) const
+	{
+		return lump_name == "F_START" or lump_name == "FF_START" or
+				lump_name == "F_END" or lump_name == "FF_END" or
+				lump_name == "S_START" or lump_name == "SS_START" or
+				lump_name == "S_END" or lump_name == "SS_END" or
+				lump_name == "P_START" or lump_name == "PP_START" or
+				lump_name == "P_END" or lump_name == "PP_END" or
+				lump_name == "C_START" or lump_name == "C_END" or
+				lump_name == "TX_START" or lump_name == "TX_END" or
+				lump_name == "HI_START" or lump_name == "HI_END" or
+				lump_name == "VX_START" or lump_name == "VX_END";
+	}
+
+    OString getMarkerPrefix(const OString& lump_name) const
+	{
+		return lump_name.substr(0, lump_name.find("_"));
+	}
+
+	MarkerType getMarkerType(const OString& lump_name) const
+	{
+		if (lump_name.find("_START") != std::string::npos)
+			return START_MARKER;
+		else
+			return END_MARKER;
+	}
+
+	void buildMarkerRecords();
+
+	struct MarkerRange
+	{
+		LumpId start;
+		LumpId end;
+	};
+
+	typedef OHashTable<OString, MarkerRange> MarkerRangeLookupTable;
+	MarkerRangeLookupTable mMarkers;
+
+	const ResourcePath& assignPathBasedOnMarkers(LumpId lump_id) const;
+};
+
+
+
+// ============================================================================
+//
+// SingleMapWadResourceContainer abstract base class interface
+//
+// ============================================================================
+
+class SingleMapWadResourceContainer : public WadResourceContainer
+{
+public:
+	SingleMapWadResourceContainer(FileAccessor* file);
+
+	SingleMapWadResourceContainer(const OString& path);
+
+	void addResources(ResourceManager* manager) override;
+};
+
+
+// ============================================================================
+//
+// DirectoryResourceContainer abstract base class interface
+//
+// ============================================================================
+
+struct FileSystemDirectoryEntry
+{
+	OString			path;
+	uint32_t		length;
+};
+
+
+class DirectoryResourceContainer : public ResourceContainer
+{
+public:
+	DirectoryResourceContainer(const OString& path);
+	
+	~DirectoryResourceContainer() override;
+
+	uint32_t getResourceCount() const override;
+
+	void addResources(ResourceManager* manager) override;
+
+	uint32_t getResourceSize(const ResourceId res_id) const override;
+
+	uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const override;
+
+	OMD5Hash getContentDigest() const override;
+
+private:
+	void cleanup();
+	void addEntries();
+
+	OString mPath;
+
+	mutable OMD5Hash mContentDigest;
+
+	ContainerDirectory<FileSystemDirectoryEntry> mDirectory;
+
+	typedef OHashTable<ResourceId, LumpId> LumpIdLookupTable;
+	LumpIdLookupTable mLumpIdLookup;
+
+	LumpId getLumpId(const ResourceId res_id) const
+	{
+		LumpIdLookupTable::const_iterator it = mLumpIdLookup.find(res_id);
+		if (it != mLumpIdLookup.end())
+			return it->second;
+		return mDirectory.INVALID_LUMP_ID;
+	}
+
+	bool isEmbeddedWadFile(const FileSystemDirectoryEntry& entry) const;
+	bool isEmbeddedSingleMapWadFile(const FileSystemDirectoryEntry& entry) const;
+};
+
+
+// ============================================================================
+//
+// ZipResourceContainer class interface
+//
+// ============================================================================
+
+struct ZipDirectoryEntry
+{
+	OString			path;
+	uint32_t		length;
+    uint32_t        local_offset;
+    uint32_t        compressed_length;
+	uint16_t		compression_method;
+};
+
+
+class ZipResourceContainer : public ResourceContainer
+{
+public:
+	ZipResourceContainer(FileAccessor* file);
+
+    ZipResourceContainer(const OString& path);
+	
+    ~ZipResourceContainer() override;
+
+	uint32_t getResourceCount() const override;
+
+	void addResources(ResourceManager* manager) override;
+
+	uint32_t getResourceSize(const ResourceId res_id) const override;
+
+	uint32_t loadResource(uint8_t* data, const ResourceId res_id, uint32_t size) const override;
+
+	OMD5Hash getContentDigest() const override;
+
+private:
+	void init(FileAccessor* file);
+
+    static const size_t ZIP_END_OF_DIR_SIZE = 22;
+    static const size_t ZIP_CENTRAL_DIR_SIZE = 46;
+    static const size_t ZIP_LOCAL_FILE_SIZE = 30;
+    static const uint32_t INVALID_OFFSET = static_cast<uint32_t>(-1);
+
+    // Compression methods (definition does not imply support)
+    enum 
+    {
+        METHOD_STORED  = 0,
+        METHOD_SHRINK  = 1,
+        METHOD_IMPLODE = 6,
+        METHOD_DEFLATE = 8,
+        METHOD_BZIP2   = 12,
+        METHOD_LZMA    = 14,
+        METHOD_PPMD    = 98
+    };
+
+    FileAccessor*  mFile;
+	ContainerDirectory<ZipDirectoryEntry> mDirectory;
+
+	std::vector<ContentManifestEntry> mManifest;
+	mutable OMD5Hash mContentDigest;
+
+	typedef OHashTable<ResourceId, LumpId> LumpIdLookupTable;
+	LumpIdLookupTable mLumpIdLookup;
+
+	LumpId getLumpId(const ResourceId res_id) const
+	{
+		LumpIdLookupTable::const_iterator it = mLumpIdLookup.find(res_id);
+		if (it != mLumpIdLookup.end())
+			return it->second;
+		return mDirectory.INVALID_LUMP_ID;
+	}
+
+    bool readCentralDirectory();
+    size_t findEndOfCentralDirectory() const;
+	void addDirectoryEntries(uint32_t offset, uint32_t length, uint16_t num_entries);
+	bool isEmbeddedWadFile(const ZipDirectoryEntry& entry) const;
+	bool isEmbeddedSingleMapWadFile(const ZipDirectoryEntry& entry) const;
+
+	uint32_t loadEntryData(const ZipDirectoryEntry* entry, uint8_t* data, uint32_t size) const;
+    uint32_t calculateEntryOffset(const ZipDirectoryEntry* entry) const;
+};

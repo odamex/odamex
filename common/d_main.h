@@ -44,6 +44,7 @@ void D_InitializeDoomObjectTables();
 
 void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles);
 bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles);
+void D_UnloadResourceFiles();
 
     // Called by IO functions when input is detected.
 void D_PostEvent(const event_t& ev);
@@ -60,32 +61,22 @@ void D_DisplayTicker(void);
 // [RH] Set this to something to draw an icon during the next screen refresh.
 extern const char *D_DrawIcon;
 
-enum struct missing_dir_policy_t
-{
-    SILENT,
-    WARN,
-    DEV_WARN,
-};
-
-void D_AddSearchDir(std::vector<std::string> &dirs, const char *newdir, missing_dir_policy_t policy = missing_dir_policy_t::SILENT);
-void D_AddSearchDir(std::vector<std::string> &dirs, std::string newdir, missing_dir_policy_t policy = missing_dir_policy_t::SILENT);
-void D_AddSearchDirList(std::vector<std::string> &dirs, const char *newdirs, missing_dir_policy_t policy = missing_dir_policy_t::SILENT);
-void D_AddSearchDirList(std::vector<std::string> &dirs, std::string newdirs, missing_dir_policy_t policy = missing_dir_policy_t::SILENT);
-void D_AddPlatformSearchDirs(std::vector<std::string>& dirs);
 void D_LoadResolvedPatches(bool reloadStrings = false);
+void D_AddWadCommandLineFiles(OWantFiles& out);
+void D_AddDehCommandLineFiles(OWantFiles& out);
 std::string D_CleanseFileName(const std::string &filename, const std::string &ext = "");
 
 extern OResFiles wadfiles;
 extern OResFiles patchfiles;
 extern OWantFiles missingfiles;
+extern bool missingCommercialIWAD;
+
 
 extern bool capfps;
 extern float maxfps;
 void D_ClearTaskSchedulers();
 void D_RunTics(void (*sim_func)(), void(*display_func)());
 
-void D_AddWadCommandLineFiles(OWantFiles& out);
-void D_AddDehCommandLineFiles(OWantFiles& out);
 void D_AddStartupWadFiles(OWantFiles& outwadfiles, OWantFiles& outpatchfiles);
 
 void D_CheckInfoDumps();

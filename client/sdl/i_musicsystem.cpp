@@ -23,6 +23,8 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include <math.h>
 
 #include "i_midi.h"
@@ -32,6 +34,7 @@
 #include "i_system.h"
 #include "i_time.h"
 #include "mus2midi.h"
+#include "resources/res_identifier.h"
 
 extern MusicSystem* musicsystem;
 EXTERN_CVAR(snd_mididelay)
@@ -48,8 +51,8 @@ static double I_CalculateMsPerMidiClock(int timeDivision, double tempo = 120.0)
 	if (timeDivision & 0x8000)
 	{
 		// timeDivision is in SMPTE frames per second format
-		double framespersecond = double((timeDivision & 0x7F00) >> 8);
-		double ticksperframe = double((timeDivision & 0xFF));
+		double framespersecond = static_cast<double>((timeDivision & 0x7F00) >> 8);
+		double ticksperframe = static_cast<double>((timeDivision & 0xFF));
 
 		// [SL] 2011-12-23 - An fps value of 29 in timeDivision really implies
 		// 29.97 fps.
@@ -61,7 +64,7 @@ static double I_CalculateMsPerMidiClock(int timeDivision, double tempo = 120.0)
 	else
 	{
 		// timeDivision is in ticks per beat format
-		double ticsperbeat = double(timeDivision & 0x7FFF);
+		double ticsperbeat = static_cast<double>(timeDivision & 0x7FFF);
 		static double millisecondsperminute = 60.0 * 1000.0;
 		double millisecondsperbeat = millisecondsperminute / tempo;
 
@@ -127,7 +130,7 @@ static MidiSong* I_RegisterMidiSong(byte* data, size_t length)
 	MEMFILE *mus = NULL, *midi = NULL;
 
 	// Convert from MUS format to MIDI format
-	if (S_MusicIsMus(data, length))
+	if (Res_MusicIsMus(data, length))
 	{
 		mus = mem_fopen_read(data, length);
 		midi = mem_fopen_write();
@@ -144,7 +147,7 @@ static MidiSong* I_RegisterMidiSong(byte* data, size_t length)
 			reglength = 0;
 		}
 	}
-	else if (!S_MusicIsMidi(data, length))
+	else if (not Res_MusicIsMidi(data, length))
 	{
 		PrintFmt(PRINT_WARNING, "I_RegisterMidiSong: Only midi music formats are supported "
 		                        "with the selected music system.\n");

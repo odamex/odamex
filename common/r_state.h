@@ -28,36 +28,14 @@
 #include "d_player.h"
 #include "r_data.h"
 
-#define WALLFRACBITS	4
-#define WALLFRACUNIT	(1<<WALLFRACBITS)
-
-
 //
 // Refresh internal data structures,
 //	for rendering.
 //
 
 // needed for texture pegging
-extern fixed_t* 		textureheight;
-
 extern "C" int			viewwidth;
 extern "C" int			viewheight;
-
-extern int				firstflat;
-extern int				numflats;
-
-// for global animation
-extern bool*			flatwarp;
-extern byte**			warpedflats;
-extern int*				flatwarpedwhen;
-extern int*				flattranslation;
-
-inline std::unique_ptr<int[]> texturetranslation;
-
-// Sprite....
-extern int				firstspritelump;
-extern int				lastspritelump;
-extern int				numspritelumps;
 
 //
 // Lookup tables for map data.
@@ -171,9 +149,6 @@ extern angle_t			clipangle;
 
 //extern fixed_t		finetangent[FINEANGLES/2];
 
-extern visplane_t*		floorplane;
-extern visplane_t*		ceilingplane;
-extern visplane_t*		skyplane;
 
 // [AM] 4:3 Field of View
 extern int				FieldOfView;

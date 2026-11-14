@@ -36,6 +36,8 @@ std::string M_FindUserFileName(const std::string& file, const char* ext);
 void M_FixPathSep(std::string& path);
 std::string M_GetCWD();
 
+int32_t M_FileLength (FILE *f);
+int32_t M_FileLength(const std::string& filename);
 template <typename CharType, typename ElementType>
 bool M_ReadLE(std::basic_istream<CharType>& io_stream, ElementType& o_data)
 {
@@ -174,7 +176,8 @@ bool M_DirectoryExists(const std::string& filename);
 bool M_WriteFile(std::string filename, void *source, size_t length);
 size_t M_ReadFile(const std::string& filename, byte **buffer);
 
-bool M_AppendExtension (std::string &filename, std::string extension, bool if_needed = true);
+std::string M_AppendExtension(const std::string& filename, const std::string& ext, bool if_needed = true);
+
 void M_ExtractFilePath(const std::string& filename, std::string &dest);
 bool M_ExtractFileExtension(const std::string& filename, std::string &dest);
 void M_ExtractFileBase (std::string filename, std::string &dest);
@@ -322,6 +325,9 @@ std::vector<std::string> M_PWADFilesScanDir(std::string dir);
  */
 bool M_GetAbsPath(const std::string& path, std::string& out);
 
+bool M_IsDirectory(const std::string& path);
+bool M_IsFile(const std::string& path);
+std::vector<std::string> M_ListDirectoryContents(const std::string& path, size_t max_depth = 1);
 struct FileDeleter
 {
     void operator()(FILE* f) const

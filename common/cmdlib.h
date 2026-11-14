@@ -49,6 +49,8 @@
 
 #include "doomdef.h"
 
+extern std::string progdir, startdir;
+
 struct OTimespan
 {
 	int csecs;
@@ -288,6 +290,7 @@ bool CheckWildcards (const char *pattern, const char *text);
 void ReplaceString (char** ptr, const char* str);
 
 void StripColorCodes(std::string& str);
+void FixPathSeparator(std::string& path);
 
 double Remap(const double value, const double low1, const double high1, const double low2,
              const double high2);

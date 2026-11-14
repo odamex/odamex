@@ -66,6 +66,8 @@
 #include "g_multikill.h"
 #include "sv_banlist.h"
 #include "d_main.h"
+#include "resources/res_filelib.h"
+#include "m_fileio.h"
 #include "v_textcolors.h"
 #include "p_lnspec.h"
 #include "m_wdlstats.h"
@@ -284,7 +286,7 @@ CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 CVAR_FUNC_IMPL(sv_maxrate)
 {
 	for (auto& player : players)
-		player.client.messenger->SetMaxRate(int(sv_maxrate));
+		player.client.messenger->SetMaxRate(static_cast<int>(sv_maxrate));
 }
 
 CVAR_FUNC_IMPL(sv_sharekeys)
@@ -906,6 +908,13 @@ void SV_CheckTimeouts()
 		if (gametic - player.client.last_received == CLIENT_TIMEOUT * 35)
 		{
 			SV_DropClientUngracefully(player, "timed out");
+		}
+		else if (player.client.digest_deadline != 0 and
+		         gametic > player.client.digest_deadline)
+		{
+			player.client.digest_deadline = 0;
+			SV_DropClientUngracefully(
+			    player, "did not present resource digests after resource change");
 		}
 	}
 }
@@ -2261,6 +2270,72 @@ static void SV_DisconnectOldClient()
 void G_DoReborn(player_t& playernum);
 
 //
+// SV_CheckResourceFiles
+//
+// Compares the resource files a connecting client reports against the
+// server's own.
+// Plain WADs must match by MD5.
+// Archive and directory resources must match by content manifest digest,
+// which permits any container form (ZIP, PK3, or directory) holding identical
+// contents, and rejects containers with files added, removed, or modified
+// relative to the server's copy.
+//
+static bool SV_CheckResourceFiles(const odaproto::clc::ResourceDigests& msg,
+                                  std::string& offender)
+{
+	// The client omits odamex.wad from its list, as does the server's
+	// announced resource list.
+	const size_t expected_wads = ::wadfiles.size() - 1;
+	if (static_cast<size_t>(msg.wads_size()) != expected_wads or
+	    static_cast<size_t>(msg.patches_size()) != ::patchfiles.size())
+	{
+		offender = "resource file count";
+		return false;
+	}
+
+	for (size_t i = 0; i < expected_wads; i++)
+	{
+		const OResFile& serverfile = ::wadfiles[i + 1];
+		const odaproto::clc::ResourceDigests_Resource& clientfile = msg.wads(i);
+
+		const OMD5Hash& digest = serverfile.getContentDigest();
+		if (not digest.empty())
+		{
+			if (clientfile.content_digest() != digest.getHexStr())
+			{
+				offender = serverfile.getBasename();
+				return false;
+			}
+		}
+		else if (M_IsDirectoryMarkerHash(serverfile.getMD5(), serverfile.getBasename()))
+		{
+			PrintFmt(PRINT_WARNING,
+			         "Cannot verify clients against directory resource \"{}\"; "
+			         "its content digest could not be computed.\n",
+			         serverfile.getBasename());
+			offender = serverfile.getBasename();
+			return false;
+		}
+		else if (clientfile.md5() != serverfile.getMD5().getHexStr())
+		{
+			offender = serverfile.getBasename();
+			return false;
+		}
+	}
+
+	for (size_t i = 0; i < ::patchfiles.size(); i++)
+	{
+		if (msg.patches(i).md5() != ::patchfiles[i].getMD5().getHexStr())
+		{
+			offender = ::patchfiles[i].getBasename();
+			return false;
+		}
+	}
+
+	return true;
+}
+
+//
 //	SV_ConnectClient
 //
 //	Called when a client connects
@@ -2375,7 +2450,7 @@ void SV_ConnectClient()
 	}
 
 	// [SL] Ignore deprecated client rate. Clients now always use sv_maxrate.
-	cl->messenger->SetMaxRate(int(sv_maxrate));
+	cl->messenger->SetMaxRate(static_cast<int>(sv_maxrate));
 
 	// Check if the IP is banned from our list or not.
 	if (SV_BanCheck(cl))
@@ -2400,9 +2475,67 @@ void SV_ConnectClient()
 		return;
 	}
 
+	// Get the resource file digests from the client and verify that their
+	// loaded files match ours.
+	//
+	// They come after the password, so that a
+	// protobreak server, which stops reading at the password, can still
+	// accept this client.
+	//
+	// Remove this comment after this is current protobreak.
+	msg_t digestsType = static_cast<msg_t>(MSG_ReadUnVarint());
+	if (digestsType != clc_resourcedigests)
+	{
+		SV_InvalidateClient(*player, "Client didn't send resource digests");
+		return;
+	}
+
+	{
+		google::protobuf::Message* digestsMsg = nullptr;
+
+		if (MSG_ParseMessage(digestsMsg, clc_resourcedigests, ::net_message) != PERR_OK)
+			return;
+
+		std::unique_ptr<google::protobuf::Message> msgPtr(digestsMsg);
+
+		std::string offender;
+		if (not SV_CheckResourceFiles(
+		        *static_cast<odaproto::clc::ResourceDigests*>(digestsMsg), offender))
+		{
+			PrintFmt("{} disconnected (resource file mismatch: {}).\n",
+			         NET_AdrToString(net_from), offender);
+
+			cl->messenger->Reliable().Write(
+			    SVC_Print(PRINT_WARNING,
+			              fmt::sprintf("Your resource files do not match the "
+			                           "server's: %s\n",
+			                           offender)));
+
+			SV_SendPacket(*player);
+			SV_DropClient(*player);
+			return;
+		}
+	}
+
 	// send consoleplayer number
 	cl->messenger->Reliable().Write (SVC_ConsolePlayer(*player, cl->digest));
 	SV_SendPacket(*player);
+}
+
+//
+// SV_ExpectResourceDigests
+//
+// Marks that the client owes the server a reply for a just sent
+// load map request. Deadline overruns result in the client being
+// dropped, as does exhausting the message allowance (flood protection).
+// Clients re-send their digests until the server acknowledges them, so a
+// handful of duplicates from lost acks is expected and tolerated.
+//
+void SV_ExpectResourceDigests(client_t& cl)
+{
+	cl.digests_expected++;
+	cl.digest_deadline = gametic + (60 * TICRATE);
+	cl.digest_allowance = 8;
 }
 
 void SV_ConnectClient2(player_t& player)
@@ -2440,6 +2573,7 @@ void SV_ConnectClient2(player_t& player)
 	// Send a map name
 	player.client.messenger->Reliable().Write (
 	             SVC_LoadMap(::wadfiles, ::patchfiles, level.mapname.c_str(), level.time));
+	SV_ExpectResourceDigests(*cl);
 
 	// [SL] 2011-12-07 - Force the player to jump to intermission if not in a level
 	if (gamestate == GS_INTERMISSION)
@@ -2694,9 +2828,9 @@ static float SV_CalculateKillDeathRatio(const player_t* player)
 	if (player->killcount <= 0)	// Copied from HU_DMScores1.
 		return 0.0f;
 	else if (player->killcount >= 1 && player->deathcount == 0)
-		return float(player->killcount);
+		return static_cast<float>(player->killcount);
 	else
-		return float(player->killcount) / float(player->deathcount);
+		return static_cast<float>(player->killcount) / static_cast<float>(player->deathcount);
 }
 
 static float SV_CalculateFragDeathRatio(const player_t* player)
@@ -2719,9 +2853,9 @@ static float SV_CalculateFragDeathRatio(const player_t* player)
 	if (frags <= 0) // Copied from HU_DMScores1.
 		return 0.0f;
 	else if (frags >= 1 && deaths == 0)
-		return float(frags);
+		return static_cast<float>(frags);
 	else
-		return float(frags) / float(deaths);
+		return static_cast<float>(frags) / static_cast<float>(deaths);
 }
 
 //
@@ -4573,6 +4707,48 @@ void SV_SendRequestedMobjUpdate(player_t& player, const odaproto::clc::SendMobjU
     player.requestedNetIdUpdate = msg.netid();
 }
 
+void SV_HandleResourceDigest(player_t& player,
+                                const odaproto::clc::ResourceDigests& msg)
+{
+	// Clients send this in reply to an svc_loadmap and re-send it
+	// until acknowledged. The allowance bounds how many of these
+	// the server will process before treating the client as a
+	// flooder; it is refreshed whenever the server solicits.
+	client_t& cl = player.client;
+	if (cl.digest_allowance == 0)
+	{
+		SV_DropClientUngracefully(player, "flooded resource digests");
+		return;
+	}
+	cl.digest_allowance--;
+
+	std::string offender;
+	if (SV_CheckResourceFiles(msg, offender))
+	{
+		cl.digests_expected = 0;
+		cl.digest_deadline = 0;
+		cl.messenger->Reliable().Write(odaproto::svc::ResourceDigestsAck());
+	}
+	else
+	{
+		if (cl.digests_expected > 0)
+			cl.digests_expected--;
+
+		if (cl.digests_expected == 0)
+		{
+			PrintFmt("{} disconnected (resource file mismatch: {}).\n",
+			         player.userinfo.netname, offender);
+
+			cl.messenger->Reliable().Write(
+			    SVC_Print(PRINT_WARNING, fmt::sprintf("Your resource files do not "
+			                                          "match the server's: %s\n",
+			                                          offender)));
+
+			SV_DropClient(player);
+		}
+	}
+}
+
 //
 // SV_ParseCommands
 //
@@ -4697,6 +4873,10 @@ parseError_e SV_ParseCommandSVC(const msg_t cmd, player_t& player, buf_t& buffer
 
 			case clc_sendmobjupdate:
 				SV_SendRequestedMobjUpdate(player, *static_cast<odaproto::clc::SendMobjUpdate*>(msgPtrRaw));
+				break;
+
+			case clc_resourcedigests:
+			    SV_HandleResourceDigest(player, *static_cast<odaproto::clc::ResourceDigests*>(msgPtrRaw));
 				break;
 
 		 default:

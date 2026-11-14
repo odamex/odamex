@@ -131,7 +131,7 @@ void M_ConvertVec3FixedToVec3(v3double_t *dest, const v3fixed_t *src)
 
 void M_ConvertVec3fToVec3Fixed(v3fixed_t *dest, const v3float_t *src)
 {
-	M_SetVec3Fixed(dest, double(src->x), double(src->y), double(src->z));
+	M_SetVec3Fixed(dest, static_cast<double>(src->x), static_cast<double>(src->y), static_cast<double>(src->z));
 }
 
 void M_ConvertVec3ToVec3Fixed(v3fixed_t *dest, const v3double_t *src)

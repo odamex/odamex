@@ -24,7 +24,10 @@
 
 #include "odamex.h"
 
+#include "r_context.h"
+
 #include <math.h>
+#include <vector>
 #include "m_alloc.h"
 #include "m_bbox.h"
 #include "i_system.h"
@@ -39,82 +42,56 @@
 // State.
 #include "r_state.h"
 #include "v_palette.h"
+#include "r_intrin.h"
 
 EXTERN_CVAR (r_particles)
 
-const seg_t*	curline;
-side_t* 		sidedef;
-line_t* 		linedef;
-sector_t*		frontsector;
-sector_t*		backsector;
-
-// killough 4/7/98: indicates doors closed wrt automap bugfix:
-bool			doorclosed;
-
-bool			r_fakingunderwater;
-bool			r_underwater;
-
-// Floor and ceiling heights at the end points of a seg_t
-fixed_t			rw_backcz1, rw_backcz2;
-fixed_t			rw_backfz1, rw_backfz2;
-fixed_t			rw_frontcz1, rw_frontcz2;
-fixed_t			rw_frontfz1, rw_frontfz2;
-
-int rw_start, rw_stop;
-
-static byte		FakeSide;
-
 const fixed_t NEARCLIP = 2*FRACUNIT;
-
-drawseg_t*		ds_p;
-drawseg_t*		drawsegs;
-drawseg_t*		firstdrawseg;
-unsigned		maxdrawsegs;
-
-// CPhipps -
-// Instead of clipsegs, let's try using an array with one entry for each column,
-// indicating whether it's blocked by a solid wall yet or not.
-// e6y: resolution limitation is removed
-byte			solidcol[MAXWIDTH];
 
 //
 // R_ClearClipSegs
 //
-void R_ClearClipSegs (void)
+void R_ClearClipSegs (rendercontext_t& ctx)
 {
-	memset(solidcol, 0, viewwidth);
+	memset(ctx.bsp.solidcol, 0, viewwidth);
+
+	// Seed the columns outside this slice as solid.
+	if (ctx.slice_start > 0)
+		memset(ctx.bsp.solidcol, 1, ctx.slice_start);
+	if (ctx.slice_stop < viewwidth - 1)
+		memset(ctx.bsp.solidcol + ctx.slice_stop + 1, 1, viewwidth - ctx.slice_stop - 1);
 }
 
 //
 // R_ReallocDrawSegs
 //
 // [SL] From prboom-plus. Moved out of R_StoreWallRange()
-void R_ReallocDrawSegs(void)
+void R_ReallocDrawSegs(rendercontext_t& ctx)
 {
-	if (ds_p == drawsegs+maxdrawsegs)		// killough 1/98 -- fix 2s line HOM
+	if (ctx.bsp.ds_p == ctx.bsp.drawsegs+ctx.bsp.maxdrawsegs)		// killough 1/98 -- fix 2s line HOM
 	{
-		unsigned pos = ds_p - drawsegs;	// jff 8/9/98 fix from ZDOOM1.14a
-		unsigned firstofs = firstdrawseg - drawsegs;
-		unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128; // killough
-		drawsegs = static_cast<drawseg_t*>(M_Realloc(drawsegs, newmax*sizeof(*drawsegs)));
-		firstdrawseg = drawsegs + firstofs;
-		ds_p = drawsegs + pos;				// jff 8/9/98 fix from ZDOOM1.14a
-		maxdrawsegs = newmax;
-		DPrintFmt("MaxDrawSegs increased to {}\n", maxdrawsegs);
+		unsigned pos = ctx.bsp.ds_p - ctx.bsp.drawsegs;	// jff 8/9/98 fix from ZDOOM1.14a
+		unsigned firstofs = ctx.bsp.firstdrawseg - ctx.bsp.drawsegs;
+		unsigned newmax = ctx.bsp.maxdrawsegs ? ctx.bsp.maxdrawsegs*2 : 128; // killough
+		ctx.bsp.drawsegs = static_cast<drawseg_t*>(M_Realloc(ctx.bsp.drawsegs, newmax*sizeof(*ctx.bsp.drawsegs)));
+		ctx.bsp.firstdrawseg = ctx.bsp.drawsegs + firstofs;
+		ctx.bsp.ds_p = ctx.bsp.drawsegs + pos;				// jff 8/9/98 fix from ZDOOM1.14a
+		ctx.bsp.maxdrawsegs = newmax;
+		DPrintFmt("MaxDrawSegs increased to {}\n", ctx.bsp.maxdrawsegs);
 	}
 }
 
 //
 // R_ClearDrawSegs
 //
-void R_ClearDrawSegs(void)
+void R_ClearDrawSegs(rendercontext_t& ctx)
 {
-	if (drawsegs == NULL)
+	if (ctx.bsp.drawsegs == nullptr)
 	{
-		maxdrawsegs = 256;
-		firstdrawseg = drawsegs = static_cast<drawseg_t*>(M_Malloc(maxdrawsegs * sizeof(drawseg_t)));
+		ctx.bsp.maxdrawsegs = 256;
+		ctx.bsp.firstdrawseg = ctx.bsp.drawsegs = static_cast<drawseg_t*>(M_Malloc(ctx.bsp.maxdrawsegs * sizeof(drawseg_t)));
 	}
-	ds_p = drawsegs;
+	ctx.bsp.ds_p = ctx.bsp.drawsegs;
 }
 
 //
@@ -127,36 +104,36 @@ void R_ClearDrawSegs(void)
 // are those which have not yet had a 1s lineseg drawn to them. If makesolid
 // is specified, any range of non-solid columns found will be marked as solid.
 //
-static void R_ClipWallSegment(int first, int last, bool makesolid)
+static void R_ClipWallSegment(rendercontext_t& ctx, int first, int last, bool makesolid)
 {
 	while (first <= last)
 	{
-		if (solidcol[first])
+		if (ctx.bsp.solidcol[first])
 		{
 			// find the first remaining non-solid column
 			// if all columns remaining are solid, we're done
-			byte* p = static_cast<byte*>(memchr(solidcol + first, 0, last - first + 1));
+			byte* p = static_cast<byte*>(memchr(ctx.bsp.solidcol + first, 0, last - first + 1));
 			if (p == NULL)
 				return;
 
-			first = p - solidcol;
+			first = p - ctx.bsp.solidcol;
 		}
 		else
 		{
 			int to;
 			// find where the span of non-solid columns ends
-			byte* p = static_cast<byte*>(memchr(solidcol + first, 1, last - first + 1));
+			byte* p = static_cast<byte*>(memchr(ctx.bsp.solidcol + first, 1, last - first + 1));
 			if (p == NULL)
 				to = last;
 			else
-				to = p - solidcol - 1;
+				to = p - ctx.bsp.solidcol - 1;
 
 			// set the range for this wall to the range of non-solid columns
-			R_StoreWallRange(first, to);
+			R_StoreWallRange(ctx, first, to);
 
 			// mark the  columns as solid
 			if (makesolid)
-				memset(solidcol + first, 1, to - first + 1);
+				memset(ctx.bsp.solidcol + first, 1, to - first + 1);
 
 			first = to + 1;
 		}
@@ -194,6 +171,16 @@ bool CopyPlaneIfValid (plane_t *dest, const plane_t *source, const plane_t *opp)
 }
 
 //
+// R_SectorIsFoggy
+//
+bool R_SectorIsFoggy(const sector_t* sector)
+{
+	return level.fadeto_color[0] or level.fadeto_color[1] or level.fadeto_color[2] or
+	       level.fadeto_color[3] or sector->colormap->fade.getr() or
+	       sector->colormap->fade.getg() or sector->colormap->fade.getb();
+}
+
+//
 // killough 3/7/98: Hack floor/ceiling heights for deep water etc.
 //
 // If player's view height is underneath fake floor, lower the
@@ -206,7 +193,7 @@ bool CopyPlaneIfValid (plane_t *dest, const plane_t *source, const plane_t *opp)
 // killough 4/11/98, 4/13/98: fix bugs, add 'back' parameter
 //
 
-sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
+sector_t *R_FakeFlat(rendercontext_t& ctx, sector_t *sec, sector_t *tempsec,
 					 int *floorlightlevel, int *ceilinglightlevel,
 					 bool back)
 {
@@ -223,7 +210,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 			sec->lightlevel : sec->ceilinglightsec->lightlevel;
 	}
 
-	FakeSide = FAKED_Center;
+	ctx.bsp.fakeside = FAKED_Center;
 
 	if (!sec->heightsec || sec->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
 		return sec;
@@ -236,7 +223,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
 	// Gate r_fakingunderwater to only apply to heightsecs with
 	// possible deep water, since it applies to every heightsec in frame.
-	const bool underwater = (r_fakingunderwater and P_FloorHeight(s) >P_FloorHeight(sec)) or
+	const bool underwater = (ctx.bsp.r_fakingunderwater and P_FloorHeight(s) >P_FloorHeight(sec)) or
 		(heightsec and viewz <= P_FloorHeight(viewx, viewy, heightsec));
 	bool doorunderwater = false;
 	int diffTex = (s->MoreFlags & SECF_CLIPFAKEPLANES);
@@ -248,7 +235,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 	if (diffTex)
 	{
 		if (CopyPlaneIfValid (&tempsec->floorplane, &s->floorplane, &sec->ceilingplane))
-			tempsec->floorpic = s->floorpic;
+			tempsec->floor_res_id = s->floor_res_id;
 		else if (s->MoreFlags & SECF_FAKEFLOORONLY)
 		{
 			if (underwater)
@@ -272,7 +259,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 					}
 				}
 
-				FakeSide = FAKED_BelowFloor;
+				ctx.bsp.fakeside = FAKED_BelowFloor;
 				return tempsec;
 			}
 			return sec;
@@ -288,7 +275,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		if (diffTex)
 		{
 			if (CopyPlaneIfValid (&tempsec->ceilingplane, &s->ceilingplane, &sec->floorplane))
-				tempsec->ceilingpic = s->ceilingpic;
+				tempsec->ceiling_res_id = s->ceiling_res_id;
 		}
 		else
 		{
@@ -304,21 +291,21 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 	// Only works if you cannot see the top surface of any deep water
 	// sectors at the same time.
 
-	if (back && !r_fakingunderwater && curline->frontsector->heightsec == NULL &&
+	if (back and not ctx.bsp.r_fakingunderwater and ctx.bsp.curline->frontsector->heightsec == nullptr and
 		P_FloorHeight(s) > P_FloorHeight(sec))
 	{
-		fixed_t fcz1 = P_CeilingHeight(curline->v1->x, curline->v1->y, frontsector);
-		fixed_t fcz2 = P_CeilingHeight(curline->v2->x, curline->v2->y, frontsector);
+		fixed_t fcz1 = P_CeilingHeight(ctx.bsp.curline->v1->x, ctx.bsp.curline->v1->y, ctx.bsp.frontsector);
+		fixed_t fcz2 = P_CeilingHeight(ctx.bsp.curline->v2->x, ctx.bsp.curline->v2->y, ctx.bsp.frontsector);
 
-		if (fcz1 <= P_FloorHeight(curline->v1->x, curline->v1->y, s) &&
-			fcz2 <= P_FloorHeight(curline->v2->x, curline->v2->y, s))
+		if (fcz1 <= P_FloorHeight(ctx.bsp.curline->v1->x, ctx.bsp.curline->v1->y, s) and
+			fcz2 <= P_FloorHeight(ctx.bsp.curline->v2->x, ctx.bsp.curline->v2->y, s))
 		{
 			// will any columns of this window be visible or will they be blocked
 			// by 1s lines and closed doors?
-			if (memchr(solidcol + rw_start, 0, rw_stop - rw_start + 1) != NULL)
+			if (memchr(ctx.bsp.solidcol + ctx.seg.rw_start, 0, ctx.seg.rw_stop - ctx.seg.rw_start + 1) != nullptr)
 			{
 				doorunderwater = true;
-				r_fakingunderwater = true;
+				ctx.bsp.r_fakingunderwater = true;
 			}
 		}
 	}
@@ -335,7 +322,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 	// killough 11/98: prevent sudden light changes from non-water sectors:
 	if ((underwater && !back) || doorunderwater)
 	{					// head-below-floor hack
-		tempsec->floorpic			= diffTex ? sec->floorpic : s->floorpic;
+		tempsec->floor_res_id		= diffTex ? sec->floor_res_id : s->floor_res_id;
 		tempsec->floor_xoffs		= s->floor_xoffs;
 		tempsec->floor_yoffs		= s->floor_yoffs;
 		tempsec->floor_xscale		= s->floor_xscale;
@@ -347,12 +334,12 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		tempsec->ceilingplane		= s->floorplane;
 		P_InvertPlane(&tempsec->ceilingplane);
 		P_ChangeCeilingHeight(tempsec, -1);
-		if (R_IsSkyFlat(s->ceilingpic))
+		if (R_ResourceIdIsSkyFlat(s->ceiling_res_id))
 		{
 			tempsec->floorplane			= tempsec->ceilingplane;
 			P_InvertPlane(&tempsec->floorplane);
 			P_ChangeFloorHeight(tempsec, +1);
-			tempsec->ceilingpic			= tempsec->floorpic;
+			tempsec->ceiling_res_id		= tempsec->floor_res_id;
 			tempsec->ceiling_xoffs		= tempsec->floor_xoffs;
 			tempsec->ceiling_yoffs		= tempsec->floor_yoffs;
 			tempsec->ceiling_xscale		= tempsec->floor_xscale;
@@ -363,7 +350,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		}
 		else
 		{
-			tempsec->ceilingpic			= diffTex ? s->floorpic : s->ceilingpic;
+			tempsec->ceiling_res_id		= diffTex ? s->floor_res_id : s->ceiling_res_id;
 			tempsec->ceiling_xoffs		= s->ceiling_xoffs;
 			tempsec->ceiling_yoffs		= s->ceiling_yoffs;
 			tempsec->ceiling_xscale		= s->ceiling_xscale;
@@ -389,7 +376,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 					s->lightlevel : s->ceilinglightsec->lightlevel;
 			}
 		}
-		FakeSide = FAKED_BelowFloor;
+		ctx.bsp.fakeside = FAKED_BelowFloor;
 	}
 	else if (heightsec && viewz >= P_CeilingHeight(viewx, viewy, heightsec) &&
 			 orgceilz > refceilz && !(s->MoreFlags & SECF_FAKEFLOORONLY))
@@ -401,8 +388,8 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 
 		tempsec->colormap			= s->colormap;
 
-		tempsec->ceilingpic = diffTex ? sec->ceilingpic : s->ceilingpic;
-		tempsec->floorpic											= s->ceilingpic;
+		tempsec->ceiling_res_id = diffTex ? sec->ceiling_res_id : s->ceiling_res_id;
+		tempsec->floor_res_id										= s->ceiling_res_id;
 		tempsec->floor_xoffs		= tempsec->ceiling_xoffs		= s->ceiling_xoffs;
 		tempsec->floor_yoffs		= tempsec->ceiling_yoffs		= s->ceiling_yoffs;
 		tempsec->floor_xscale		= tempsec->ceiling_xscale		= s->ceiling_xscale;
@@ -411,10 +398,10 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		tempsec->base_floor_angle	= tempsec->base_ceiling_angle	= s->base_ceiling_angle;
 		tempsec->base_floor_yoffs	= tempsec->base_ceiling_yoffs	= s->base_ceiling_yoffs;
 
-		if (!R_IsSkyFlat(s->floorpic))
+		if (not R_ResourceIdIsSkyFlat(s->floor_res_id))
 		{
 			tempsec->ceilingplane	= sec->ceilingplane;
-			tempsec->floorpic		= s->floorpic;
+			tempsec->floor_res_id	= s->floor_res_id;
 			tempsec->floor_xoffs	= s->floor_xoffs;
 			tempsec->floor_yoffs	= s->floor_yoffs;
 			tempsec->floor_xscale	= s->floor_xscale;
@@ -438,7 +425,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 					s->lightlevel : s->ceilinglightsec->lightlevel;
 			}
 		}
-		FakeSide = FAKED_AboveCeiling;
+		ctx.bsp.fakeside = FAKED_AboveCeiling;
 	}
 	sec = tempsec;					// Use other sector
 
@@ -455,9 +442,9 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 // Check the clipped  segs for being within NEARCLIP of the view
 // point and if so, run R_FakeFlat on them
 //
-static void R_CheckClippedSegForFakeFlat(const seg_t* line)
+static void R_CheckClippedSegForFakeFlat(rendercontext_t& ctx, const seg_t* line)
 {
-	if (r_fakingunderwater || !line->backsector || !line->backsector->heightsec)
+	if (ctx.bsp.r_fakingunderwater or not line->backsector or not line->backsector->heightsec)
 		return;
 
 	// segs entirely behind the view plane cannot occupy the view
@@ -485,10 +472,10 @@ static void R_CheckClippedSegForFakeFlat(const seg_t* line)
 
 	// let R_FakeFlat run the deep water window checks, considering the
 	// entire width of the view since the rejected seg has no column range
-	static sector_t tempsec;
-	rw_start = 0;
-	rw_stop = viewwidth - 1;
-	R_FakeFlat(line->backsector, &tempsec, NULL, NULL, true);
+	static thread_local sector_t tempsec;
+	ctx.seg.rw_start = 0;
+	ctx.seg.rw_stop = viewwidth - 1;
+	R_FakeFlat(ctx, line->backsector, &tempsec, nullptr, nullptr, true);
 }
 
 //
@@ -496,19 +483,19 @@ static void R_CheckClippedSegForFakeFlat(const seg_t* line)
 // Clips the given segment
 // and adds any visible pieces to the line list.
 //
-void R_AddLine (const seg_t *line)
+void R_AddLine (rendercontext_t& ctx, const seg_t *line)
 {
-	curline = line;
+	ctx.bsp.curline = line;
 
 	// skip this line if it's not facing the camera
 	if (R_PointOnSegSide(viewx, viewy, line) != 0)
 	{
 		// a seg passing exactly through the view point is also rejected here
-		R_CheckClippedSegForFakeFlat(line);
+		R_CheckClippedSegForFakeFlat(ctx, line);
 		return;
 	}
 
-	dcol.color = ((line - R_GetSegs().data()) & 31) * 4;	// [RH] Color if not texturing line
+	ctx.draw.dcol.color = ((line - R_GetSegs().data()) & 31) * 4;	// [RH] Color if not texturing line
 
 	// translate the line seg endpoints from world-space to camera-space,
 	// keeping full 64-bit precision (t1, t2) so distant walls on huge maps
@@ -521,7 +508,7 @@ void R_AddLine (const seg_t *line)
 	int32_t lclip, rclip;
 	if (!R_ClipLineToFrustum64(t1, t2, NEARCLIP, lclip, rclip))
 	{
-		R_CheckClippedSegForFakeFlat(line);
+		R_CheckClippedSegForFakeFlat(ctx, line);
 		return;
 	}
 
@@ -533,12 +520,12 @@ void R_AddLine (const seg_t *line)
 	int x2 = R_ProjectPointX64(t2.x, t2.y) - 1;
 	if (!R_CheckProjectionX(x1, x2))
 	{
-		R_CheckClippedSegForFakeFlat(line);
+		R_CheckClippedSegForFakeFlat(ctx, line);
 		return;
 	}
 
-	rw_start = x1;
-	rw_stop = x2;
+	ctx.seg.rw_start = x1;
+	ctx.seg.rw_stop = x2;
 
 	// clip the line seg endpoints in world-space
 	// and store in (w1.x, w1.y) and (w2.x, w2.y)
@@ -546,14 +533,19 @@ void R_AddLine (const seg_t *line)
 	R_ClipLine(line->v1, line->v2, lclip, rclip, &w1, &w2);
 
 	// killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
-	static sector_t tempsec;
-	backsector = line->backsector ? R_FakeFlat(line->backsector, &tempsec, NULL, NULL, true) : NULL;
+	static thread_local sector_t tempsec;
+	ctx.bsp.backsector = line->backsector ? R_FakeFlat(ctx, line->backsector, &tempsec, nullptr, nullptr, true) : nullptr;
 
-	// Clamp the max scaling distance to prevent an overflow
-	static constexpr int64_t maxwalldist = int64_t(16384) * FRACUNIT;
-	const fixed_t d1 = static_cast<fixed_t>(t1.y > maxwalldist ? maxwalldist : t1.y);
-	const fixed_t d2 = static_cast<fixed_t>(t2.y > maxwalldist ? maxwalldist : t2.y);
-	R_PrepWall(w1.x, w1.y, w2.x, w2.y, d1, d2, x1, x2);
+	// Only the columns still open can be drawn.
+	int first = x1, last = x2;
+	while (first <= last and ctx.bsp.solidcol[first])
+		first++;
+	while (last >= first and ctx.bsp.solidcol[last])
+		last--;
+	if (first > last)
+		return;
+
+	R_PrepWall(ctx, w1.x, w1.y, w2.x, w2.y, t1.x, t1.y, t2.x, t2.y, x1, x2, first, last);
 
 	// [SL] Check for single-sided line, closed doors or other scenarios that
 	// would make this line seg solid.
@@ -561,67 +553,68 @@ void R_AddLine (const seg_t *line)
 	// This fixes the automap floor height bug -- killough 1/18/98:
 	// killough 4/7/98: optimize: save result in doorclosed for use in r_segs.c
 
-	if (!backsector || !(line->linedef->flags & ML_TWOSIDED) ||
-		(rw_backcz1 <= rw_frontfz1 && rw_backcz2 <= rw_frontfz2) ||
-		(rw_backfz1 >= rw_frontcz1 && rw_backfz2 >= rw_frontcz2) ||
+	if (not ctx.bsp.backsector or not (line->linedef->flags & ML_TWOSIDED) or
+		(ctx.seg.rw_backcz1 <= ctx.seg.rw_frontfz1 and ctx.seg.rw_backcz2 <= ctx.seg.rw_frontfz2) or
+		(ctx.seg.rw_backfz1 >= ctx.seg.rw_frontcz1 and ctx.seg.rw_backfz2 >= ctx.seg.rw_frontcz2) or
 
 		// if door is closed because back is shut:
-		((rw_backcz1 <= rw_backfz1 && rw_backcz2 <= rw_backfz2) &&
+		((ctx.seg.rw_backcz1 <= ctx.seg.rw_backfz1 and ctx.seg.rw_backcz2 <= ctx.seg.rw_backfz2) and
 
 		// preserve a kind of transparent door/lift special effect:
-		((rw_backcz1 >= rw_frontcz1 && rw_backcz2 >= rw_frontcz2) ||
-		 line->sidedef->toptexture) &&
+		((ctx.seg.rw_backcz1 >= ctx.seg.rw_frontcz1 and ctx.seg.rw_backcz2 >= ctx.seg.rw_frontcz2) or
+		 not line->sidedef->toptexture.empty()) and
 
-		((rw_backfz1 <= rw_frontfz1 && rw_backfz2 <= rw_frontfz2) ||
-		 line->sidedef->bottomtexture) &&
+		((ctx.seg.rw_backfz1 <= ctx.seg.rw_frontfz1 and ctx.seg.rw_backfz2 <= ctx.seg.rw_frontfz2) or
+		 not line->sidedef->bottomtexture.empty()) and
 
 		// properly render skies (consider door "open" if both ceilings are sky):
-		(backsector->ceilingpic !=skyflatnum || frontsector->ceilingpic!=skyflatnum)))
+		(not R_ResourceIdIsSkyFlat(ctx.bsp.backsector->ceiling_res_id) or 
+		 not R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id))))
 	{
-		doorclosed = true;
-		R_ClipWallSegment(x1, x2, true);
+		ctx.bsp.doorclosed = true;
+		R_ClipWallSegment(ctx, first, last, true);
 		return;
 	}
 
 	// Reject empty lines used for triggers and special events.
 	// Identical floor and ceiling on both sides,
 	// identical light levels on both sides, and no middle texture.
-	if (P_IdenticalPlanes(&frontsector->ceilingplane, &backsector->ceilingplane)
-		&& P_IdenticalPlanes(&frontsector->floorplane, &backsector->floorplane)
-		&& backsector->lightlevel == frontsector->lightlevel
-		&& backsector->floorpic == frontsector->floorpic
-		&& backsector->ceilingpic == frontsector->ceilingpic
-		&& curline->sidedef->midtexture == 0
+	if (P_IdenticalPlanes(&ctx.bsp.frontsector->ceilingplane, &ctx.bsp.backsector->ceilingplane)
+		and P_IdenticalPlanes(&ctx.bsp.frontsector->floorplane, &ctx.bsp.backsector->floorplane)
+		and ctx.bsp.backsector->lightlevel == ctx.bsp.frontsector->lightlevel
+		and ctx.bsp.backsector->floor_res_id == ctx.bsp.frontsector->floor_res_id
+		and ctx.bsp.backsector->ceiling_res_id == ctx.bsp.frontsector->ceiling_res_id
+		and ctx.bsp.curline->sidedef->midtexture.empty()
 
 		// killough 3/7/98: Take flats offsets into account:
-		&& backsector->floor_xoffs == frontsector->floor_xoffs
-		&& (backsector->floor_yoffs + backsector->base_floor_yoffs) == (frontsector->floor_yoffs + backsector->base_floor_yoffs)
-		&& backsector->ceiling_xoffs == frontsector->ceiling_xoffs
-		&& (backsector->ceiling_yoffs + backsector->base_ceiling_yoffs) == (frontsector->ceiling_yoffs + frontsector->base_ceiling_yoffs)
+		and ctx.bsp.backsector->floor_xoffs == ctx.bsp.frontsector->floor_xoffs
+		and (ctx.bsp.backsector->floor_yoffs + ctx.bsp.backsector->base_floor_yoffs) == (ctx.bsp.frontsector->floor_yoffs + ctx.bsp.frontsector->base_floor_yoffs)
+		and ctx.bsp.backsector->ceiling_xoffs == ctx.bsp.frontsector->ceiling_xoffs
+		and (ctx.bsp.backsector->ceiling_yoffs + ctx.bsp.backsector->base_ceiling_yoffs) == (ctx.bsp.frontsector->ceiling_yoffs + ctx.bsp.frontsector->base_ceiling_yoffs)
 
 		// killough 4/16/98: consider altered lighting
-		&& backsector->floorlightsec == frontsector->floorlightsec
-		&& backsector->ceilinglightsec == frontsector->ceilinglightsec
+		and ctx.bsp.backsector->floorlightsec == ctx.bsp.frontsector->floorlightsec
+		and ctx.bsp.backsector->ceilinglightsec == ctx.bsp.frontsector->ceilinglightsec
 
 		// [RH] Also consider colormaps
-		&& backsector->colormap == frontsector->colormap
+		and ctx.bsp.backsector->colormap == ctx.bsp.frontsector->colormap
 
 		// [RH] and scaling
-		&& backsector->floor_xscale == frontsector->floor_xscale
-		&& backsector->floor_yscale == frontsector->floor_yscale
-		&& backsector->ceiling_xscale == frontsector->ceiling_xscale
-		&& backsector->ceiling_yscale == frontsector->ceiling_yscale
+		and ctx.bsp.backsector->floor_xscale == ctx.bsp.frontsector->floor_xscale
+		and ctx.bsp.backsector->floor_yscale == ctx.bsp.frontsector->floor_yscale
+		and ctx.bsp.backsector->ceiling_xscale == ctx.bsp.frontsector->ceiling_xscale
+		and ctx.bsp.backsector->ceiling_yscale == ctx.bsp.frontsector->ceiling_yscale
 
 		// [RH] and rotation
-		&& (backsector->floor_angle + backsector->base_floor_angle) == (frontsector->floor_angle + frontsector->base_floor_angle)
-		&& (backsector->ceiling_angle + backsector->base_ceiling_angle) == (frontsector->ceiling_angle + frontsector->base_ceiling_angle)
+		and (ctx.bsp.backsector->floor_angle + ctx.bsp.backsector->base_floor_angle) == (ctx.bsp.frontsector->floor_angle + ctx.bsp.frontsector->base_floor_angle)
+		and (ctx.bsp.backsector->ceiling_angle + ctx.bsp.backsector->base_ceiling_angle) == (ctx.bsp.frontsector->ceiling_angle + ctx.bsp.frontsector->base_ceiling_angle)
 		)
 	{
 		return;
 	}
 
-	doorclosed = false;
-	R_ClipWallSegment(x1, x2, false);
+	ctx.bsp.doorclosed = false;
+	R_ClipWallSegment(ctx, first, last, false);
 }
 
 
@@ -641,17 +634,27 @@ static constexpr int checkcoord[12][4] = // killough -- static const
 };
 
 //
-// R_CheckBBox
+// R_BBoxView
 //
 // Checks BSP node/subtree bounding box.
-// Returns true if some part of the bbox might be visible.
+// 
+// We now check hether some part of it might be visible in the slice, and if not,
+// whether it projects onto closed columns (which include every column outside
+// the slice), or nowhere in the view.
 //
 // killough 1/28/98: static
 // CPhipps - const parameter, reformatted
 // [SL] Rewritten to use R_ClipLineToFrustum to determine if any part of the
 //      bbox's two diagonals would be drawn in a non-solid screen column.
 //
-static bool R_CheckBBox(const fixed_t *bspcoord)
+enum class bboxview_t
+{
+	open,		// some column it projects to is still open in the slice
+	closed,		// it projects into the view, but only onto closed columns
+	offscreen	// it projects nowhere in the view
+};
+
+static bboxview_t R_BBoxView(rendercontext_t& ctx, const fixed_t *bspcoord)
 {
 	const fixed_t clipdist = 0;
 	v2fixed_t t1, t2;
@@ -661,7 +664,7 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 				(viewy >= bspcoord[BOXTOP ] ? 0 : viewy > bspcoord[BOXBOTTOM] ? 4 : 8);
 
 	if (boxpos == 5)
-		return true;
+		return bboxview_t::open;
 
 	fixed_t xl = bspcoord[checkcoord[boxpos][0]];
 	fixed_t yl = bspcoord[checkcoord[boxpos][1]];
@@ -673,7 +676,7 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 	// if we scale it down here, don't let it cull any bsp subtrees
 	if (R_RotatePointSafe(int64_t(xl) - viewx, int64_t(yl) - viewy, ANG90 - viewangle, t1.x, t1.y) ||
 	    R_RotatePointSafe(int64_t(xh) - viewx, int64_t(yh) - viewy, ANG90 - viewangle, t2.x, t2.y))
-		return true;
+		return bboxview_t::open;
 
 	v2fixed_t box_pts[4][2];
 	// top line of box
@@ -688,13 +691,14 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 	// Check each of the four sides of the bounding box to see if
 	// any part is visible. Find the maximum range of columns the bounding box
 	// will project onto the screen.
+	bool projected = false;
 	for (int i = 0; i < 4; i++)
 	{
 		v2fixed_t p1 = box_pts[i][0];
 		v2fixed_t p2 = box_pts[i][1];
 
 		if (R_PointOnLine(0, 0, p1.x, p1.y, p2.x, p2.y))
-			return true;
+			return bboxview_t::open;
 
 		int32_t lclip, rclip;
 		if (R_ClipLineToFrustum(&p1, &p2, clipdist, lclip, rclip))
@@ -704,13 +708,25 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 			int x2 = R_ProjectPointX(p2.x, p2.y) - 1;
 			if (R_CheckProjectionX(x1, x2))
 			{
-				if (memchr(solidcol + x1, 0, x2 - x1 + 1) != NULL)
-					return true;
+				projected = true;
+				if (memchr(ctx.bsp.solidcol + x1, 0, x2 - x1 + 1) != nullptr)
+					return bboxview_t::open;
 			}
 		}
 	}
 
-	return false;
+	return projected ? bboxview_t::closed : bboxview_t::offscreen;
+}
+
+//
+// R_CheckBBox
+//
+// Checks BSP node/subtree bounding box.
+// Returns true if some part of the bbox might be visible in the slice.
+//
+bool R_CheckBBox(rendercontext_t& ctx, const fixed_t *bspcoord)
+{
+	return R_BBoxView(ctx, bspcoord) == bboxview_t::open;
 }
 
 EXTERN_CVAR(r_thingsectorlight)
@@ -721,7 +737,7 @@ EXTERN_CVAR(r_thingsectorlight)
 // Add sprites of things in sector.
 // Draw one or more line segments.
 //
-void R_Subsector (int num)
+void R_Subsector (rendercontext_t& ctx, int num)
 {
 	sector_t     tempsec;				// killough 3/7/98: deep water hack
 	int          floorlightlevel;		// killough 3/16/98: set floor lightlevel
@@ -735,87 +751,131 @@ void R_Subsector (int num)
 #endif
 
 	const subsector_t& sub = subsectors[num];
-	frontsector = sub.sector;
+	ctx.bsp.frontsector = sub.sector;
 	int count = sub.numlines;
 	const seg_t* line = &R_GetSegs()[sub.firstline];
 
+	// This helps a tiny bit with cache locality,
+	// but it can't prevent memory stalling forever.
+	for (int i = 0; i < count; i++)
+	{
+		R_PREFETCH(line[i].v1);
+		R_PREFETCH(line[i].v2);
+		R_PREFETCH(&line[i].linedef->sidenum[0]);
+		R_PREFETCH(line[i].sidedef);
+	}
+
 	// killough 3/8/98, 4/4/98: Deep water / fake ceiling effect
-	frontsector = R_FakeFlat(frontsector, &tempsec, &floorlightlevel,
+	ctx.bsp.frontsector = R_FakeFlat(ctx, ctx.bsp.frontsector, &tempsec, &floorlightlevel,
 						   &ceilinglightlevel, false);	// killough 4/11/98
 
-	basecolormap = frontsector->colormap->maps;
+	ctx.draw.basecolormap = ctx.bsp.frontsector->colormap->maps;
 
-	ceilingplane = P_CeilingHeight(viewx, viewy, frontsector) > viewz ||
-		R_IsSkyFlat(frontsector->ceilingpic) ||
-		R_IsStackBoundary(frontsector->SkyboxCeiling) ||
-		(frontsector->heightsec &&
-		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
-		R_IsSkyFlat(frontsector->heightsec->floorpic)) ?
-		R_FindPlane(frontsector->ceilingplane,		// killough 3/8/98
-					R_IsSkyFlat(frontsector->ceilingpic) &&  // killough 10/98
-						frontsector->sky & PL_SKYFLAT ? frontsector->sky :
-						frontsector->ceilingpic,
+	// Set foggy flag
+	// Before the planes are found, which keep it for when they are drawn.
+	ctx.bsp.foggy = R_SectorIsFoggy(ctx.bsp.frontsector);
+
+	ctx.plane.ceilingplane = P_CeilingHeight(viewx, viewy, ctx.bsp.frontsector) > viewz or
+		R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id) or
+		R_IsStackBoundary(ctx.bsp.frontsector->SkyboxCeiling) or
+		(ctx.bsp.frontsector->heightsec and
+		not (ctx.bsp.frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) and
+		R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->heightsec->floor_res_id)) ?
+		R_FindPlane(ctx, ctx.bsp.frontsector->ceilingplane,		// killough 3/8/98
+					ctx.bsp.frontsector->ceiling_res_id,
+					R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->ceiling_res_id) and  // killough 10/98
+						(ctx.bsp.frontsector->sky & PL_SKYFLAT) ? ctx.bsp.frontsector->sky : 0,
 					ceilinglightlevel,				// killough 4/11/98
-					frontsector->ceiling_xoffs,		// killough 3/7/98
-					frontsector->ceiling_yoffs + frontsector->base_ceiling_yoffs,
-					frontsector->ceiling_xscale,
-					frontsector->ceiling_yscale,
-					frontsector->ceiling_angle + frontsector->base_ceiling_angle,
-					frontsector->SkyboxCeiling
+					ctx.bsp.frontsector->ceiling_xoffs,		// killough 3/7/98
+					ctx.bsp.frontsector->ceiling_yoffs + ctx.bsp.frontsector->base_ceiling_yoffs,
+					ctx.bsp.frontsector->ceiling_xscale,
+					ctx.bsp.frontsector->ceiling_yscale,
+					ctx.bsp.frontsector->ceiling_angle + ctx.bsp.frontsector->base_ceiling_angle,
+					ctx.bsp.frontsector->SkyboxCeiling
 					) : NULL;
 
 	// killough 3/7/98: Add (x,y) offsets to flats, add deep water check
 	// killough 3/16/98: add floorlightlevel
 	// killough 10/98: add support for skies transferred from sidedefs
-	floorplane = P_FloorHeight(viewx, viewy, frontsector) < viewz || // killough 3/7/98
-		R_IsStackBoundary(frontsector->SkyboxFloor) ||
-		(frontsector->heightsec &&
-		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
-		R_IsSkyFlat(frontsector->heightsec->ceilingpic)) ?
-		R_FindPlane(frontsector->floorplane,
-					R_IsSkyFlat(frontsector->floorpic) &&  // killough 10/98
-						frontsector->sky & PL_SKYFLAT ? frontsector->sky :
-						frontsector->floorpic,
+	ctx.plane.floorplane = P_FloorHeight(viewx, viewy, ctx.bsp.frontsector) < viewz or // killough 3/7/98
+		R_IsStackBoundary(ctx.bsp.frontsector->SkyboxFloor) or
+		(ctx.bsp.frontsector->heightsec and
+		not (ctx.bsp.frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) and
+		R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->heightsec->ceiling_res_id)) ?
+		R_FindPlane(ctx, ctx.bsp.frontsector->floorplane,
+					ctx.bsp.frontsector->floor_res_id,
+					R_ResourceIdIsSkyFlat(ctx.bsp.frontsector->floor_res_id) and  // killough 10/98
+						(ctx.bsp.frontsector->sky & PL_SKYFLAT) ? ctx.bsp.frontsector->sky : 0,
 					floorlightlevel,				// killough 3/16/98
-					frontsector->floor_xoffs,		// killough 3/7/98
-					frontsector->floor_yoffs + frontsector->base_floor_yoffs,
-					frontsector->floor_xscale,
-					frontsector->floor_yscale,
-					frontsector->floor_angle + frontsector->base_floor_angle,
-					frontsector->SkyboxFloor
+					ctx.bsp.frontsector->floor_xoffs,		// killough 3/7/98
+					ctx.bsp.frontsector->floor_yoffs + ctx.bsp.frontsector->base_floor_yoffs,
+					ctx.bsp.frontsector->floor_xscale,
+					ctx.bsp.frontsector->floor_yscale,
+					ctx.bsp.frontsector->floor_angle + ctx.bsp.frontsector->base_floor_angle,
+					ctx.bsp.frontsector->SkyboxFloor
 					) : NULL;
 
-	// [RH] set foggy flag
-	foggy = level.fadeto_color[0] || level.fadeto_color[1] || level.fadeto_color[2] ||
-	        level.fadeto_color[3] || frontsector->colormap->fade.getr() ||
-	        frontsector->colormap->fade.getg() || frontsector->colormap->fade.getb();
 
 	// killough 9/18/98: Fix underwater slowdown, by passing real sector
 	// instead of fake one. Improve sprite lighting by basing sprite
 	// lightlevels on floor & ceiling lightlevels in the surrounding area.
 	const int lightlevel = r_thingsectorlight ?
-		(floorlightlevel + ceilinglightlevel) / 2 : frontsector->lightlevel;
-	R_AddSprites(sub.sector, lightlevel, FakeSide);
+		(floorlightlevel + ceilinglightlevel) / 2 : ctx.bsp.frontsector->lightlevel;
+	R_AddSprites(ctx, sub.sector, lightlevel, ctx.bsp.fakeside);
 
 	// [RH] Add particles
 	if (r_particles)
-	{
-		for (uint16_t i = ParticlesInSubsec[num]; i != NO_PARTICLE; i = Particles[i].nextinsubsector)
-			R_ProjectParticle(Particles + i, subsectors[num].sector, FakeSide);
-	}
+		R_AddParticles(ctx, num, ctx.bsp.fakeside);
 
 	if (sub.poly)
 	{ // Render the polyobj in the subsector first
 		int polyCount = sub.poly->numsegs;
 		seg_t **polySeg = sub.poly->segs;
 		while (polyCount--)
-			R_AddLine (*polySeg++);
+			R_AddLine (ctx, *polySeg++);
 	}
 
 	while (count--)
-		R_AddLine(line++);
+		R_AddLine(ctx, line++);
 }
 
+
+//
+// Subsectors under each node
+//
+// R_RenderBSPNode tests a front subtree only when it holds at least
+// FRONT_CULL_MIN subsectors -- below that, the test costs about as much as the
+// walk it would save.
+//
+static constexpr uint32_t FRONT_CULL_MIN = 4;
+
+static std::vector<uint32_t> nodesubsectors;
+static const node_t* nodesubsectorsfor = nullptr;
+
+uint32_t R_CountSubsectors(unsigned int child)
+{
+	if (child & NF_SUBSECTOR)
+		return 1;
+
+	uint32_t& count = nodesubsectors[child];
+	if (count == 0)
+		count = R_CountSubsectors(nodes[child].children[0]) + R_CountSubsectors(nodes[child].children[1]);
+	return count;
+}
+
+//
+// R_PrepareBSPNodes
+//
+void R_PrepareBSPNodes()
+{
+	if (nodesubsectorsfor == nodes and nodesubsectors.size() == static_cast<size_t>(numnodes))
+		return;
+
+	nodesubsectors.assign(numnodes, 0);
+	for (int i = 0; i < numnodes; i++)
+		R_CountSubsectors(i);
+	nodesubsectorsfor = nodes;
+}
 
 //
 // RenderBSPNode
@@ -824,7 +884,7 @@ void R_Subsector (int num)
 // Just call with BSP root.
 // killough 5/2/98: reformatted, removed tail recursion
 //
-void R_RenderBSPNode (int bspnum)
+void R_RenderBSPNode (rendercontext_t& ctx, int bspnum)
 {
 	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
 	{
@@ -834,17 +894,34 @@ void R_RenderBSPNode (int bspnum)
 		int frontside = R_PointOnSide(viewx, viewy, bsp);
 		int backside = frontside ^ 1;
 
-		// Recursively divide front space.
-		R_RenderBSPNode(bsp->children[frontside]);
+		// Recursively divide front space, unless it can't show in this slice.
+		//
+		// Vanilla enters the front side unconditionally, and with slices that
+		// had every slice walking front subtrees that belong to other slices.
+		// One that projects only onto this slice's closed columns (which
+		// include every column outside it) is hidden in the whole view, so
+		// it is skipped.
+		//
+		// One that projects nowhere in the view is still entered, by every
+		// slice: walking it can switch on deep water (R_FakeFlat via
+		// R_CheckClippedSegForFakeFlat).
+		//
+		// A subtree of fewer than FRONT_CULL_MIN subsectors is walked
+		// without a closed test.
+		const unsigned int front = bsp->children[frontside];
+		const uint32_t frontsize = (front & NF_SUBSECTOR) ? 1 : nodesubsectors[front];
+
+		if (frontsize < FRONT_CULL_MIN or R_BBoxView(ctx, bsp->bbox[frontside]) != bboxview_t::closed)
+			R_RenderBSPNode(ctx, front);
 
 		// Possibly divide back space.
-		if (!R_CheckBBox(bsp->bbox[backside]))
+		if (not R_CheckBBox(ctx, bsp->bbox[backside]))
 			return;
 
 		bspnum = bsp->children[backside];
 	}
 
-	R_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
+	R_Subsector(ctx, bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
 
 

@@ -26,6 +26,7 @@
 #include "odamex.h"
 
 #include <limits>
+#include <thread>
 #include <string>
 
 #include "nonstd/scope.hpp"
@@ -73,6 +74,9 @@
 
 
 #include "w_wad.h"
+#include "doomtype.h"
+#include "resources/res_main.h"
+#include "version.h"
 #include "cmdlib.h"
 #include "m_argv.h"
 #include "m_misc.h"
@@ -134,9 +138,11 @@ size_t I_BytesToMegabytes (size_t Bytes)
     return (Bytes/1024/1024);
 }
 
+static const std::thread::id main_thread_id = std::this_thread::get_id();
+
 void I_BeginRead()
 {
-	if (r_loadicon)
+	if (r_loadicon and std::this_thread::get_id() == main_thread_id)
 		I_DrawLoadingIcon();
 }
 
@@ -159,7 +165,7 @@ static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 	langid = MAKELCID (strtoul(buf, NULL, 16), SORT_DEFAULT);
 	if (!GetLocaleInfo (langid, LOCALE_SABBREVLANGNAME, buf, 8))
 		return;
-	idp = (char *)(&LanguageIDs[idx]);
+	idp = reinterpret_cast<char *>(&LanguageIDs[idx]);
 	memset (idp, 0, 4);
 	idp[0] = tolower(buf[0]);
 	idp[1] = tolower(buf[1]);
@@ -243,13 +249,21 @@ void I_Endoom()
 	if (!r_showendoom || Args.CheckParm ("-novideo"))
 		return;
 
-	if (r_showendoom == 2 && !W_IsLumpReplaced(gameinfo.endoom))
+	// r_showendoom 2 means "only when a PWAD supplies its own ENDOOM"; the
+	// engine resource file always provides one, so anything past the first
+	// is a replacement.
+	const size_t count =
+	    Res_GetAllResourceIds(global_directory_name +
+	                          ResourcePath(OStringToUpper(gameinfo.endoom.c_str())))
+	        .size();
+
+	if (r_showendoom == 2 and count <= 1)
 		return;
 
 	// Hack to stop crash with disk icon
 	in_endoom = true;
 
-	byte* endoom_data = W_CacheLumpName<byte>(gameinfo.endoom, PU_STATIC);
+	const uint8_t* endoom_data = Res_LoadResource<uint8_t>(OStringToUpper(gameinfo.endoom.c_str()), PU_STATIC);
 
 	// Set up text mode screen
 

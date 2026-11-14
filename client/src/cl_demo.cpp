@@ -40,6 +40,9 @@
 #include "msg_message.h"
 #include "svc_message.h"
 #include "g_gametype.h"
+#include "g_level.h"
+#include "resources/res_main.h"
+#include "resources/res_filelib.h"
 #include "g_game.h"
 #include "g_spree.h"
 
@@ -55,7 +58,6 @@ constexpr bool TRY_LOADING_OLD_NETDEMOS = false;
 
 extern std::string server_host;
 extern std::string digest;
-extern OResFiles wadfiles;
 
 extern bool hasReceivedFullUpdate;
 extern int  last_svgametic;
@@ -985,10 +987,10 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	    numwads = 0xff;
 	MSG_WriteByte   (netbuffer, numwads - 1);
 
-	for (size_t n = 1; n < numwads; n++)
+	for (size_t i = 1; i < numwads; i++)
 	{
 		// Don't use absolute paths, as they present a security risk.
-		MSG_WriteString(netbuffer, ::wadfiles[n].getBasename().c_str());
+		MSG_WriteString(netbuffer, D_CleanseFileName(::wadfiles[i].getBasename()).c_str());
 	}
 
 	MSG_WriteBool   (netbuffer, 0);     // deathmatch?
@@ -1009,8 +1011,10 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	}
 
 	// MD5 hash sums for all the wadfiles on the server
-	for (size_t n = 1; n < numwads; n++)
-		MSG_WriteString(netbuffer, ::wadfiles[n].getMD5().getHexCStr());
+	for (size_t i = 1; i < numwads; i++)
+	{
+		MSG_WriteString(netbuffer, ::wadfiles[i].getMD5().getHexCStr());
+	}
 
 	MSG_WriteString (netbuffer, "");    // sv_website.cstring()
 
@@ -1731,6 +1735,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	savegamerestore = true;     // Use the player actors in the savegame
 	serverside = false;
 
+	// load the resource files
 	G_LoadWad(newwadfiles, newpatchfiles);
 
 	// We read the level snapshots AFTER loading the wads because it's entirely possible that D_Shutdown

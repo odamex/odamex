@@ -98,12 +98,14 @@ message LoadMap
 	{
 		string name = 1;
 		string hash = 2;
+		string content_digest = 3;   // Manifest digest for archives/directories, empty otherwise.
 	}
 
 	repeated Resource wadnames = 1;
 	repeated Resource patchnames = 2;
 	string mapname = 3;
 	int32 time = 4;
+	bool verify_digests = 5;   // The server wants clc_resourcedigests after loading
 }
 
 // svc_consoleplayer
@@ -111,6 +113,11 @@ message ConsolePlayer
 {
 	int32 pid = 1;
 	string digest = 2;
+}
+
+// svc_resourcedigestsack
+message ResourceDigestsAck
+{
 }
 
 // svc_explodemissile

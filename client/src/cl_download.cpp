@@ -42,6 +42,7 @@
 #include "m_fileio.h"
 #include "w_ident.h"
 #include "m_random.h"
+#include "resources/res_filelib.h"
 
 EXTERN_CVAR(cl_waddownloaddir)
 EXTERN_CVAR(waddirs)
@@ -180,7 +181,7 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 
 	if (W_IsFilehashCommercialWAD(filename.getWantedMD5()))
 	{
-		const fileIdentifier_t* id = W_GameInfo(filename.getWantedMD5());
+		const FileIdentifier* id = W_GameInfo(filename.getWantedMD5());
 		PrintFmt(PRINT_WARNING, "{} is a renamed commercial wad file containing {}.\n"
 		                        "A copy of {} can be obtained through purchasing DOOM + DOOM II from Steam or GOG.\n",
 		                        filename.getBasename(), id->mNiceName, id->mFilename);
@@ -192,7 +193,25 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 
 	// Assign the other params to the download state.
 	::dlstate.filename = filename.getBasename();
+
+	// Extension-less wants come from servers with a directory (or
+	// unpacked archive) loaded as a resource.  Only the archive form can be
+	// downloaded, so request the ZIP spelling of the resource.
+	std::string dlext;
+	if (not M_ExtractFileExtension(::dlstate.filename, dlext))
+	{
+		::dlstate.filename += ".zip";
+	}
+
 	::dlstate.hash = filename.getWantedMD5();
+
+	// A directory marker hash identifies the resource by name only;
+	// the downloaded archive's contents cannot match it, so do not try to
+	// checksum the download.
+	if (M_IsDirectoryMarkerHash(::dlstate.hash, filename.getBasename()))
+	{
+		::dlstate.hash = OMD5Hash();
+	}
 	::dlstate.flags = flags;
 
 	// Start the checking bit on the next tick.
@@ -314,17 +333,18 @@ static StringTokens GetDownloadDirs()
 	StringTokens dirs;
 
 	// Add all of the sources.
-	D_AddSearchDir(dirs, cl_waddownloaddir.str());
-	D_AddSearchDir(dirs, M_GetDownloadDir());
+	Res_AddSearchDir(dirs, cl_waddownloaddir.str(), missing_dir_policy_t::WARN);
+	Res_AddSearchDir(dirs, M_GetDownloadDir());
+
 
 	// These folders should only work on PC versions
 #ifndef GCONSOLE
-	D_AddSearchDirList(dirs, Args.CheckValue("-waddir"));
-	D_AddSearchDir(dirs, getenv("DOOMWADDIR"));
-	D_AddSearchDirList(dirs, getenv("DOOMWADPATH"));
+	Res_AddSearchDirList(dirs, Args.CheckValue("-waddir"), missing_dir_policy_t::WARN);
+	Res_AddSearchDir(dirs, getenv("DOOMWADDIR"), missing_dir_policy_t::WARN);
+	Res_AddSearchDirList(dirs, getenv("DOOMWADPATH"), missing_dir_policy_t::WARN);
 #endif
 
-	D_AddSearchDirList(dirs, waddirs.str());
+	Res_AddSearchDirList(dirs, waddirs.str(), missing_dir_policy_t::WARN);
 
 #ifdef __SWITCH__
 	D_AddSearchDir(dirs, "./wads");

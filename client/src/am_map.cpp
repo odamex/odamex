@@ -23,10 +23,14 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include "c_bind.h"
 #include "p_lnspec.h"
 #include "p_local.h"
 #include "st_stuff.h"
+#include "resources/res_main.h"
+#include "resources/res_texture.h"
 #include "v_palette.h"
 #include "w_wad.h"
 #include "z_zone.h"
@@ -42,6 +46,7 @@
 #include "v_video.h"
 
 #include "v_text.h"
+#include "v_font.h"
 
 // State.
 #include "r_state.h"
@@ -246,6 +251,7 @@ static v2int_t f;
 static int f_w;
 static int f_h;
 static int f_p; // [RH] # of bytes from start of a line to start of next
+static int f_cs; // # of bytes from one pixel to the next along a row
 
 static byte* fb; // pseudo-frame buffer
 static int amclock;
@@ -280,7 +286,7 @@ static fixed64_t scale_mtof = static_cast<fixed64_t>(INITSCALEMTOF);
 // used by FTOM to scale from frame-buffer-to-map coords (=1/scale_mtof)
 static fixed64_t scale_ftom;
 
-static lumpHandle_t marknums[10];             // numbers used for marking by the automap
+static const Texture* marknums[10]; // numbers used for marking by the automap
 static mpoint_t markpoints[AM_NUMMARKPOINTS]; // where the points are
 static int markpointnum = 0;                  // next point to be assigned
 
@@ -766,14 +772,14 @@ void AM_loadPics()
 {
 	for (int i = 0; i < 10; i++)
 	{
-		marknums[i] = W_CachePatchHandle(fmt::format("AMMNUM{}", i), PU_STATIC);
+		marknums[i] = W_CachePatch(fmt::format("AMMNUM{}", i).c_str(), PU_STATIC);
 	}
 }
 
 void AM_unloadPics()
 {
 	for (auto& marknum : marknums)
-		marknum.clear();
+		marknum = nullptr;
 }
 
 void AM_clearMarks()
@@ -1079,23 +1085,27 @@ void AM_Ticker()
 //
 void AM_clearFB(am_color_t color)
 {
-	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+	// A fill is a run of pixels repeated with a stride. The surface stores
+	// columns, so the contiguous run is a screen column and the stride between
+	// runs is the column step.
+	const int pixelsize = I_GetPrimarySurface()->getBytesPerPixel();
+
+	const int run = f_h;
+	const int count = f_w;
+	const int stride = f_cs;
+
+	if (pixelsize == 1)
 	{
-		if (f_w == f_p)
-			memset(fb, color.index, f_w * f_h);
-		else
-			for (int y = 0; y < f_h; y++)
-				memset(fb + y * f_p, color.index, f_w);
+		for (int i = 0; i < count; i++)
+			memset(fb + (i * stride), color.index, run);
 	}
 	else
 	{
-		argb_t* line = reinterpret_cast<argb_t*>(fb);
-
-		for (int y = 0; y < f_h; y++)
+		for (int i = 0; i < count; i++)
 		{
-			for (int x = 0; x < f_w; x++)
-				line[x] = color.rgb;
-			line += f_p >> 2;
+			argb_t* line = reinterpret_cast<argb_t*>(fb + (i * stride));
+			for (int j = 0; j < run; j++)
+				line[j] = color.rgb;
 		}
 	}
 }
@@ -1243,7 +1253,8 @@ static inline void PUTDOT_THICK(
 	PIXEL_T color,
 	void (*PUTDOT)(int, int, PIXEL_T),
 	PIXEL_T* fbuf,
-	int pitch)
+	int pitch,
+	int colstep)
 {
 	// Thin point fast path
 	if (am_thickness.asInt() == 1)
@@ -1269,7 +1280,7 @@ static inline void PUTDOT_THICK(
 		const int dx  = nx - x;
 		const int dx2 = dx * dx;
 
-		PIXEL_T* pix = fbuf + miny * pitch + nx;
+		PIXEL_T* pix = fbuf + (miny * pitch) + (nx * colstep);
 
 		for (int ny = miny; ny <= maxy; ++ny, pix += pitch)
 		{
@@ -1282,12 +1293,12 @@ static inline void PUTDOT_THICK(
 
 static inline void PUTDOT_THICK(int x, int y, argb_t color)
 {
-	PUTDOT_THICK<argb_t>(x, y, color, [](int x, int y, argb_t color){ *(reinterpret_cast<argb_t*>(fb + y * f_p + (x << 2))) = color; }, reinterpret_cast<argb_t*>(fb), f_p >> 2);
+	PUTDOT_THICK<argb_t>(x, y, color, [](int x, int y, argb_t color){ *(reinterpret_cast<argb_t*>(fb + (y * f_p) + (x * f_cs))) = color; }, reinterpret_cast<argb_t*>(fb), f_p >> 2, f_cs >> 2);
 }
 
 static inline void PUTDOT_THICK(int x, int y, byte color)
 {
-	PUTDOT_THICK<byte>(x, y, color, [](int x, int y, byte color){ fb[y * f_p + x] = color; }, fb, f_p);
+	PUTDOT_THICK<byte>(x, y, color, [](int x, int y, byte color){ fb[(y * f_p) + (x * f_cs)] = color; }, fb, f_p, f_cs);
 }
 
 //
@@ -1985,13 +1996,14 @@ void AM_drawCheatThing(const AActor* t)
 		AM_drawLineCharacter(thinrectangle_guy, radius, rotate_angle, color, p.x, p.y);
 	}
 
-	if (netdebug_automap)
+	if (netdebug_automap and V_FontsReady())
 	{
-		screen->DrawTextStretched(CR_GREY,
-		                          CXMTOF(p.x - radius),
-		                          CYMTOF(p.y + radius) - V_LineHeight() * 2,
-		                          fmt::sprintf("%d", t->netid).c_str(),
-		                          2, 2);
+		const OFont* font = V_GetHudFontSized(16);
+		screen->DrawFontText(font,
+		                     CR_GREY,
+		                     CXMTOF(p.x - radius),
+		                     CYMTOF(p.y + radius) - font->getHeight(),
+		                     fmt::sprintf("%d", t->netid).c_str());
 	}
 }
 
@@ -2035,9 +2047,7 @@ void AM_drawMarks()
 			static constexpr int h = 6; // because something's wrong with the wad, i guess
 
 			if (fx >= f.x && fx <= f_w - w && fy >= f.y && fy <= f_h - h)
-			{
-				screen->DrawPatchCleanNoMove(W_ResolvePatchHandle(marknums[i]), fx, fy);
-			}
+				screen->DrawTextureCleanNoMove(marknums[i], fx, fy);
 		}
 	}
 }
@@ -2071,6 +2081,26 @@ std::string AM_authorLine()
 }
 
 //
+// AM_TextFont
+//
+// The face the automap draws its text with, at the same clean scale AM_Drawer
+// uses. The font bakes its scale into its glyphs, so every measurement taken
+// from it is already in real pixels.
+//
+const OFont* AM_TextFont()
+{
+	return V_GetHudFontSized(8 * std::min(CleanXfac, CleanYfac));
+}
+
+//
+// Draws a line of automap text with the automap's font.
+//
+void AM_drawText(int color, int x, int y, const char* line)
+{
+	screen->DrawFontText(AM_TextFont(), color, x, y, line);
+}
+
+//
 // Resting position of a line of automap text, matching the map name's column.
 //
 int AM_textRestX(const std::string& line, int surface_width)
@@ -2078,7 +2108,7 @@ int AM_textRestX(const std::string& line, int surface_width)
 	if (!AM_OverlayAutomapVisible())
 		return 0;
 
-	return surface_width - (V_StringWidth(line.c_str()) * CleanXfac);
+	return surface_width - AM_TextFont()->getTextWidth(line.c_str());
 }
 
 //
@@ -2095,7 +2125,7 @@ void AM_drawTextLuc(int color, int x, int y, const std::string& line, float alph
 	const float oldtrans = ::hud_transparency;
 	::hud_transparency.ForceSet(alpha);
 
-	screen->DrawTextCleanLuc(color, x, y, line.c_str());
+	screen->DrawFontText(AM_TextFont(), color, x, y, line.c_str(), false);
 
 	::hud_transparency.ForceSet(oldtrans);
 }
@@ -2128,16 +2158,11 @@ std::vector<amchar_t> AM_explodeLine(const std::string& line, int basecolor)
 	return chars;
 }
 
-// Unscaled width of a character in the console font, matching what V_DrawText
-// advances by (including spaces).
+// Width of a character in the automap font, matching what AM_drawText advances
+// by (including spaces).
 int AM_charWidth(char c)
 {
-	const int index = toupper(c) - HU_FONTSTART;
-
-	if (index < 0 || index >= HU_FONTSIZE)
-		return 4;
-
-	return W_ResolvePatchHandle(hu_font[index])->width();
+	return AM_TextFont()->getTextWidth(c);
 }
 
 int AM_lineWidth(const std::vector<amchar_t>& chars)
@@ -2192,7 +2217,7 @@ void AM_drawClipped(const std::vector<amchar_t>& chars, int color, int x, int y,
 
 	for (const amchar_t& ch : chars)
 	{
-		const int charwidth = AM_charWidth(ch.c) * CleanXfac;
+		const int charwidth = AM_charWidth(ch.c);
 
 		if (pos >= clipleft && pos + charwidth <= clipright)
 		{
@@ -2217,7 +2242,7 @@ void AM_drawClipped(const std::vector<amchar_t>& chars, int color, int x, int y,
 	}
 
 	if (!display.empty())
-		screen->DrawTextClean(color, drawx, y, display.c_str());
+		AM_drawText(color, drawx, y, display.c_str());
 }
 
 //
@@ -2234,8 +2259,7 @@ void AM_drawMapNameLine(const std::string& mapline, int mapcolor, int y,
 
 	if (!animated || level.author.empty())
 	{
-		screen->DrawTextClean(mapcolor, AM_textRestX(mapline, surface_width), y,
-		                      mapline.c_str());
+		AM_drawText(mapcolor, AM_textRestX(mapline, surface_width), y, mapline.c_str());
 		return;
 	}
 
@@ -2279,8 +2303,7 @@ void AM_drawMapNameLine(const std::string& mapline, int mapcolor, int y,
 	const int cycle = (2 * AM_AUTHORHOLD) + toauthor + tomap;
 	if (cycle <= 0)
 	{
-		screen->DrawTextClean(mapcolor, AM_textRestX(mapline, surface_width), y,
-		                      mapline.c_str());
+		AM_drawText(mapcolor, AM_textRestX(mapline, surface_width), y, mapline.c_str());
 		return;
 	}
 
@@ -2297,15 +2320,14 @@ void AM_drawMapNameLine(const std::string& mapline, int mapcolor, int y,
 
 	if (t < AM_AUTHORHOLD)
 	{
-		screen->DrawTextClean(mapcolor, AM_textRestX(mapline, surface_width), y,
-		                      mapline.c_str());
+		AM_drawText(mapcolor, AM_textRestX(mapline, surface_width), y, mapline.c_str());
 		return;
 	}
 
 	if (t >= AM_AUTHORHOLD + toauthor && t < (2 * AM_AUTHORHOLD) + toauthor)
 	{
-		screen->DrawTextClean(CR_GREY, AM_textRestX(authorline, surface_width), y,
-		                      authorline.c_str());
+		AM_drawText(CR_GREY, AM_textRestX(authorline, surface_width), y,
+		            authorline.c_str());
 		return;
 	}
 
@@ -2336,8 +2358,8 @@ void AM_drawMapNameLine(const std::string& mapline, int mapcolor, int y,
 
 		// Where the typing happens is the same place the line comes to rest, so
 		// it works from the left edge normally and the right edge on the overlay.
-		screen->DrawTextClean(typing ? incolor : outcolor,
-		                      AM_textRestX(display, surface_width), y, display.c_str());
+		AM_drawText(typing ? incolor : outcolor, AM_textRestX(display, surface_width), y,
+		            display.c_str());
 		return;
 	}
 
@@ -2360,11 +2382,11 @@ void AM_drawMapNameLine(const std::string& mapline, int mapcolor, int y,
 
 	// The pair is carried a steady number of pixels per tic, the incoming line
 	// trailing the outgoing one by the width of the space they run in.
-	const int scrolled = static_cast<int>(progress * region) * CleanXfac;
-	const int width = region * CleanXfac;
+	const int scrolled = static_cast<int>(progress * region);
+	const int width = region;
 
-	const int outwidth = AM_lineWidth(*outchars) * CleanXfac;
-	const int inwidth = AM_lineWidth(*inchars) * CleanXfac;
+	const int outwidth = AM_lineWidth(*outchars);
+	const int inwidth = AM_lineWidth(*inchars);
 
 	int clipleft = 0;
 	int clipright = 0;
@@ -2415,7 +2437,8 @@ void AM_Drawer()
 		f.x = f.y = 0;
 		f_w = surface_width;
 		f_h = ST_StatusBarY(surface_width, surface_height);
-		f_p = surface->getPitch();
+		f_p = surface->getRowStepInBytes();
+		f_cs = surface->getColStepInBytes();
 
 		AM_clearFB(gameinfo.currentAutomapColors.Background);
 	}
@@ -2425,7 +2448,8 @@ void AM_Drawer()
 		f.y = R_ViewWindowY(surface_width, surface_height);
 		f_w = R_ViewWidth(surface_width, surface_height);
 		f_h = R_ViewHeight(surface_width, surface_height);
-		f_p = surface->getPitch();
+		f_p = surface->getRowStepInBytes();
+		f_cs = surface->getColStepInBytes();
 	}
 	else
 	{
@@ -2460,7 +2484,8 @@ void AM_Drawer()
 
 		f.x = R_ViewWindowX(surface_width, surface_height) + x_offset;
 		f.y = R_ViewWindowY(surface_width, surface_height) + y_offset;
-		f_p = surface->getPitch();
+		f_p = surface->getRowStepInBytes();
+		f_cs = surface->getColStepInBytes();
 
 		if (const DCanvas* canvas = surface->getDefaultCanvas())
 			canvas->Dim(f.x, f.y, f_w, f_h, am_ovbackcolor.cstring(), am_ovbackalpha);
@@ -2508,13 +2533,18 @@ void AM_Drawer()
 
 	AM_drawMarks();
 
-	if (!(viewactive && am_overlay < 2) && !hu_font[0].empty())
+	if (not (viewactive and am_overlay < 2) and V_FontsReady())
 	{
 		std::string line;
 		const int time = level.time / TICRATE;
 
-		const int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
-		const int OV_Y = surface_height - (surface_height * 32 / 200);
+		// Same clean scale the bitmap path drew at. The font bakes its scale
+		// into its glyphs, so its metrics are already in real pixels and the
+		// old external CleanXfac multiply is gone from every measurement here.
+		const OFont* font = V_GetHudFontSized(8 * std::min(CleanXfac, CleanYfac));
+
+		int text_height = font->getHeight() + CleanYfac;
+		int OV_Y = surface_height - (surface_height * 32 / 200);
 
 		const bool showauthor = am_showauthor != AM_AUTHOR_OFF && !level.author.empty();
 		const int authorline = (showauthor && am_showauthor == AM_AUTHOR_STATIC) ? 1 : 0;
@@ -2536,7 +2566,7 @@ void AM_Drawer()
 				}
 
 				int x, y;
-				const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
+				const int text_width = font->getTextWidth(line.c_str());
 
 				if (AM_OverlayAutomapVisible())
 				{
@@ -2553,7 +2583,7 @@ void AM_Drawer()
 					y = OV_Y - (text_height * (AM_LINE_MONSTERS + authorline)) + 1;
 				}
 
-				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
+				screen->DrawFontText(font, CR_GREY, x, y, line.c_str());
 			}
 
 			if (am_showitems && !G_IsHordeMode())
@@ -2563,7 +2593,7 @@ void AM_Drawer()
 				                    level.total_items);
 
 				int x, y;
-				const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
+				const int text_width = font->getTextWidth(line.c_str());
 
 				if (AM_OverlayAutomapVisible())
 				{
@@ -2576,7 +2606,7 @@ void AM_Drawer()
 					y = OV_Y - (text_height * (AM_LINE_ITEMS + authorline)) + 1;
 				}
 
-				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
+				screen->DrawFontText(font, CR_GREY, x, y, line.c_str());
 			}
 
 			if (am_showsecrets && !G_IsHordeMode())
@@ -2584,7 +2614,7 @@ void AM_Drawer()
 				line = fmt::sprintf(TEXTCOLOR_RED "SECRETS:" TEXTCOLOR_NORMAL " %d / %d",
 				                    level.found_secrets, level.total_secrets);
 				int x, y;
-				const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
+				const int text_width = font->getTextWidth(line.c_str());
 
 				if (AM_OverlayAutomapVisible())
 				{
@@ -2597,7 +2627,7 @@ void AM_Drawer()
 					y = OV_Y - (text_height * (AM_LINE_SECRETS + authorline)) + 1;
 				}
 
-				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
+				screen->DrawFontText(font, CR_GREY, x, y, line.c_str());
 			}
 		}
 
@@ -2678,8 +2708,8 @@ void AM_Drawer()
 				y -= text_height * 3;
 			}
 
-			screen->DrawTextClean(CR_GREY, AM_textRestX(authorline, surface_width), y,
-			                      authorline.c_str());
+			AM_drawText(CR_GREY, AM_textRestX(authorline, surface_width), y,
+			            authorline.c_str());
 		}
 
 		if (am_showtime)
@@ -2687,7 +2717,7 @@ void AM_Drawer()
 			line = fmt::sprintf(" %02d:%02d:%02d", time / 3600, (time % 3600) / 60, time % 60); // Time
 
 			int x, y;
-			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
+			const int text_width = font->getTextWidth(line.c_str());
 
 			if (AM_OverlayAutomapVisible())
 			{
@@ -2704,7 +2734,7 @@ void AM_Drawer()
 				y -= text_height * 3;
 			}
 
-			screen->DrawTextClean(CR_GREY, x, y, line.c_str());
+			screen->DrawFontText(font, CR_GREY, x, y, line.c_str());
 		}
 	}
 }

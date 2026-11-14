@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include "dobject.h"
+#include "resources/res_resourceid.h"
 #include <array>
 #include <cassert>
 #include <type_traits>
@@ -182,7 +184,7 @@ public:
 	}
 
 	// Overload bool because its size is implementation-defined, and we want archived sizes to be exact.
-	FArchive& operator<< (bool b) { return operator<< (uint8_t(b)); }
+	FArchive& operator<< (bool b) { return operator<< (static_cast<uint8_t>(b)); }
 
 	template <typename ElementType, size_t N>
 	FArchive& operator<< (const std::array<ElementType, N>& i_array)
@@ -204,6 +206,9 @@ public:
 
 	FArchive& operator<< (const unsigned char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
 	FArchive& operator<< (const signed char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
+
+	// ResourceId is a class type, so the integral template above does not cover it.
+	FArchive& operator<< (const ResourceId& res_id) { return operator<< (static_cast<uint32_t>(res_id)); }
 
 	// ------------ Streaming-out operations ---------------
 
@@ -267,6 +272,7 @@ public:
 	//FArchive& operator>> (unsigned char *&str) { return operator>> ((char *&)str); }
 	//FArchive& operator>> (signed char *&str) { return operator>> ((char *&)str); }
 	FArchive& operator>> (DObject* &object) { return ReadObject (object, RUNTIME_CLASS(DObject)); }
+	FArchive& operator>> (ResourceId& res_id) { uint32_t in; *this >> in; res_id = ResourceId(in); return *this; }
 
 protected:
 	enum { EObjectHashSize = 137 };

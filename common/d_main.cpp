@@ -58,6 +58,7 @@
 #include "r_main.h"
 #include "r_data.h"
 #include "r_sprites.h"
+#include "resources/res_texture.h"
 #include "d_main.h"
 #include "g_level.h"
 #include "d_dehacked.h"
@@ -65,6 +66,8 @@
 #include "gi.h"
 #include "w_ident.h"
 #include "m_resfile.h"
+#include "resources/res_main.h"
+#include "resources/res_filelib.h"
 #include "odainfo.h"
 #include "infomap.h"
 
@@ -82,177 +85,6 @@ extern bool step_mode;
 
 bool capfps = true;
 float maxfps = 35.0f;
-
-#if defined(_WIN32)
-
-typedef struct
-{
-	HKEY root;
-	const char* path;
-	const char* value;
-} registry_value_t;
-
-static const char* uninstaller_string = "\\uninstl.exe /S ";
-
-// Keys installed by the various CD editions.  These are actually the
-// commands to invoke the uninstaller and look like this:
-//
-// C:\Program Files\Path\uninstl.exe /S C:\Program Files\Path
-//
-// With some munging we can find where Doom was installed.
-
-// [AM] From the persepctive of a 64-bit executable, 32-bit registry keys are
-//      located in a different spot.
-#if _WIN64
-#define SOFTWARE_KEY "Software\\Wow6432Node"
-#else
-#define SOFTWARE_KEY "Software"
-#endif
-
-static registry_value_t uninstall_values[] =
-{
-	// Ultimate Doom, CD version (Depths of Doom trilogy)
-	{
-		HKEY_LOCAL_MACHINE,
-		SOFTWARE_KEY "\\Microsoft\\Windows\\CurrentVersion\\"
-			"Uninstall\\Ultimate Doom for Windows 95",
-		"UninstallString",
-	},
-
-	// Doom II, CD version (Depths of Doom trilogy)
-	{
-		HKEY_LOCAL_MACHINE,
-		SOFTWARE_KEY "\\Microsoft\\Windows\\CurrentVersion\\"
-			"Uninstall\\Doom II for Windows 95",
-		"UninstallString",
-	},
-
-	// Final Doom
-	{
-		HKEY_LOCAL_MACHINE,
-		SOFTWARE_KEY "\\Microsoft\\Windows\\CurrentVersion\\"
-			"Uninstall\\Final Doom for Windows 95",
-		"UninstallString",
-	},
-
-	// Shareware version
-	{
-		HKEY_LOCAL_MACHINE,
-		SOFTWARE_KEY "\\Microsoft\\Windows\\CurrentVersion\\"
-			"Uninstall\\Doom Shareware for Windows 95",
-		"UninstallString",
-	},
-};
-
-// Value installed by the Collector's Edition when it is installed
-static registry_value_t collectors_edition_value =
-{
-	HKEY_LOCAL_MACHINE,
-	SOFTWARE_KEY "\\Activision\\DOOM Collector's Edition\\v1.0",
-	"INSTALLPATH",
-};
-
-// Subdirectories of the above install path, where IWADs are installed.
-static const char* collectors_edition_subdirs[] =
-{
-	"Doom2",
-	"Final Doom",
-	"Ultimate Doom",
-};
-
-// Location where Steam is installed
-static registry_value_t steam_install_location =
-{
-	HKEY_LOCAL_MACHINE,
-	SOFTWARE_KEY "\\Valve\\Steam",
-	"InstallPath",
-};
-
-// Subdirs of the steam install directory where IWADs are found
-static const char* steam_install_subdirs[] =
-{
-	"steamapps\\common\\doom 2\\base",
-	"steamapps\\common\\Doom 2\\masterbase",
-	"steamapps\\common\\final doom\\base",
-	"steamapps\\common\\Doom 2\\finaldoombase",
-	"steamapps\\common\\ultimate doom\\base",
-	"steamapps\\common\\DOOM 3 BFG Edition\\base\\wads",
-	"steamapps\\common\\master levels of doom\\master\\wads", //Let Odamex find the Master Levels pwads too
-	"steamapps\\common\\ultimate doom\\base\\doom2", //2024 Steam re-release additions here and below
-	"steamapps\\common\\ultimate doom\\base\\master\\wads",
-	"steamapps\\common\\ultimate doom\\base\\plutonia",
-	"steamapps\\common\\ultimate doom\\base\\tnt",
-	"steamapps\\common\\ultimate doom\\rerelease",
-};
-
-static registry_value_t gog_doom_plus_doom2 =
-{
-	HKEY_LOCAL_MACHINE,
-	SOFTWARE_KEY "\\GOG.com\\Games\\1413291984",
-	"path",
-};
-
-static registry_value_t gog_doom =
-{
-	HKEY_LOCAL_MACHINE,
-	SOFTWARE_KEY "\\GOG.com\\Games\\1435827232",
-	"path",
-};
-
-static registry_value_t gog_doom2 =
-{
-	HKEY_LOCAL_MACHINE,
-	SOFTWARE_KEY "\\GOG.com\\Games\\1435848814",
-	"path",
-};
-
-static registry_value_t gog_final_doom =
-{
-	HKEY_LOCAL_MACHINE,
-	SOFTWARE_KEY "\\GOG.com\\Games\\1435848742",
-	"path",
-};
-
-static char *GetRegistryString(const registry_value_t *reg_val)
-{
-	HKEY key = 0;
-	DWORD len = 0;
-	DWORD valtype = 0;
-	char* result = 0;
-
-	// Open the key (directory where the value is stored)
-
-	if (RegOpenKeyEx(reg_val->root, reg_val->path,
-	    0, KEY_READ, &key) != ERROR_SUCCESS)
-	{
-		return NULL;
-	}
-
-	result = NULL;
-
-	// Find the type and length of the string, and only accept strings.
-
-	if (RegQueryValueEx(key, reg_val->value,
-	    NULL, &valtype, NULL, &len) == ERROR_SUCCESS && valtype == REG_SZ)
-	{
-		// Allocate a buffer for the value and read the value
-		result = static_cast<char*>(malloc(len));
-
-		if (RegQueryValueEx(key, reg_val->value, NULL, &valtype,
-		    (unsigned char *)result, &len) != ERROR_SUCCESS)
-		{
-			M_Free(result);
-		}
-	}
-
-	// Close the key
-
-	RegCloseKey(key);
-
-	return result;
-}
-
-#endif
 
 //
 // D_InitializeDoomObjectTables()
@@ -292,218 +124,6 @@ void D_InitializeDoomObjectTables()
 		[](const mobjinfo_t& m){ return m.type; }
 	);
 }
-
-void D_AddSearchDir(std::vector<std::string>& dirs, const char* newdir, missing_dir_policy_t policy)
-{
-	if (!newdir)
-		return;
-
-	D_AddSearchDir(dirs, std::string{newdir}, policy);
-}
-
-void D_AddSearchDir(std::vector<std::string>& dirs, std::string newdir, missing_dir_policy_t policy)
-{
-	if (newdir.empty())
-		return;
-
-	M_ExpandHomeDir(newdir);
-	newdir = M_CleanPath(newdir);
-	if (M_DirectoryExists(newdir))
-	{
-		dirs.push_back(newdir);
-	}
-	else if (policy == missing_dir_policy_t::WARN ||
-		(policy == missing_dir_policy_t::DEV_WARN && (::developer || ::devparm)))
-	{
-		PrintFmt(PRINT_WARNING, "{}: search directory \"{}\" not found\n", __FUNCTION__, newdir);
-	}
-}
-
-//
-// D_AddSearchDirList
-// denis - Split a new directory string using the path list separator and append results to the output
-//
-void D_AddSearchDirList(std::vector<std::string> &dirs, const char *newdirs, missing_dir_policy_t policy)
-{
-	if (!newdirs)
-		return;
-
-	D_AddSearchDirList(dirs, std::string{newdirs}, policy);
-}
-
-void D_AddSearchDirList(std::vector<std::string> &dirs, std::string newdirs, missing_dir_policy_t policy)
-{
-	if(newdirs.empty())
-		return;
-
-	// search through dwd
-	std::stringstream ss{newdirs};
-	std::string segment;
-
-	while(!ss.eof())
-	{
-		std::getline(ss, segment, PATHLISTSEPCHAR);
-
-		if(!segment.length())
-			continue;
-
-		M_ExpandHomeDir(segment);
-		segment = M_CleanPath(segment);
-		if (M_DirectoryExists(segment))
-		{
-			dirs.push_back(segment);
-		}
-		else if (policy == missing_dir_policy_t::WARN ||
-			(policy == missing_dir_policy_t::DEV_WARN && (::developer || ::devparm)))
-		{
-			PrintFmt(PRINT_WARNING, "{}: search directory \"{}\" not found\n", __FUNCTION__, segment);
-		}
-	}
-}
-
-// [AM] Add platform-sepcific search directories
-void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
-{
-	#if defined(_WIN32)
-
-	// Doom 95
-	{
-		for (const auto& uninstallval : uninstall_values)
-		{
-			char* val;
-			char* path;
-			char* unstr;
-
-			val = GetRegistryString(&uninstallval);
-
-			if (val == NULL)
-				continue;
-
-			unstr = strstr(val, uninstaller_string);
-
-			if (unstr == NULL)
-			{
-				M_Free(val);
-			}
-			else
-			{
-				path = unstr + strlen(uninstaller_string);
-
-				const char* cpath = path;
-				D_AddSearchDir(dirs, cpath);
-			}
-		}
-	}
-
-	// Doom Collectors Edition
-	{
-		char* install_path = GetRegistryString(&collectors_edition_value);
-
-		if (install_path != NULL)
-		{
-			for (const auto& dir : collectors_edition_subdirs)
-			{
-				const std::string subpath = fmt::format("{}\\{}", install_path, dir);
-
-				D_AddSearchDir(dirs, subpath);
-			}
-
-			M_Free(install_path);
-		}
-	}
-
-	// Doom on Steam
-	{
-		char* install_path = GetRegistryString(&steam_install_location);
-
-		if (install_path != NULL)
-		{
-			for (const auto& dir : steam_install_subdirs)
-			{
-				const std::string subpath = fmt::format("{}\\{}", install_path, dir);
-
-				D_AddSearchDir(dirs, subpath);
-			}
-
-			M_Free(install_path);
-		}
-	}
-
-	// Doom on GOG
-	{
-		char* doom_plus_doom2_path = GetRegistryString(&gog_doom_plus_doom2);
-
-		if (doom_plus_doom2_path != nullptr)
-		{
-			D_AddSearchDir(dirs, doom_plus_doom2_path);
-			M_Free(doom_plus_doom2_path);
-		}
-
-		char* doom_path = GetRegistryString(&gog_doom);
-
-		if (doom_path != nullptr)
-		{
-			D_AddSearchDir(dirs, doom_path);
-			M_Free(doom_path);
-		}
-
-		char* doom2_path = GetRegistryString(&gog_doom2);
-
-		if (doom2_path != nullptr)
-		{
-			const std::string full_doom2_path = fmt::format("{}\\{}", doom2_path, "doom2");
-			const std::string master_levels_path = fmt::format("{}\\{}", doom2_path, "master\\wads");
-			D_AddSearchDir(dirs, full_doom2_path);
-			D_AddSearchDir(dirs, master_levels_path);
-			M_Free(doom2_path);
-		}
-
-		char* final_doom_path = GetRegistryString(&gog_final_doom);
-
-		if (final_doom_path != NULL)
-		{
-			const std::string plutonia_path = fmt::format("{}\\{}", final_doom_path, "Plutonia");
-			const std::string tnt_path = fmt::format("{}\\{}", final_doom_path, "TNT");
-			D_AddSearchDir(dirs, plutonia_path);
-			D_AddSearchDir(dirs, tnt_path);
-			M_Free(final_doom_path);
-		}
-	}
-
-	// DOS Doom via DEICE
-	D_AddSearchDir(dirs, "\\doom2");    // Doom II
-	D_AddSearchDir(dirs, "\\plutonia"); // Final Doom
-	D_AddSearchDir(dirs, "\\tnt");
-	D_AddSearchDir(dirs, "\\doom_se");  // Ultimate Doom
-	D_AddSearchDir(dirs, "\\doom");     // Shareware / Registered Doom
-	D_AddSearchDir(dirs, "\\dooms");    // Shareware versions
-	D_AddSearchDir(dirs, "\\doomsw");
-
-	#elif defined(UNIX)
-
-	#if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR)
-	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/odamex", missing_dir_policy_t::DEV_WARN);
-	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", missing_dir_policy_t::DEV_WARN);
-	#endif
-	// Search the maintainer-directed data directory for WADs
-	#if defined(ODAMEX_INSTALL_DATADIR)
-	D_AddSearchDir(dirs, ODAMEX_INSTALL_DATADIR, missing_dir_policy_t::DEV_WARN);
-	#endif
-
-	D_AddSearchDir(dirs, "/usr/share/doom", missing_dir_policy_t::DEV_WARN);
-	D_AddSearchDir(dirs, "/usr/share/games/doom", missing_dir_policy_t::DEV_WARN);
-	D_AddSearchDir(dirs, "/usr/local/share/games/doom", missing_dir_policy_t::DEV_WARN);
-	D_AddSearchDir(dirs, "/usr/local/share/doom", missing_dir_policy_t::DEV_WARN);
-	// Flatpak sandbox default directories
-	// (Since you need to pass envvars to a Flatpak)
-	D_AddSearchDir(dirs, "/run/host/usr/share/doom", missing_dir_policy_t::DEV_WARN);
-	D_AddSearchDir(dirs, "/run/host/usr/share/games/doom", missing_dir_policy_t::DEV_WARN);
-	D_AddSearchDir(dirs, "/run/host/usr/local/share/games/doom", missing_dir_policy_t::DEV_WARN);
-	D_AddSearchDir(dirs, "/run/host/usr/local/share/doom", missing_dir_policy_t::DEV_WARN);
-
-	#endif
-}
-
 
 //
 // D_GetTitleString
@@ -549,20 +169,22 @@ void D_LoadResolvedPatches(bool reloadStrings)
 	// Load internal chex.deh if necessary
 	if (::gamemode == retail_chex)
 	{
-		D_DoDehPatch(nullptr, W_GetNumForName("_CHXHACK"), reloadStrings);
+		D_DoDehPatch(nullptr, Res_GetResourceId("_CHXHACK", global_directory_name),
+		             reloadStrings);
 	}
 
 	// Load external patch files first.
 	for (const auto& file : ::patchfiles)
 	{
-		D_DoDehPatch(&file, -1, reloadStrings);
+		D_DoDehPatch(&file, ResourceId::INVALID_ID, reloadStrings);
 	}
 
-	// Check WAD files for lumps.
-	int lump = -1;
-	while ((lump = W_FindLump("DEHACKED", lump)) != -1)
+	// Check resource files for DEHACKED lumps, in load order.
+	const ResourceIdList dehacked_res_ids =
+	    Res_GetAllResourceIds(ResourcePath("/GLOBAL/DEHACKED"));
+	for (const ResourceId res_id : dehacked_res_ids)
 	{
-		D_DoDehPatch(NULL, lump, reloadStrings);
+		D_DoDehPatch(nullptr, res_id, reloadStrings);
 	}
 
 	// Re-apply spawninv settings with our new DEH settings.
@@ -581,7 +203,7 @@ std::string D_CleanseFileName(const std::string &filename, const std::string &ex
 
 	M_FixPathSep(newname);
 	if (ext.length())
-		M_AppendExtension(newname, "." + ext);
+		newname = M_AppendExtension(newname, "." + ext);
 
 	size_t slash = newname.find_last_of(PATHSEPCHAR);
 
@@ -685,7 +307,7 @@ static void LoadResolvedFiles(const OResFiles& newwadfiles,
 	::patchfiles = newpatchfiles;
 
 	// Now scan the contents of the IWAD to determine which one it is
-	W_ConfigureGameInfo(::wadfiles.at(1));
+	W_ConfigureGameInfo(::wadfiles.at(1).getFullpath());
 
 	// print info about the IWAD to the console
 	D_PrintIWADIdentity();
@@ -699,7 +321,12 @@ static void LoadResolvedFiles(const OResFiles& newwadfiles,
 		    "\nYou cannot load additional WADs with the shareware version. Register!");
 	}
 
-	W_InitMultipleFiles(::wadfiles);
+	// Load the resource files through the resource manager.
+	std::vector<std::string> resource_filenames;
+	resource_filenames.reserve(::wadfiles.size());
+	for (const auto& file : ::wadfiles)
+		resource_filenames.push_back(file.getFullpath());
+	Res_OpenResourceFiles(resource_filenames);
 
 	// [RH] Initialize localizable strings.
 	// [SL] It is necessary to load the strings here since a dehacked patch
@@ -728,7 +355,7 @@ static bool CommercialIWADWarning(const OWantFile& wanted)
 		return false;
 	}
 
-	const fileIdentifier_t* info = W_GameInfo(wanted.getWantedMD5());
+	const FileIdentifier* info = W_GameInfo(wanted.getWantedMD5());
 	if (!info)
 	{
 		// No GameInfo means that we're not dealing with a WAD we recognize.
@@ -759,7 +386,7 @@ static bool CommercialIWADWarning(const OWantFile& wanted)
 	}
 	else
 	{
-		const fileIdentifier_t* curInfo = W_GameInfo(sameNameRes.getMD5());
+		const FileIdentifier* curInfo = W_GameInfo(sameNameRes.getMD5());
 		if (curInfo)
 		{
 			// Found a file, but it's the wrong version.
@@ -852,13 +479,16 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 
 	if (::wadfiles.empty())
 	{
-		// If we don't have odamex.wad, resolve it now.
+		// If we don't have the engine resource yet, resolve it now.  The want is
+		// intentionally extension-less so it resolves to odamex.wad, odamex.zip,
+		// odamex.pk3, or an "odamex" directory - in that order of preference.
 		OWantFile want_odamex;
-		OWantFile::make(want_odamex, "odamex.wad", OFILE_WAD);
+		OWantFile::make(want_odamex, "odamex", OFILE_WAD);
 		if (!M_ResolveWantedFile(odamex_wad, want_odamex))
 		{
-			I_FatalError("Could not resolve \"{}\".  Please ensure this file is "
-			             "someplace where Odamex can find it.\n",
+			I_FatalError("Could not resolve the \"{}\" engine resource "
+			             "(odamex.wad, odamex.pk3/zip, or an odamex directory).  "
+			             "Please ensure it is someplace where Odamex can find it.\n",
 			             want_odamex.getBasename());
 		}
 	}
@@ -937,7 +567,7 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 		// it can stand up on its own or it needs to run under an IWAD.
 		const std::string badsprite = R_FindIncompleteSprite();
 		const std::string badtexture =
-		    badsprite.empty() ? R_FindTextureMissingPatch() : "";
+		    badsprite.empty() ? Res_FindTextureMissingPatch() : "";
 
 		if (!badsprite.empty() || !badtexture.empty())
 		{
@@ -954,7 +584,7 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 				              fallback_iwad.getBasename());
 
 				D_UndoDehPatch();
-				W_Close();
+				Res_CloseAllResourceFiles();
 
 				// Put the mod back where it belongs, in front of a real IWAD.
 				OResFiles retry_wads = resolved_wads;
@@ -997,6 +627,38 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
  * @param newpatchfiles Patch files to check.
  * @return True if everything checks out.
  */
+static bool WantMatchesLoaded(const OWantFile& want, const OResFile& loaded)
+{
+	// A known content digest is authoritative: it identifies the logical
+	// contents of an archive or directory regardless of container form, and
+	// catches added, missing, or modified files inside it.
+	const OMD5Hash& want_digest = want.getWantedContentDigest();
+	if (not want_digest.empty())
+	{
+		return want_digest == loaded.getContentDigest();
+	}
+
+	if (want.getWantedMD5() == loaded.getMD5())
+	{
+		return true;
+	}
+
+	// Directory resources are identified by a name marker rather than a
+	// content hash; accept a loaded directory or archive of the same base name.
+	if (M_IsDirectoryMarkerHash(want.getWantedMD5(), want.getBasename()))
+	{
+		std::string base = loaded.getBasename();
+		const std::string::size_type dot = base.find_last_of('.');
+		if (dot != std::string::npos)
+		{
+			base = base.substr(0, dot);
+		}
+		return iequals(base, want.getBasename());
+	}
+
+	return false;
+}
+
 static bool CheckWantedMatchesLoaded(const OWantFiles& newwadfiles,
                                      const OWantFiles& newpatchfiles)
 {
@@ -1017,7 +679,7 @@ static bool CheckWantedMatchesLoaded(const OWantFiles& newwadfiles,
 	     ++it)
 	{
 		size_t idx = it - newwadfiles.begin();
-		if (it->getWantedMD5() != ::wadfiles.at(idx + 1).getMD5())
+		if (not WantMatchesLoaded(*it, ::wadfiles.at(idx + 1)))
 		{
 			return false;
 		}
@@ -1125,6 +787,15 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 	::gamestate = oldgamestate; // GS_STARTUP would prevent netcode connecting properly
 
 	return ::missingfiles.empty() && failmsg.empty();
+}
+
+
+//
+// D_UnloadResourceFiles
+//
+void D_UnloadResourceFiles()
+{
+	Res_CloseAllResourceFiles();
 }
 
 

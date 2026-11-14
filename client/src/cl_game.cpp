@@ -25,6 +25,8 @@
 
 #include "odamex.h"
 
+#include "r_context.h"
+
 BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
 END_DISABLE_WARNING_GNU
@@ -51,7 +53,7 @@ END_DISABLE_WARNING_GNU
 #include "c_bind.h"
 #include "c_dispatch.h"
 #include "v_video.h"
-#include "w_wad.h"
+#include "resources/res_main.h"
 #include "p_local.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
@@ -127,8 +129,6 @@ bool 			noblit; 				// for comparative timing purposes
 
 int 			gametic;
 
-extern fixed_t bobx;
-extern fixed_t boby;
 extern NetGraph netgraph;
 
 enum demoversion_t
@@ -354,7 +354,7 @@ BEGIN_COMMAND (weapnext)
 {
 	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), true);
 	if (newweapon != wp_nochange)
-		Impulse = int(newweapon) + 50;
+		Impulse = static_cast<int>(newweapon) + 50;
 }
 END_COMMAND (weapnext)
 
@@ -362,7 +362,7 @@ BEGIN_COMMAND (weapprev)
 {
 	weapontype_t newweapon = P_GetNextWeapon(&consoleplayer(), false);
 	if (newweapon != wp_nochange)
-		Impulse = int(newweapon) + 50;
+		Impulse = static_cast<int>(newweapon) + 50;
 }
 END_COMMAND (weapprev)
 
@@ -886,6 +886,11 @@ END_COMMAND(netstat)
 
 void P_BobTicker()
 {
+	// weapon bob belongs to the context the weapon sprite is drawn in, which
+	// is always the main thread's
+	fixed_t& bobx = ::rctx.sprite.bobx;
+	fixed_t& boby = ::rctx.sprite.boby;
+
 	bobx = P_TickWeaponBobX();
 	boby = P_TickWeaponBobY();
 }
@@ -1955,6 +1960,7 @@ void G_ReadDemoTiccmd()
 //
 
 std::string defdemoname;
+ResourceId demo_res_id = ResourceId::INVALID_ID;
 
 void G_DeferedPlayDemo (const char *name, bool bIsSingleDemo)
 {
@@ -2025,11 +2031,11 @@ void G_DoPlayDemo(bool justStreamInput)
 	gameaction = ga_nothing;
 	int bytelen;
 
-	int demolump = W_CheckNumForName(defdemoname);
-	if (demolump != -1)
+	demo_res_id = Res_GetResourceId(defdemoname, NS_GLOBAL);
+	if (Res_CheckResource(demo_res_id))
 	{
-		demobuffer = demo_p = W_CacheLumpNum<byte>(demolump, PU_STATIC);
-		bytelen = W_LumpLength(demolump);
+		demobuffer = demo_p = const_cast<byte*>(Res_LoadResource<byte>(demo_res_id, PU_STATIC));
+		bytelen = Res_GetResourceSize(demo_res_id);
 	}
 	else
 	{
@@ -2052,7 +2058,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	if (bytelen < 14)
 	{
 		if (bytelen)
-			Z_Free(demobuffer);
+			Res_ReleaseResource(demo_res_id);
 
 		PrintFmt(PRINT_WARNING, "DOOM Demo file too short\n");
 		gameaction = singledemo ? ga_fullconsole : ga_nothing;
@@ -2108,7 +2114,7 @@ void G_DoPlayDemo(bool justStreamInput)
 
 			if (!validplayer(con))
 			{
-				Z_Free(demobuffer);
+				Res_ReleaseResource(demo_res_id);
 				PrintFmt(PRINT_HIGH, "DOOM Demo: invalid console player {} of {}\n", who + 1, players.size());
 				gameaction = ga_fullconsole;
 				return;
@@ -2226,7 +2232,8 @@ void G_CleanupDemo()
 {
 	if (demoplayback)
 	{
-		Z_Free(demobuffer);
+		Res_ReleaseResource(demo_res_id);
+		demo_res_id = ResourceId::INVALID_ID;
 
 		demoplayback = false;
 		multiplayer = false;
@@ -2281,7 +2288,7 @@ bool G_CheckDemoStatus (void)
 				extern dtime_t starttime;
 				dtime_t endtime = I_MSTime() - starttime;
 				int realtics = endtime * TICRATE / 1000;
-				float fps = float(gametic * TICRATE) / realtics;
+				float fps = static_cast<float>(gametic * TICRATE) / realtics;
 
 				PrintFmt(PRINT_HIGH, "timed {} gametics in {} realtics ({:.1f} fps)\n",
 				         gametic, realtics, fps);

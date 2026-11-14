@@ -487,7 +487,7 @@ bool EV_DoPlat (int tag, line_t *line, DPlat::EPlatType type, fixed_t height,
 		if (change)
 		{
 			if (line)
-				sec->floorpic = sides[line->sidenum[0]].sector->floorpic;
+				sec->floor_res_id = sides[line->sidenum[0]].sector->floor_res_id;
 			if (change == 1)
 				sec->special = 0;	// Stop damage and other stuff, if any
 			if (serverside)

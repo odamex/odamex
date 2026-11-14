@@ -23,11 +23,14 @@
 
 #include <charconv>
 
+#include "i_system.h"
 #include "g_episode.h"
 #include "oscanner.h"
 #include "w_wad.h"
 #include "infomap.h"
 #include "g_mapinfo.h" // G_MapNameToLevelNum
+#include "resources/res_main.h"
+#include "resources/res_texture.h"
 
 //
 // Reads the run of digits at the given offset, moving it past them.
@@ -280,7 +283,7 @@ bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		os.mustScan(8);
 		const std::string musicname = os.getToken();
-		if (W_CheckNumForName(musicname.c_str()) != -1)
+		if (Res_GetResourceId(musicname, NS_MUSIC) != ResourceId::INVALID_ID)
 		{
 			mape->music = musicname;
 		}
@@ -369,8 +372,7 @@ bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		os.mustScan(8);
 		const std::string musicname = os.getToken();
-
-		if (W_CheckNumForName(musicname.c_str()) != -1)
+		if (Res_GetResourceId(musicname, NS_MUSIC) != ResourceId::INVALID_ID)
 			mape->intermusic = musicname;
 	}
 	else if (!stricmp(pname.c_str(), "episode"))
@@ -552,20 +554,20 @@ bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	return 1;
 }
 
-void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
+void ParseUMapInfoLump(const ResourceId res_id, const OLumpName& lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
 
-	umapinfofrompwad = W_IsLumpFromPWAD(static_cast<unsigned>(lump));
+	umapinfofrompwad = Res_IsResourceFromPWAD(res_id);
 
-	const char* buffer = W_CacheLumpNum<char>(lump, PU_STATIC);
+	const char* buffer = Res_LoadResource<char>(res_id, PU_STATIC);
 
 	const OScannerConfig config = {
-	    lumpname, // lumpName
+	    lumpname.c_str(), // lumpName
 	    false,    // semiComments
 	    true,     // cComments
 	};
-	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + Res_GetResourceSize(res_id));
 
 	while (os.scan())
 	{
@@ -665,6 +667,16 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 	}
 	// if an episode title patch is missing or invalid, fall back on text name
 	for (auto& episode : EpisodeInfos) {
-		episode.fulltext = episode.pic_name.empty() || W_CheckNumForName(episode.pic_name) == -1;
+		episode.fulltext = episode.pic_name.empty() or
+		    not Res_CheckResource(Res_GetTextureResourceId(
+		        OStringToUpper(episode.pic_name.c_str()), GRAPHICS, false));
 	}
+}
+
+void ParseUMapInfoLump(const std::string& lumpname)
+{
+	ResourceId res_id = Res_GetResourceId(lumpname, NS_GLOBAL);
+	if (res_id == ResourceId::INVALID_ID)
+		I_Error("Unable to locate mapinfo lump \"%s\"", lumpname.c_str());
+	ParseUMapInfoLump(res_id, lumpname);
 }

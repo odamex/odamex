@@ -394,7 +394,7 @@ static std::list<MidiEvent*> *I_ReadMidiTrack(MEMFILE *mf)
 	std::list<MidiEvent*> *eventlist = new std::list<MidiEvent*>;
 
 	size_t trackend = mem_ftell(mf) + chunkheader.chunk_size;
-	while (mem_ftell(mf) < int(trackend))
+	while (mem_ftell(mf) < static_cast<int>(trackend))
 	{
 		MidiEvent *newevent = I_ReadMidiEvent(mf, track_time);
 
@@ -425,9 +425,9 @@ double I_GetTempoChange(MidiMetaEvent *event)
 		{
 			const byte* data = event->getData();
 			static constexpr double microsecondsperminute = 60.0 * 1000000.0;
-			const double microsecondsperbeat =	int(data[0]) << 16 |
-			                                    int(data[1]) << 8 |
-			                                    int(data[2]);
+			const double microsecondsperbeat =	static_cast<int>(data[0]) << 16 |
+			                                    static_cast<int>(data[1]) << 8 |
+			                                    static_cast<int>(data[2]);
 			return microsecondsperminute / microsecondsperbeat;
 		}
 	}

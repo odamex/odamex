@@ -26,6 +26,8 @@
 
 #include <utility>
 
+#include <algorithm>
+
 #include "odamex.h"
 
 #include "st_stuff.h"
@@ -42,6 +44,8 @@
 #include "gi.h"
 #include "c_console.h"
 #include "g_gametype.h"
+
+#include "resources/res_texture.h"
 #include "p_ctf.h"
 
 
@@ -54,9 +58,6 @@ enum st_stateenum_t
 };
 
 static bool st_needrefresh = true;
-
-// lump number for PLAYPAL
-static int lu_palette;
 
 EXTERN_CVAR(sv_allowredscreen)
 EXTERN_CVAR(sv_allowfov)
@@ -275,44 +276,44 @@ static bool st_oldchat;
 static bool st_cursoron;
 
 // main bar left
-static lumpHandle_t sbar;
+static const Texture*	sbar;
 
 static short sbar_width = 0;
 
 // 0-9, tall numbers
 // [RH] no longer static
-lumpHandle_t tallnum[10];
+const Texture*			tallnum[10];
 
 // tall % sign
 // [RH] no longer static
-lumpHandle_t tallpercent;
+const Texture*			tallpercent;
 
 // 0-9, short, yellow (,different!) numbers
-static lumpHandle_t shortnum[10];
+static const Texture* 		shortnum[10];
 
 // 3 key-cards, 3 skulls, [RH] 3 combined
-lumpHandle_t keys[NUMCARDS + NUMCARDS / 2];
+const Texture* 			keys[NUMCARDS+(NUMCARDS/2)];
 
 // face status patches [RH] no longer static
-lumpHandle_t faces[ST_NUMFACES];
+const Texture* 				faces[ST_NUMFACES];
 
 // negative number patch
-lumpHandle_t negminus;
+const Texture*				negminus;
 
 // face background
-static lumpHandle_t faceback;
+static const Texture* 		faceback;
 
 // classic face background
-static lumpHandle_t faceclassic[4];
+static const Texture*			faceclassic[4];
 
  // main bar right
-static lumpHandle_t armsbg;
+static const Texture* 		armsbg;
 
 // score/flags
-static lumpHandle_t flagsbg;
+static const Texture* 		flagsbg;
 
 // weapon ownership patches
-static lumpHandle_t arms[6][2];
+static const Texture* 		arms[6][2];
 
 // ready-weapon widget
 static StatusBarWidgetNumber w_ready;
@@ -1045,8 +1046,8 @@ static void ST_refreshBackground()
 
 	stbar_surface->lock();
 
-	const DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
-	stbar_canvas->DrawPatch(W_ResolvePatchHandle(sbar), 0, 0);
+	DCanvas* stbar_canvas = stbar_surface->getDefaultCanvas();
+	stbar_canvas->DrawTexture(sbar, 0, 0);
 
 	if (sv_gametype == GM_CTF)
 	{
@@ -1143,10 +1144,9 @@ void ST_Drawer()
 }
 
 
-static lumpHandle_t LoadFaceGraphic(const OLumpName& name)
+static const Texture* LoadFaceGraphic(const OLumpName& name)
 {
-	int lump = W_GetNumForName(name, ns_global);
-	return W_CachePatchHandle(lump, PU_STATIC);
+	return W_CachePatch(name.c_str(), PU_STATIC);
 }
 
 static void ST_loadGraphics()
@@ -1157,30 +1157,30 @@ static void ST_loadGraphics()
 	for (int i = 0; i < 10; i++)
 	{
 		namebuf = fmt::format("STTNUM{}", i);
-		tallnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		tallnum[i] = W_CachePatch(namebuf, PU_STATIC);
 
 		namebuf = fmt::format("STYSNUM{}", i);
-		shortnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		shortnum[i] = W_CachePatch(namebuf, PU_STATIC);
 	}
 
-	// Load percent key
-	tallpercent = W_CachePatchHandle("STTPRCNT", PU_STATIC);
+	// Load percent key.
+	tallpercent = Res_CacheTexture("STTPRCNT", SPRITE, PU_STATIC);
 
 	// Load minus key
-	negminus = W_CachePatchHandle("STTMINUS", PU_STATIC);
+	negminus = Res_CacheTexture("STTMINUS", SPRITE, PU_STATIC);
 
 	// key cards
 	for (int i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
 	{
 		namebuf = fmt::format("STKEYS{}", i);
-		keys[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		keys[i] = W_CachePatch(namebuf, PU_STATIC);
 	}
 
 	// arms background
-	armsbg = W_CachePatchHandle("STARMS", PU_STATIC);
+	armsbg = Res_CacheTexture("STARMS", SPRITE, PU_STATIC);
 
 	// flags background
-	flagsbg = W_CachePatchHandle("STFLAGS", PU_STATIC);
+	flagsbg = Res_CacheTexture("STFLAGS", SPRITE, PU_STATIC);
 
 	// arms ownership widgets
 	for (int i = 0; i < 6; i++)
@@ -1188,7 +1188,7 @@ static void ST_loadGraphics()
 		namebuf = fmt::format("STGNUM{}", i+2);
 
 		// gray #
-		arms[i][0] = W_CachePatchHandle(namebuf, PU_STATIC);
+		arms[i][0] = Res_CacheTexture(namebuf, SPRITE, PU_STATIC);
 
 		// yellow #
 		arms[i][1] = shortnum[i+2];
@@ -1197,17 +1197,17 @@ static void ST_loadGraphics()
 	// face backgrounds for different color players
 	// [RH] only one face background used for all players
 	//		different colors are accomplished with translations
-	faceback = W_CachePatchHandle("STFBANY", PU_STATIC);
+	faceback = Res_CacheTexture("STFBANY", SPRITE, PU_STATIC);
 
 	// [Nes] Classic vanilla lifebars.
 	for (int i = 0; i < 4; i++)
 	{
 		namebuf = fmt::format("STFB{}", i);
-		faceclassic[i] = W_CachePatchHandle(namebuf, PU_STATIC);
+		faceclassic[i] = W_CachePatch(namebuf, PU_STATIC);
 	}
 
 	// status bar background bits
-	sbar = W_CachePatchHandle(W_CheckWidescreenPatch("STBAR"), PU_STATIC);
+	sbar = W_CachePatch(W_CheckWidescreenPatch("STBAR"), PU_STATIC);
 	// in tyool 2024, we have widescreen status bars
 	// and they're not always 320x32
 	sbar_width = W_ResolvePatchHandle(sbar)->width();
@@ -1241,7 +1241,6 @@ static void ST_loadGraphics()
 
 static void ST_loadData()
 {
-    lu_palette = W_GetNumForName("PLAYPAL");
 	ST_loadGraphics();
 }
 
@@ -1250,40 +1249,40 @@ static void ST_unloadGraphics()
 	// unload the numbers, tall and short
 	for (int i = 0; i < 10; i++)
 	{
-		::tallnum[i].clear();
-		::shortnum[i].clear();
+		::tallnum[i] = nullptr;
+		::shortnum[i] = nullptr;
 	}
 
 	// unload tall percent
-	::tallpercent.clear();
+	::tallpercent = nullptr;
 
 	// unload arms background
-	::armsbg.clear();
+	::armsbg = nullptr;
 
 	// unload flags background
-	::flagsbg.clear();
+	::flagsbg = nullptr;
 
 	// unload gray #'s
 	for (int i = 0; i < 6; i++)
 	{
-		::arms[i][0].clear();
+		::arms[i][0] = nullptr;
 	}
 
 	// unload the key cards
 	for (int i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
 	{
-		::keys[i].clear();
+		::keys[i] = nullptr;
 	}
 
-	::sbar.clear();
-	::faceback.clear();
+	::sbar = nullptr;
+	::faceback = nullptr;
 
 	for (int i = 0; i < ST_NUMFACES; i++)
 	{
-		::faces[i].clear();
+		::faces[i] = nullptr;
 	}
 
-	::negminus.clear();
+	::negminus = nullptr;
 }
 
 static void ST_unloadData()

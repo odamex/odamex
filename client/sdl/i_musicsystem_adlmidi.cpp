@@ -20,6 +20,9 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+#include "resources/res_identifier.h"
+
 #include "i_musicsystem_adlmidi.h"
 
 #include "i_sdl.h"
@@ -215,7 +218,7 @@ void AdlMidiMusicSystem::setVolume(float volume)
 	MusicSystem::setVolume(volume);
 
 	_UpdateMidiHook();
-	Mix_VolumeMusic(int(getVolume() * MIX_MAX_VOLUME));
+	Mix_VolumeMusic(static_cast<int>(getVolume() * MIX_MAX_VOLUME));
 }
 
 
@@ -244,7 +247,7 @@ void AdlMidiMusicSystem::_RegisterSong(byte* data, size_t length)
 {
 	const std::lock_guard<std::mutex> lock(m_mutex);
 	m_isPlaying = false;
-	if (S_MusicIsMus(data, length) || S_MusicIsMidi(data, length))
+	if (Res_MusicIsMus(data, length) or Res_MusicIsMidi(data, length))
 	{
 		adl_reset(m_midiPlayer);
 		if (adl_openData(m_midiPlayer, data, length) < 0)

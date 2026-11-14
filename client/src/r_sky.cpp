@@ -22,11 +22,16 @@
 //	The default sky map is 256 columns and repeats 4 times
 //	on a 320 screen.
 //
+//	ID24 SKYDEFS support (fire skies, double skies, scrolling skies)
+//	adapted from Rum and Raisin via protobreak, running on top of the
+//	resource manager / Texture system.
 //
 //-----------------------------------------------------------------------------
 
 
 #include "odamex.h"
+
+#include "r_context.h"
 
 #include "m_fixed.h"
 #include "m_jsonlump.h"
@@ -35,10 +40,12 @@
 #include "r_draw.h"
 #include "r_main.h"
 #include "r_sky.h"
-#include "w_wad.h"
 #include "i_system.h"
+#include "g_mapinfo.h"
 
-extern int *texturewidthmask;
+#include "resources/res_main.h"
+#include "resources/res_texture.h"
+
 extern fixed_t FocalLengthX;
 extern fixed_t freelookviewheight;
 
@@ -49,16 +56,22 @@ EXTERN_CVAR(r_skypalette)
 EXTERN_CVAR(r_linearsky)
 
 
+
 //
 // sky mapping
 //
-fixed_t		defaultskytexturemid;
+static const Texture* sky1texture;
+static const Texture* sky2texture;
+
+fixed_t		skytexturemid;
 fixed_t		skyscale;
 int			skystretch;
 fixed_t		skyheight;
 fixed_t		skyiscale;
 
-int			sky1shift,        sky2shift;
+int			sky1shift,		sky2shift;
+
+static ResourceId sky_flat_resource_id = ResourceId::INVALID_ID;
 
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
@@ -66,13 +79,12 @@ int			sky1shift,        sky2shift;
 static angle_t xtoviewangle[MAXWIDTH + 1];
 static angle_t linearskyangle[MAXWIDTH + 1];
 
+static const palindex_t* skyposts[MAXWIDTH];
+
 CVAR_FUNC_IMPL(r_stretchsky)
 {
-	R_InitSkyMap ();
+	R_InitSkyMap();
 }
-
-static tallpost_t* skyposts[MAXWIDTH];
-static byte transparentskybuffer[MAXWIDTH][512]; // holds foreground sky with transparency to blit to the screen
 
 enum class skytype_t
 {
@@ -90,8 +102,7 @@ struct skytex_t
 	fixed_t scaley;
 	fixed_t currx;
 	fixed_t curry;
-	int32_t texnum;
-	OLumpName texture;
+	ResourceId res_id;
 
 	// for interpolation
 	fixed_t prevx;
@@ -120,8 +131,28 @@ struct sky_t
 	bool usedefaultmid;
 };
 
-OHashTable<OLumpName, sky_t*> skylookup;
-OHashTable<int32_t, sky_t*> skyflatlookup;
+OHashTable<ResourceId, sky_t*> skylookup;
+OHashTable<ResourceId, sky_t*> skyflatlookup;
+
+//
+// R_ResourceIdIsSkyFlat
+//
+// Returns true if the given ResourceId represents the sky.
+//
+bool R_ResourceIdIsSkyFlat(const ResourceId res_id)
+{
+	if (res_id == sky_flat_resource_id)
+		return true;
+	return skyflatlookup.find(res_id) != skyflatlookup.end();
+}
+
+//
+// cache the Texture for a skytex_t, honoring texture animation
+//
+static const Texture* R_SkyTexTexture(const skytex_t* skytex)
+{
+	return Res_CacheTexture(Res_GetAnimatedTextureResourceId(skytex->res_id));
+}
 
 /**
  * @brief Used by OInterpolation::beginGameInterpolation
@@ -275,34 +306,34 @@ static void R_InitXToViewAngle()
 //
 // [ML] 5/11/06 - Remove sky2 stuffs
 // [ML] 3/16/10 - Bring it back!
-
-void R_GenerateLookup(int texnum, int *const errors); // from r_data.cpp
-
+//
 void R_InitSkyMap()
 {
-	if (textureheight == NULL)
-		return;
-
 	// [SL] 2011-11-30 - Don't run if we don't know what sky texture to use
 	if (gamestate != GS_LEVEL)
 		return;
 
-	sky_t* defaultsky = skyflatlookup[skyflatnum];
+	// Prefer the SKYDEFS sky attached to the default sky flat, if one exists.
+	const Texture* defaultskytex = sky1texture;
+	auto it = skyflatlookup.find(sky_flat_resource_id);
+	if (it != skyflatlookup.end() and it->second)
+		defaultskytex = R_SkyTexTexture(&it->second->background);
 
-	const fixed_t fskyheight = textureheight[defaultsky->background.texnum];
+	fixed_t fskyheight = defaultskytex ? defaultskytex->getScaledHeight() : 0;
 
 	if (fskyheight <= (128 << FRACBITS))
 	{
-		defaultskytexturemid = 200 / 2 * FRACUNIT;
+		skytexturemid = 200 / 2 * FRACUNIT;
 		skystretch = ((r_stretchsky != 0) && (consoleplayer().spectator || displayplayer().isFreecam)) ||
 		             (r_stretchsky == 1) ||
 		             (r_stretchsky == 2 && sv_freelook && (cl_mouselook || joy_freelook));
 	}
 	else
 	{
-		defaultskytexturemid = 199<<FRACBITS;
+		skytexturemid = 199 << FRACBITS;
 		skystretch = 0;
 	}
+
 	skyheight = fskyheight << skystretch;
 
 	if (viewwidth && viewheight)
@@ -318,17 +349,26 @@ void R_InitSkyMap()
 	// The Heretic sky map is 256*200*4 maps.
 	sky1shift = 22+skystretch-16;
 	sky2shift = 22+skystretch-16;
-	if (texturewidthmask[sky1texture] >= 127)
+	if (defaultskytex and defaultskytex->mWidthBits >= 7)
 		sky1shift -= skystretch;
-	if (texturewidthmask[sky2texture] >= 127)
+	if (sky2texture and sky2texture->mWidthBits >= 7)
 		sky2shift -= skystretch;
 
 	R_InitXToViewAngle();
 }
 
-sky_t* R_GetSky(const OLumpName& name, bool create)
+//
+// R_GetSky
+//
+// Finds or creates the sky definition for the given texture name.
+//
+static sky_t* R_GetSky(const OLumpName& name, bool create)
 {
-	auto found = skylookup.find(name);
+	const ResourceId tex_res_id = Res_GetTextureResourceId(OStringToUpper(name.c_str()), WALL);
+	if (not Res_CheckResource(tex_res_id))
+		return nullptr;
+
+	auto found = skylookup.find(tex_res_id);
 	if (found != skylookup.end())
 	{
 		return found->second;
@@ -339,48 +379,51 @@ sky_t* R_GetSky(const OLumpName& name, bool create)
 		return nullptr;
 	}
 
-	int32_t tex = R_TextureNumForName(name);
-	if (tex < 0) return nullptr;
-
-	OLumpName skytexname;
 	sky_t* sky = Z_Malloc<sky_t>(PU_STATIC);
+	*sky = {};
 	sky->background.scalex = INT2FIXED(1);
 	sky->background.scaley = INT2FIXED(1);
 	sky->background.scrolly = INT2FIXED(0);
 	if (level.flags & LEVEL_DOUBLESKY)
 	{
-		sky->background.texnum = R_TextureNumForName(level.skypic2);
-		sky->background.texture = level.skypic2;
+		sky->background.res_id = Res_GetTextureResourceId(OStringToUpper(level.skypic2.c_str()), WALL);
 		sky->background.scrollx = level.sky2ScrollDelta & 0xffffff;
 		sky->foreground.scrollx = level.sky1ScrollDelta & 0xffffff;
-		sky->foreground.texnum = tex;
-		sky->foreground.texture = name;
+		sky->foreground.res_id = tex_res_id;
 		sky->foreground.scalex = INT2FIXED(1);
 		sky->foreground.scaley = INT2FIXED(1);
 		sky->foreground.scrolly = INT2FIXED(0);
 		sky->type = skytype_t::DOUBLESKY;
-		skytexname = level.skypic2;
 	}
 	else
 	{
-		sky->background.texnum = tex;
-		sky->background.texture = name;
+		sky->background.res_id = tex_res_id;
 		sky->background.scrollx = level.sky1ScrollDelta & 0xffffff;
 		sky->type = skytype_t::NORMAL;
-		skytexname = name;
 	}
 	sky->usedefaultmid = true;
 
-	skylookup[skytexname] = sky;
+	skylookup[sky->background.res_id] = sky;
 	return sky;
+}
+
+//
+// R_SkyFlatResourceId
+//
+// Returns the ResourceId of the default sky flat (F_SKY1, or F_SKY for
+// Hexen-format maps).
+//
+static ResourceId R_SkyFlatResourceId()
+{
+	if (HexenHack)
+		return Res_GetTextureResourceId("F_SKY", FLOOR);
+	return Res_GetTextureResourceId(SKYFLATNAME.c_str(), FLOOR);
 }
 
 // [EB] adapted from Rum and Raisin r_sky.cpp
 void R_InitSkyDefs()
 {
-	skyflatnum = R_FlatNumForName(SKYFLATNAME);
-
-	skyflatlookup[skyflatnum] = nullptr;
+	sky_flat_resource_id = R_SkyFlatResourceId();
 
 	auto ParseSkydef = [](const Json::Value& elem, const JSONLumpVersion& version) -> jsonlumpresult_t
 	{
@@ -408,8 +451,8 @@ void R_InitSkyDefs()
 			if (skytype < skytype_t::NORMAL || skytype > skytype_t::DOUBLESKY) return jsonlumpresult_t::PARSEERROR;
 
 			OLumpName skytexname = skytex.asString();
-			int32_t tex = R_TextureNumForName(skytexname);
-			if (tex < 0) return jsonlumpresult_t::PARSEERROR;
+			const ResourceId tex_res_id = Res_GetTextureResourceId(OStringToUpper(skytexname.c_str()), WALL);
+			if (not Res_CheckResource(tex_res_id)) return jsonlumpresult_t::PARSEERROR;
 
 			if (!mid.isNumeric()
 			   || !scrollx.isNumeric()
@@ -421,14 +464,14 @@ void R_InitSkyDefs()
 			}
 
 			sky_t* sky = Z_Malloc<sky_t>(PU_STATIC);
+			*sky = {};
 
 			sky->type = skytype;
 			sky->usedefaultmid = false;
 
 			static constexpr float_t ticratescale = 1.0 / TICRATE;
 
-			sky->background.texnum  = tex;
-			sky->background.texture = skytexname;
+			sky->background.res_id  = tex_res_id;
 			sky->background.mid     = FLOAT2FIXED(mid.asFloat());
 			sky->background.scrollx = FLOAT2FIXED(scrollx.asFloat() * ticratescale);
 			sky->background.scrolly = FLOAT2FIXED(scrolly.asFloat() * ticratescale);
@@ -463,8 +506,8 @@ void R_InitSkyDefs()
 				const Json::Value& forescaley  = foreelem["scaley"];
 
 				OLumpName foreskytexname = foreskytex.asString();
-				int32_t foretex = R_TextureNumForName(foreskytexname);
-				if (foretex < 0) return jsonlumpresult_t::PARSEERROR;
+				const ResourceId foretex_res_id = Res_GetTextureResourceId(OStringToUpper(foreskytexname.c_str()), WALL);
+				if (not Res_CheckResource(foretex_res_id)) return jsonlumpresult_t::PARSEERROR;
 
 				if (!foremid.isNumeric()
 				   || !forescrollx.isNumeric()
@@ -475,8 +518,7 @@ void R_InitSkyDefs()
 					return jsonlumpresult_t::PARSEERROR;
 				}
 
-				sky->foreground.texnum  = foretex;
-				sky->foreground.texture = foreskytexname;
+				sky->foreground.res_id  = foretex_res_id;
 				sky->foreground.mid     = FLOAT2FIXED(foremid.asFloat());
 				sky->foreground.scrollx = FLOAT2FIXED(forescrollx.asFloat() * ticratescale);
 				sky->foreground.scrolly = FLOAT2FIXED(forescrolly.asFloat() * ticratescale);
@@ -488,7 +530,7 @@ void R_InitSkyDefs()
 				if (!fireelem.isNull() || !foreelem.isNull()) return jsonlumpresult_t::PARSEERROR;
 			}
 
-			skylookup[skytexname] = sky;
+			skylookup[tex_res_id] = sky;
 		}
 
 		for (const Json::Value& flatentry : flatmappings)
@@ -497,13 +539,13 @@ void R_InitSkyDefs()
 			const Json::Value& skyelem = flatentry["sky"];
 
 			OLumpName flatname = flatelem.asString();
-			int32_t flatnum = R_FlatNumForName(flatname);
-			if (flatnum < 0 || flatnum >= ::numflats) return jsonlumpresult_t::PARSEERROR;
+			const ResourceId flat_res_id = Res_GetTextureResourceId(OStringToUpper(flatname.c_str()), FLOOR);
+			if (not Res_CheckResource(flat_res_id)) return jsonlumpresult_t::PARSEERROR;
 
 			OLumpName skyname = skyelem.asString();
 			sky_t* sky = R_GetSky(skyname, true);
 
-			skyflatlookup[flatnum] = sky;
+			skyflatlookup[flat_res_id] = sky;
 		}
 
 		return jsonlumpresult_t::SUCCESS;
@@ -520,7 +562,7 @@ void R_ClearSkyDefs()
 	skyflatlookup.clear();
 }
 
-void spreadFire(int src, byte* firepixels, int width)
+static void spreadFire(int src, byte* firepixels, int width)
 {
 	const byte pixel = firepixels[src];
 	const int copyloc0 = src - width;
@@ -538,39 +580,44 @@ void spreadFire(int src, byte* firepixels, int width)
 static void R_UpdateFireSky(sky_t* sky, bool init = false)
 {
 	if (gametic % sky->fireticrate != 0 && !init) return;
-	const int texnum = sky->background.texnum;
-	texture_t* tex = textures[texnum];
-	for (int x = 0 ; x < tex->width; x++)
+	const Texture* tex = R_SkyTexTexture(&sky->background);
+	if (not tex) return;
+	const int width = tex->mWidth;
+	const int height = tex->mHeight;
+	for (int x = 0 ; x < width; x++)
 	{
-		for (int y = 1; y < tex->height; y++)
+		for (int y = 1; y < height; y++)
 		{
-			spreadFire(y * tex->width + x, sky->firetexturedata, tex->width);
+			spreadFire((y * width) + x, sky->firetexturedata, width);
 		}
 	}
-	byte* coldata;
-	for (int x = 0; x < tex->width; x++)
+	for (int x = 0; x < width; x++)
 	{
-		coldata = R_GetTextureColumnData(texnum, x);
-		for (int y = 0; y < tex->height; y++)
+		// Texture stores its columns contiguously, so writing per-column
+		// works the same way the old column-data accessor did.
+		palindex_t* coldata = const_cast<palindex_t*>(tex->getColumn(x));
+		for (int y = 0; y < height; y++)
 		{
-			coldata[y] = sky->firepalette[sky->firetexturedata[y * tex->width + x]];
+			coldata[y] = sky->firepalette[sky->firetexturedata[(y * width) + x]];
 		}
 	}
 }
 
-void R_InitFireSky(sky_t* sky)
+static void R_InitFireSky(sky_t* sky)
 {
-	int texnum = sky->background.texnum;
-	const texture_t* tex = textures[texnum];
-	sky->firetexturedata = Z_Malloc<byte>(tex->width * tex->height, PU_LEVEL);
-    for (int i = 0 ; i < tex->width*tex->height; i++)
+	const Texture* tex = R_SkyTexTexture(&sky->background);
+	if (not tex) return;
+	const int width = tex->mWidth;
+	const int height = tex->mHeight;
+	sky->firetexturedata = Z_Malloc<byte>(width * height, PU_LEVEL);
+	for (int i = 0 ; i < width*height; i++)
 	{
 		sky->firetexturedata[i] = 0;
-    }
-	for (int i = 0 ; i < tex->width; i++)
+	}
+	for (int i = 0 ; i < width; i++)
 	{
-		sky->firetexturedata[(tex->height - 1) * tex->width + i] = sky->numfireentries - 1;
-    }
+		sky->firetexturedata[((height - 1) * width) + i] = sky->numfireentries - 1;
+	}
 	for (int i = 0; i < 64; i++) {
 		R_UpdateFireSky(sky, true);
 	}
@@ -602,7 +649,7 @@ void R_UpdateSkies()
 	}
 }
 
-void R_ActivateSky(sky_t* sky)
+static void R_ActivateSky(sky_t* sky)
 {
 	if (sky->type == skytype_t::FIRE)
 	{
@@ -610,7 +657,7 @@ void R_ActivateSky(sky_t* sky)
 	}
 	if (sky->type == skytype_t::DOUBLESKY)
 	{
-		auto skypair = skylookup.find(sky->foreground.texture);
+		auto skypair = skylookup.find(sky->foreground.res_id);
 		if (skypair != skylookup.end())
 		{
 			R_ActivateSky(skypair->second);
@@ -619,23 +666,28 @@ void R_ActivateSky(sky_t* sky)
 	sky->active = true;
 }
 
-void R_ActivateSkies(const byte* hitlist, std::vector<int>& skytextures)
+//
+// R_ActivateSkies
+//
+// Activates (and initializes, e.g. fire skies) every sky whose mapped flat
+// is actually used by a sector in the current level.
+//
+void R_ActivateSkies()
 {
-	for (auto& [flat, sky] : skyflatlookup)
+	for (auto& [flat_res_id, sky] : skyflatlookup)
 	{
-		if (hitlist[flat])
-			R_ActivateSky(sky);
+		if (not sky)
+			continue;
 
-		skytextures.push_back(sky->background.texnum);
-		if (sky->type == skytype_t::DOUBLESKY)
+		bool used = false;
+		for (int i = 0; i < numsectors and not used; i++)
 		{
-			skytextures.push_back(sky->foreground.texnum);
-			auto foreskypair = skylookup.find(sky->foreground.texture);
-			if (foreskypair != skylookup.end())
-			{
-				R_ActivateSky(foreskypair->second);
-			}
+			used = sectors[i].floor_res_id == flat_res_id or
+			       sectors[i].ceiling_res_id == flat_res_id;
 		}
+
+		if (used)
+			R_ActivateSky(sky);
 	}
 }
 
@@ -662,6 +714,9 @@ void R_InitSkiesForLevel()
 void R_SetDefaultSky(const OLumpName& sky)
 {
 	sky_t* skydef = R_GetSky(sky, true);
+	if (not skydef)
+		return;
+
 	// make sure that if mapinfo sets a scroll speed we use that
 	// to not mess up wads without skydefs that reuse textures with different scroll speeds
 	// setting a scroll speed in mapinfo and in a skydef is undefined behavior
@@ -683,35 +738,68 @@ void R_SetDefaultSky(const OLumpName& sky)
 			skydef->background.scrollx = level.sky1ScrollDelta;
 		}
 	}
-	skyflatlookup[R_FlatNumForName(SKYFLATNAME)] = skydef;
+
+	sky_flat_resource_id = R_SkyFlatResourceId();
+	skyflatlookup[sky_flat_resource_id] = skydef;
 }
+
+
+//
+// R_SetSkyTextures
+//
+// Loads the default sky textures and re-initializes the sky map lookup tables.
+//
+void R_SetSkyTextures(const char* sky1_name, const char* sky2_name)
+{
+	sky1texture = Res_CacheTexture(OStringToUpper(sky1_name), WALL);
+	sky2texture = Res_CacheTexture(OStringToUpper(sky2_name), WALL);
+
+	if (not sky1texture)
+	{
+		PrintFmt(PRINT_WARNING, "Unnamed sky1 texture not found\n");
+		sky1texture = Res_CacheTexture("-MISSING-", WALL);
+	}
+
+	if (sky2texture and sky1texture->mHeight != sky2texture->mHeight)
+	{
+		PrintFmt(PRINT_HIGH,"Both sky textures must be the same height.\n");
+		sky2texture = sky1texture;
+	}
+
+	sky1columnoffset = 0;
+	sky2columnoffset = 0;
+	sky1scrolldelta = level.sky1ScrollDelta;
+	sky2scrolldelta = sky2texture ? level.sky2ScrollDelta : 0;
+
+	sky_flat_resource_id = R_SkyFlatResourceId();
+
+	R_InitSkyMap();
+}
+
 
 //
 // R_BlastSkyColumn
 //
-static inline void R_BlastSkyColumn(void (*drawfunc)())
+static inline void R_BlastSkyColumn(rendercontext_t& ctx, void (*drawfunc)(rendercontext_t&))
 {
+	drawcolumn_t& dcol = ctx.draw.dcol;
+
 	if (dcol.yl <= dcol.yh)
 	{
-		dcol.source = dcol.post->data();
-		dcol.texturefrac = dcol.texturemid + (dcol.yl - centery + 1) * dcol.iscale;
-		drawfunc();
+		dcol.texturefrac = dcol.texturemid +
+		                   FixedMul(((dcol.yl + 1) << FRACBITS) - centeryfrac, dcol.iscale);
+		drawfunc(ctx);
 	}
 }
 
-inline void SkyColumnBlaster()
+inline void SkyColumnBlaster(rendercontext_t& ctx)
 {
-	R_BlastSkyColumn(colfunc);
+	R_BlastSkyColumn(ctx, ctx.draw.colfunc);
 }
 
-inline bool R_PostDataIsTransparent(const byte* data)
+inline void SkyForegroundColumnBlaster(rendercontext_t& ctx)
 {
-	return *data == '\0';
-}
-
-bool R_IsSkyFlat(int flatnum)
-{
-	return flatnum == skyflatnum || skyflatlookup.contains(flatnum);
+	R_BlastSkyColumn(ctx, R_DrawSkyForegroundColumn);
 }
 
 void R_SetSkyScrollSpeed(int skynum, fixed_t speed)
@@ -719,7 +807,10 @@ void R_SetSkyScrollSpeed(int skynum, fixed_t speed)
 	if (skynum != 1 && skynum != 2)
 		return;
 
-	auto sky = skyflatlookup[R_FlatNumForName(SKYFLATNAME)];
+	sky_t* sky = skyflatlookup[Res_GetTextureResourceId(SKYFLATNAME.c_str(), FLOOR)];
+	if (not sky)
+		return;
+
 	if (level.flags & LEVEL_DOUBLESKY)
 	{
 		if (skynum == 1)
@@ -732,7 +823,7 @@ void R_SetSkyScrollSpeed(int skynum, fixed_t speed)
 		if (skynum == 1)
 			sky->background.scrollx = speed;
 		else if (skynum == 2)
-			sky2scrollxdelta = speed;
+			sky2scrolldelta = speed;
 	}
 }
 
@@ -744,38 +835,75 @@ void R_SetSkyScrollSpeed(int skynum, fixed_t speed)
 // color.
 // [ML] 5/11/06 - Removed sky2
 // [BC] 7/5/24 - Brought back for real this time
+// [EB] SKYDEFS support: scrolling, scaling, fire and double skies
 //
-void R_RenderSkyRange(visplane_t* pl)
+void R_RenderSkyRange(rendercontext_t& ctx, visplane_t* pl)
 {
 	if (pl->minx > pl->maxx)
 		return;
 
-	static constexpr int columnmethod = 2;
-	int frontskytex, backskytex;
+	const Texture* frontskytex = nullptr;
+	const Texture* backskytex = nullptr;
+
 	fixed_t front_offset = 0;
 	fixed_t back_offset = 0;
 	fixed_t frontrow_offset = 0;
 	fixed_t backrow_offset = 0;
 	angle_t skyflip = 0;
-	const angle_t* xtoskyangle = r_linearsky.asBool() ? linearskyangle : xtoviewangle;
+	const angle_t* xtoskyangle = r_linearsky ? linearskyangle : xtoviewangle;
 
-	auto skyflat = skyflatlookup.find(pl->picnum);
+	fixed_t sky1scalex = FRACUNIT;
+	fixed_t sky2scalex = FRACUNIT;
+	fixed_t sky1scaley = FRACUNIT;
+	fixed_t sky2scaley = FRACUNIT;
+	fixed_t sky1mid = skytexturemid;
+	fixed_t sky2mid = skytexturemid;
 
-	fixed_t sky1scalex = INT2FIXED(1);
-	fixed_t sky2scalex = INT2FIXED(1);
-	fixed_t sky1scaley = INT2FIXED(1);
-	fixed_t sky2scaley = INT2FIXED(1);
-	fixed_t sky1mid = defaultskytexturemid;
-	fixed_t sky2mid = defaultskytexturemid;
+	auto skyflat = skyflatlookup.find(pl->res_id);
 
-	if (skyflat != skyflatlookup.end())
+	if (pl->sky_transfer == PL_SKYFLAT)
+	{
+		// use sky2
+		frontskytex = sky2texture ? sky2texture : sky1texture;
+		front_offset = sky2columnoffset;
+	}
+	else if (pl->sky_transfer & PL_SKYFLAT)
+	{
+		// MBF's linedef-controlled skies
+		uint32_t linenum = (pl->sky_transfer & ~PL_SKYFLAT) - 1;
+		if (linenum >= numlines)
+			linenum = 0;
+		const line_t* line = &lines[linenum];
+
+		// Sky transferred from first sidedef
+		const side_t* side = *line->sidenum + sides;
+
+		// Texture comes from upper texture of reference sidedef
+		frontskytex = Res_CacheTexture(Res_GetAnimatedTextureResourceId(side->toptexture));
+
+		// Horizontal offset is turned into an angle offset,
+		// to allow sky rotation as well as careful positioning.
+		// However, the offset is scaled very small, so that it
+		// allows a long-period of sky rotation.
+		front_offset = (-side->textureoffset) >> 6;
+
+		// Vertical offset allows careful sky positioning.
+		sky1mid = side->rowoffset - (28*FRACUNIT);
+
+		// We sometimes flip the picture horizontally.
+		//
+		// Doom always flipped the picture, so we make it optional,
+		// to make it easier to use the new feature, while to still
+		// allow old sky textures to be used.
+		skyflip = line->args[2] ? 0u : ~0u;
+	}
+	else if (skyflat != skyflatlookup.end() and skyflat->second)
 	{
 		const sky_t* sky = skyflat->second;
-		// use sky1
-		if (skyflat->second->type == skytype_t::DOUBLESKY)
+		if (sky->type == skytype_t::DOUBLESKY)
 		{
-			frontskytex = texturetranslation[sky->foreground.texnum];
-			backskytex = texturetranslation[sky->background.texnum];
+			frontskytex = R_SkyTexTexture(&sky->foreground);
+			backskytex = R_SkyTexTexture(&sky->background);
 			front_offset = sky->foreground.currx;
 			back_offset = sky->background.currx;
 			frontrow_offset = sky->foreground.curry;
@@ -792,8 +920,8 @@ void R_RenderSkyRange(visplane_t* pl)
 		}
 		else
 		{
-			frontskytex = texturetranslation[sky->background.texnum];
-			backskytex = -1;
+			frontskytex = R_SkyTexTexture(&sky->background);
+			backskytex = nullptr;
 			front_offset = sky->background.currx;
 			frontrow_offset = sky->background.curry;
 			sky1scalex = sky->background.scalex;
@@ -802,164 +930,87 @@ void R_RenderSkyRange(visplane_t* pl)
 				sky1mid = sky->background.mid;
 		}
 	}
-	else if (pl->picnum == int(PL_SKYFLAT))
-	{
-		// use sky2
-		frontskytex = texturetranslation[sky2texture];
-		backskytex = -1;
-		front_offset = sky2columnoffset;
-	}
 	else
 	{
-		// MBF's linedef-controlled skies
-		const int picnum = (pl->picnum & ~PL_SKYFLAT) - 1;
-		const line_t* line = &lines[picnum < numlines ? picnum : 0];
+		// default sky1 (no SKYDEFS mapping present)
+		frontskytex = sky1texture;
 
-		// Sky transferred from first sidedef
-		const side_t* side = *line->sidenum + sides;
+		if (level.flags & LEVEL_DOUBLESKY)
+			backskytex = sky2texture;
 
-		// Texture comes from upper texture of reference sidedef
-		frontskytex = texturetranslation[side->toptexture];
-		backskytex = -1;
-
-		// Horizontal offset is turned into an angle offset,
-		// to allow sky rotation as well as careful positioning.
-		// However, the offset is scaled very small, so that it
-		// allows a long-period of sky rotation.
-		front_offset = (-side->textureoffset) >> 6;
-
-		// Vertical offset allows careful sky positioning.
-		sky1mid = side->rowoffset - 28*FRACUNIT;
-
-		// We sometimes flip the picture horizontally.
-		//
-		// Doom always flipped the picture, so we make it optional,
-		// to make it easier to use the new feature, while to still
-		// allow old sky textures to be used.
-		skyflip = line->args[2] ? 0u : ~0u;
+		front_offset = sky1columnoffset;
+		back_offset = sky2columnoffset;
 	}
 
-	R_ResetDrawFuncs();
+	if (not frontskytex)
+		return;
+
+	R_ResetDrawFuncs(ctx);
 
 	const palette_t* pal = V_GetDefaultPalette();
 
 	// set up the appropriate colormap for the sky
 	if (fixedlightlev)
 	{
-		dcol.colormap = shaderef_t(&pal->maps, fixedlightlev);
+		ctx.draw.dcol.colormap = shaderef_t(&pal->maps, fixedlightlev);
 	}
 	else if (fixedcolormap.isValid() && r_skypalette)
 	{
-		dcol.colormap = fixedcolormap;
+		ctx.draw.dcol.colormap = fixedcolormap;
 	}
 	else
 	{
 		// [SL] 2011-06-28 - Emulate vanilla Doom's handling of skies
 		// when the player has the invulnerability powerup
-		dcol.colormap = shaderef_t(&pal->maps, 0);
+		ctx.draw.dcol.colormap = shaderef_t(&pal->maps, 0);
 	}
 
-	// determine which texture posts will be used for each screen
-	// column in this range.
+	ctx.plane.skyplane = pl;
+	ctx.draw.dcol.masked = false;
 
-	if (backskytex != -1)
+	// Background sky layer (only present when a foreground layer will be
+	// composited on top of it).
+	if (backskytex)
 	{
-		dcol.iscale = FixedMul(skyiscale, sky2scaley) >> skystretch;
-		dcol.texturemid = sky2mid + backrow_offset;
-		dcol.textureheight = textureheight[backskytex];
-		dcol.texturefrac = dcol.texturemid + (dcol.yl - centery) * dcol.iscale;
-		skyplane = pl;
+		ctx.draw.dcol.iscale = FixedMul(skyiscale, sky2scaley) >> skystretch;
+		ctx.draw.dcol.texturemid = sky2mid + backrow_offset;
+		ctx.draw.dcol.textureheight = backskytex->mHeight << FRACBITS;
+		ctx.draw.dcol.texturedata = backskytex->mData;
+		ctx.draw.dcol.argbtexturedata = backskytex->mARGBData;
 
 		for (int x = pl->minx; x <= pl->maxx; x++)
 		{
-			int sky2colnum = ((((viewangle + xtoskyangle[x]) ^ skyflip) >> sky2shift) + back_offset) >> FRACBITS;
-			sky2colnum = FIXED2INT(FixedMul(INT2FIXED(sky2colnum), sky2scalex));
-			tallpost_t* skypost = R_GetTextureColumn(backskytex, sky2colnum);
-			skyposts[x] = skypost;
+			int colnum = ((((viewangle + xtoskyangle[x]) ^ skyflip) >> sky2shift) + back_offset) >> FRACBITS;
+			colnum = FIXED2INT(FixedMul(INT2FIXED(colnum), sky2scalex));
+			colnum &= (1 << backskytex->mWidthBits) - 1;
+			skyposts[x] = backskytex->getColumn(colnum);
 		}
 
-		R_RenderColumnRange(pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom),
-				skyposts, SkyColumnBlaster, false, columnmethod);
+		R_RenderColumnRange(ctx, pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom),
+				skyposts, SkyColumnBlaster, false, 2);
 	}
 
-	dcol.iscale = FixedMul(skyiscale, sky1scaley) >> skystretch;
-	dcol.texturemid = sky1mid + frontrow_offset;
-	dcol.textureheight = textureheight[frontskytex];
-	dcol.texturefrac = dcol.texturemid + (dcol.yl - centery) * dcol.iscale;
+	// Foreground (or only) sky layer.
+	ctx.draw.dcol.iscale = FixedMul(skyiscale, sky1scaley) >> skystretch;
+	ctx.draw.dcol.texturemid = sky1mid + frontrow_offset;
+	ctx.draw.dcol.textureheight = frontskytex->mHeight << FRACBITS;
+	ctx.draw.dcol.texturedata = frontskytex->mData;
+	ctx.draw.dcol.argbtexturedata = frontskytex->mARGBData;
 
-	if (backskytex == -1)
+	for (int x = pl->minx; x <= pl->maxx; x++)
 	{
-		for (int x = pl->minx; x <= pl->maxx; x++)
-		{
-			int sky1colnum = ((((viewangle + xtoskyangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
-			sky1colnum = FIXED2INT(FixedMul(INT2FIXED(sky1colnum), sky1scalex));
-			tallpost_t* skypost = R_GetTextureColumn(frontskytex, sky1colnum);
-			skyposts[x] = skypost;
-		}
-
-		R_RenderColumnRange(pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom),
-			skyposts, SkyColumnBlaster, false, columnmethod);
-	}
-	else
-	{
-		for (int x = pl->minx; x <= pl->maxx; x++)
-		{
-			int sky1colnum = ((((viewangle + xtoskyangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
-			sky1colnum = FIXED2INT(FixedMul(INT2FIXED(sky1colnum), sky1scalex));
-			tallpost_t* skypost = R_GetTextureColumn(frontskytex, sky1colnum);
-
-			int count = std::min<int>(512, textureheight[frontskytex] >> FRACBITS);
-			int destpostlen = 0;
-
-			tallpost_t* destpost = reinterpret_cast<tallpost_t*>(transparentskybuffer[x]);
-
-			tallpost_t* orig = destpost;
-
-			destpost->topdelta = 0;
-
-			while (destpostlen < count)
-			{
-				int remaining = count - destpostlen; // pixels remaining to be replenished
-
-				if (skypost->topdelta == destpostlen)
-				{
-					// valid first sky, grab its data and advance the pixel
-					memcpy(destpost->data() + destpostlen, skypost->data(), skypost->length);
-					destpostlen += skypost->length;
-				}
-				else
-				{
-					// sky1 top delta is less than current pixel, lets get palette 0 up to the pixel
-					int cursky1delta = abs((skypost->end() ? remaining : skypost->topdelta) - destpostlen);
-					int translen = cursky1delta > remaining ? remaining : cursky1delta;
-					memset(destpost->data() + destpostlen, 0,
-					       translen);
-					destpostlen += translen;
-				}
-
-				if (!skypost->end() && !skypost->next()->end() && destpostlen >= skypost->topdelta + skypost->length)
-				{
-					skypost = skypost->next();
-				}
-
-				destpost->length = destpostlen;
-			}
-
-			// finish the post up.
-			destpost = destpost->next();
-			destpost->length = 0;
-			destpost->writeend();
-
-			skyposts[x] = orig;
-		}
-
-		R_SetSkyForegroundDrawFuncs();
-
-		R_RenderColumnRange(pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom),
-			skyposts, SkyColumnBlaster, false, columnmethod);
+		int colnum = ((((viewangle + xtoskyangle[x]) ^ skyflip) >> sky1shift) + front_offset) >> FRACBITS;
+		colnum = FIXED2INT(FixedMul(INT2FIXED(colnum), sky1scalex));
+		colnum &= (1 << frontskytex->mWidthBits) - 1;
+		skyposts[x] = frontskytex->getColumn(colnum);
 	}
 
-	R_ResetDrawFuncs();
+	// When compositing over a background layer, palette index 0 in the
+	// foreground texture is treated as transparent (ID24 convention).
+	R_RenderColumnRange(ctx, pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom), skyposts,
+			backskytex ? SkyForegroundColumnBlaster : SkyColumnBlaster, false, 2);
+
+	R_ResetDrawFuncs(ctx);
 }
 
 VERSION_CONTROL (r_sky_cpp, "$Id$")

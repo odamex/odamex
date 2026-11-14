@@ -39,6 +39,7 @@
 #include "d_main.h"
 
 #include "svc_message.h"
+#include "resources/res_filelib.h"
 
 EXTERN_CVAR(sv_gametype)
 

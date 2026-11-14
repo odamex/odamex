@@ -40,6 +40,7 @@
 #include "p_ctf.h"
 #include "p_horde.h"
 #include "p_spec.h"
+#include "c_cvars.h"
 #include "g_spree.h"
 
 /**

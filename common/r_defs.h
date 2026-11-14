@@ -36,6 +36,8 @@
 
 #include "dthinker.h"
 
+#include "resources/res_resourceid.h"
+
 // Silhouette, needed for clipping Segs (mainly)
 // and sprites representing things.
 #define SIL_NONE				0
@@ -94,6 +96,7 @@ struct vertex_t
 // Forward of LineDefs, for Sectors.
 struct line_t;
 struct sector_t;
+class Texture;
 
 //
 // The SECTORS record, at runtime.
@@ -185,8 +188,10 @@ struct sector_t
 	// with height instead obtained from P_FloorHeight/P_CeilingHeight
 	fixed_t 	floortexz = 0;
 	fixed_t 	ceilingtexz = 0;
-	short		floorpic = 0;
-	short		ceilingpic = 0;
+
+	ResourceId	floor_res_id;		// default-constructs to ResourceId::INVALID_ID
+	ResourceId	ceiling_res_id;
+
 	short		lightlevel = 0;
 	short		special = 0;
 	short		tag = 0;
@@ -291,8 +296,6 @@ struct sector_t
 	int SectorChanges = 0;
 };
 
-
-
 //
 // The SideDef.
 //
@@ -306,9 +309,9 @@ struct side_t
 
     // Texture indices.
     // We do not maintain names here.
-    short	toptexture;
-    short	bottomtexture;
-    short	midtexture;
+    ResourceId	toptexture;
+    ResourceId	bottomtexture;
+    ResourceId	midtexture;
 
     // Sector the SideDef is facing.
     sector_t*	sector;
@@ -580,30 +583,39 @@ struct tallpost_t
 
 struct drawseg_t
 {
-	const seg_t*	curline;
+	const seg_t*  curline;
 
-    int				x1;
-    int				x2;
+	// Pointers to lists for sprite clipping,
+	// all three adjusted so [x1] is first value.
+	const int*    sprtopclip;
+	const int*    sprbottomclip;
+	const palindex_t** midposts;
 
-    fixed_t			scale1;
-    fixed_t			scale2;
-    fixed_t			scalestep;
+	int       x1;
+	int       x2;
 
-	fixed_t			light, lightstep;
+	fixed_t   scale1;
+	fixed_t   scale2;
 
-    // 0=none, 1=bottom, 2=top, 3=both
-    int				silhouette;
+	// The scales R_DrawSprite decides by: scale1 and scale2, except that an
+	// end cut only by the slice boundary takes the wall's scale where it leaves
+	// the view (see R_StoreWallRange).
+	fixed_t   sortscale1;
+	fixed_t   sortscale2;
 
-    // Pointers to lists for sprite clipping,
-    //  all adjusted so [x1] is first value.
-    int*			sprtopclip;
-    int*			sprbottomclip;
-	tallpost_t**	midposts;
+	// 0=none, 1=bottom, 2=top, 3=both
+	int       silhouette;
+
+	// only R_RenderMaskedSegRange reads past this point
+
+	fixed_t   scalestep;
+
+	fixed_t   light, lightstep;
 
 	// per-column scales for the masked midtexture, in texture y-scale
 	// space; saved from wallscalex so the masked pass draws with the same
 	// scales R_PrepWall gave the wall tiers
-	fixed_t*		midscales;
+	fixed_t*  midscales;
 };
 
 
@@ -686,7 +698,8 @@ struct vissprite_t
 
 	fixed_t			depth;
 	fixed_t			texturemid;
-	int				patch;
+	ResourceId		res_id;
+	const Texture*	texture;
 
     // for color translation and shadow draw,
     //  maxbright frames as well
@@ -727,8 +740,8 @@ struct spriteframe_t
     //  we might as well insert the same name eight times.
 	bool	rotate;
 
-    // Lump to use for view angles 0-15.
-    int		lump[16];
+    // Resource to use for view angles 0-15.
+	ResourceId resource[16];
 
     // Flip bit (1 = flip) to use for view angles 0-15.
     bool	flip[16];
@@ -761,7 +774,9 @@ struct visplane_t
 
 	plane_t		secplane;
 
-	int			picnum;
+	ResourceId	res_id;
+	uint32_t	sky_transfer;		// texture reference for Boom sky transfer
+
 	int			lightlevel;
 	fixed_t		xoffs, yoffs;		// killough 2/28/98: Support scrolling flats
 	int			minx;
@@ -771,8 +786,12 @@ struct visplane_t
 	fixed_t		xscale, yscale;		// [RH] Support flat scaling
 	angle_t		angle;				// [RH] Support flat rotation
 	AActor*		skybox;
+	bool		foggy;				// sector fades, so extralight is not applied
 
-	unsigned int *bottom;			// [RH] bottom and top arrays are dynamically
-	unsigned int pad;				//		allocated immediately after the
-	unsigned int top[3];			//		visplane.
+	// Per-column spans, allocated apart from the header. Holding them inline
+	// put a screen's worth of them between one header and the next, so every
+	// walk of a hash chain or the free list paid a TLB miss per step.
+	// top[-1] is addressable: R_DrawSingleFlatPlane writes it when minx is 0.
+	unsigned int* top;
+	unsigned int* bottom;
 };

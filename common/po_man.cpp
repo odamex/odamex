@@ -25,11 +25,12 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include "p_local.h"
 #include "r_local.h"
 #include "i_system.h"
 #include "z_zone.h"
-#include "w_wad.h"
 #include "m_bbox.h"
 #include "tables.h"
 #include "s_sndseq.h"

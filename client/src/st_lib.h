@@ -31,6 +31,8 @@
 extern IWindowSurface* stbar_surface;
 extern IWindowSurface* stnum_surface;
 
+class Texture;
+
 //
 // Typedefs of widgets
 //
@@ -42,7 +44,7 @@ class StatusBarWidget_Base
 	int m_y;
 
 	void clearRect(int x, int y, int w, int h);
-	void drawPatch(int x, int y, const patch_t* p);
+	void drawPatch(int x, int y, const Texture* t);
 
   public:
 	[[nodiscard]] int getX() const { return m_x; }
@@ -55,7 +57,7 @@ class StatusBarWidgetNumber : StatusBarWidget_Base
 {
   protected:
 
-	void drawPatch(int x, int y, const patch_t* p)
+	void drawPatch(int x, int y, const Texture* p)
 	{
 		StatusBarWidget_Base::drawPatch(x, y, p);
 	}
@@ -75,10 +77,10 @@ class StatusBarWidgetNumber : StatusBarWidget_Base
 	int* num;
 
 	// list of patches for 0-9
-	lumpHandle_t* p;
+	const Texture** p;
 
 	// Number widget routines
-	void init(int x, int y, lumpHandle_t* pl, int* num, int maxdigits);
+	void init(int x, int y, const Texture** pl, int* num, int maxdigits);
 
 	void update(bool refresh, bool cleararea = true);
 };
@@ -88,11 +90,11 @@ class StatusBarWidgetNumber : StatusBarWidget_Base
 class StatusBarWidgetPercent : StatusBarWidgetNumber
 {
 	// percent sign graphic
-	lumpHandle_t m_percentLump;
+	const Texture* m_percentTex;
 
   public:
 	// Percent widget routines
-	void init(int x, int y, lumpHandle_t* pl, int* num, lumpHandle_t percent);
+	void init(int x, int y, const Texture** pl, int* num, const Texture* percent);
 
 	void update(bool refresh);
 };
@@ -112,10 +114,10 @@ class StatusBarWidgetMultiIcon : StatusBarWidget_Base
 	int* inum;
 
 	// list of icons
-	lumpHandle_t* p;
+	const Texture**		p;
 
 	// Multiple Icon widget routines
-	void init(int x, int y, lumpHandle_t* il, int* inum);
+	void init(int x, int y, const Texture** il, int* inum);
 
 	void update(bool refresh);
 };
