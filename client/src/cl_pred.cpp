@@ -255,7 +255,8 @@ void CL_PredictAllSectors(const player_t& player)
 void CL_PredictSpying()
 {
 	player_t& player = displayplayer();
-	if (consoleplayer_id == displayplayer_id or freecamIsActive())
+
+	if (not cmdstate.IsSpying())
 		return;
 
 	// Save and restore the prevangle and prevpitch so that the client viewangle interpolation
@@ -287,9 +288,9 @@ void CL_PredictRemotePlayers()
 	for (auto& player : players)
 	{
 		if (player.ingame() 
-			&& player.mo 
-			&& player.id != consoleplayer_id   // handled in CL_PredictWorld
-			&& player.id != displayplayer_id)  // handled in CL_PredictSpying
+			and player.mo 
+			and player.id != cmdstate.GetConsolePlayerId()   // handled in CL_PredictWorld
+			and player.id != cmdstate.GetDisplayPlayerId())  // handled in CL_PredictSpying
 		{
 			P_BumpPlayerCounters(player);
 		}
@@ -302,9 +303,9 @@ void CL_PredictRemotePlayers()
 //
 void CL_PredictFreecam()
 {
-	freecam_t* freecam = freecam_t::getfreecam(freecam_id);
+	freecam_t* freecam = freecam_t::getfreecam(cmdstate.GetFreecamId());
 
-	if (not freecam or not freecamIsActive())
+	if (not freecam or not cmdstate.IsFreecam())
 		return;
 
 	if (freecam->mo)
@@ -452,7 +453,7 @@ bool CL_PredictWorld()
 	if (gamestate != GS_LEVEL)
 		return false;
 
-	if (netdemo.isPaused() and freecamIsActive())
+	if (netdemo.isPaused() and cmdstate.IsFreecam())
 	{
 		CL_PredictFreecam();
 		return false;
@@ -466,10 +467,10 @@ bool CL_PredictWorld()
 	// tenatively tell the netgraph that our prediction was successful
 	netgraph.setMisprediction(false);
 
-	if (freecamIsActive())
+	if (cmdstate.IsFreecam())
 		CL_PredictFreecam();
 
-	if (not freecamIsActive() and consoleplayer_id != displayplayer_id)
+	if (cmdstate.IsSpying())
 		CL_PredictSpying();
 
 	CL_PredictRemotePlayers();

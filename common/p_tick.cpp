@@ -52,9 +52,9 @@ void P_AnimationTick(AActor *mo);
 void P_Ticker (bool runAllThinkers)
 {
 #ifdef CLIENT_APP
-	if (paused and freecamIsActive())
+	if (paused and cmdstate.IsFreecam())
 	{
-		freecam_t::getfreecam(freecam_id)->mo->RunThink();
+		freecam_t::getfreecam(cmdstate.GetFreecamId())->mo->RunThink();
 	}
 
 	// Game pauses when in the menu and not online/demo

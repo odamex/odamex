@@ -518,7 +518,7 @@ std::string SpyPlayerName()
 {
 	const player_t& plyr = displayplayer();
 
-	if (plyr.id == consoleplayer_id or freecamIsActive())
+	if (plyr.id == cmdstate.GetConsolePlayerId() or cmdstate.IsFreecam())
 	{
 		return "";
 	}
@@ -1955,14 +1955,14 @@ void EATargets(int x, int y, const float scale,
 			continue;
 
 		// We don't care about the player whose eyes we are looking through.
-		if (player.id == displayplayer_id)
+		if (player.id == cmdstate.GetDisplayPlayerId())
 			continue;
 
 		if (not P_ActorInFOV(displaymobj, player.mo, fov, distance))
 			continue;
 
 		// The server doesn't want us to see enemy target names.
-		if (playerIsDisplayed()
+		if (cmdstate.IsPlayer()
 			and not netdemoplaying
 			and not ::sv_allowtargetnames
 			and not consoleplayer().spectator
@@ -2016,7 +2016,7 @@ void EATargets(int x, int y, const float scale,
 			break;
 		}
 
-		if (target.PlayPtr == &(consoleplayer()) and not freecamIsActive())
+		if (target.PlayPtr == &(consoleplayer()) and not cmdstate.IsFreecam())
 		{
 			// You're looking at yourself.
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin, "You",

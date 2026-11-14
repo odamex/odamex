@@ -134,8 +134,8 @@ void ClientReplay::removeReplayItem(const std::pair<int, uint32_t> replayItem)
 //
 void ClientReplay::itemReplay()
 {
-	if (itemReplayStack.empty() || !consoleplayer().mo || !enabled() ||
-	    consoleplayer_id != displayplayer_id || consoleplayer().spectator)
+	if (itemReplayStack.empty() or not consoleplayer().mo or not enabled() or
+	    cmdstate.IsSpying() or consoleplayer().spectator)
 		return;
 
 	player_t& player = consoleplayer();

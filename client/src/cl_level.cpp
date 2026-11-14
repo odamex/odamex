@@ -187,7 +187,9 @@ void G_DoNewGame (void)
 	players.clear();
 	players.emplace_back();
 	players.front().doreborn = true;
-	consoleplayer_id = displayplayer_id = players.back().id = 1;
+	players.back().id = 1;
+	cmdstate.SetConsolePlayerId(1);
+	cmdstate.SetDisplayPlayerId(1);
 
 	G_InitNew(d_mapname);
 	gameaction = ga_nothing;
@@ -391,7 +393,7 @@ void G_DoCompleted (void)
 			wminfo.winner = consoleplayer().userinfo.team == win.id;
 			break;
 		case WinInfo::WIN_PLAYER:
-			wminfo.winner = consoleplayer_id == win.id;
+		    wminfo.winner = cmdstate.GetConsolePlayerId() == win.id;
 			break;
 		default:
 			wminfo.winner = false;
@@ -683,11 +685,11 @@ void G_DoLoadLevel (int position)
 		}
 	}
 
-	if (not freecamIsActive())
+	if (not cmdstate.IsFreecam())
 	{
 		// view the guy you are playing..
 		// unless level load is from a netdemo snapshot and display is freecam
-		displayplayer_id = consoleplayer_id;
+		cmdstate.ResetDisplayPlayer();
 	}
 
 	ST_Start();		// [RH] Make sure status bar knows who we are

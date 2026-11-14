@@ -1125,7 +1125,7 @@ void OdamexHUD() {
 
 	iy = hud::DrawRespawnText(iy);
 
-	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
+	if (::hud_speedometer and cmdstate.IsSpyingSelf())
 	{
 		if (::hud_bigfont)
 			V_SetFont("BIGFONT");
@@ -1800,7 +1800,7 @@ void LevelStateHUD()
 	switch (::levelstate.getState())
 	{
 	case LevelState::WARMUP: {
-		if (consoleplayer().spectator or freecamIsActive())
+		if (consoleplayer().spectator or cmdstate.IsFreecam())
 		{
 			break;
 		}
@@ -2054,7 +2054,7 @@ void DoomHUD()
 
 	st_y = hud::DrawRespawnText(st_y);
 
-	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
+	if (::hud_speedometer and cmdstate.IsSpyingSelf())
 	{
 		std::string buf;
 		buf = fmt::sprintf("%d" TEXTCOLOR_DARKGREY "ups",
@@ -2069,7 +2069,7 @@ void DoomHUD()
 	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_UNTRANSLATED);
 
 	// when using automap
-	if (freecamIsActive())
+	if (cmdstate.IsFreecam())
 	{
 		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, "Freecam", CR_WHITE);

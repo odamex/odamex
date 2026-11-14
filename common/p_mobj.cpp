@@ -1149,7 +1149,7 @@ void AActor::RunThink ()
 	// MUSINFO
 	if (type == MT_MUSICSOURCE && clientside)
 	{
-		if (playerIsDisplayed()
+		if (cmdstate.IsPlayer()
 			and musinfo.mapthing != this
 			and displayplayer().mo
 			and displayplayer().mo->subsector
@@ -1218,7 +1218,7 @@ void AActor::RunThink ()
 	}
 
 #ifdef CLIENT_APP
-	if (player && ::consoleplayer_id == player->id)
+	if (player and cmdstate.GetConsolePlayerId() == player->id)
 	{
 		v3double_t start, end;
 		M_ActorPositionToVec3(&start, this);
@@ -2496,7 +2496,7 @@ void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 	mo->player->deltaviewheight = mo->momz>>3;
 
 	// The server sends the sound to us for other players
-	if (mo->player->id != consoleplayer_id && !serverside)
+	if (mo->player->id != cmdstate.GetConsolePlayerId() and not serverside)
 		return;
 
 	if (co_zdoomphys)

@@ -218,7 +218,7 @@ void D_ProcessEvents (void)
 void D_PostEvent(const event_t& ev)
 {
 	if (ev.type == ev_mouse and not menuactive and gamestate == GS_LEVEL and
-		(not paused or freecamIsActive()) and ConsoleState != c_down and ConsoleState != c_falling)
+		(not paused or cmdstate.IsFreecam()) and ConsoleState != c_down and ConsoleState != c_falling)
 	{
 		G_Responder(ev);
 		return;
@@ -1050,7 +1050,7 @@ void D_DoomMain()
 	EXTERN_CVAR(cl_colorpreset);
 	EXTERN_CVAR(cl_color);
 	R_BuildPlayerTranslation(menuplayer_id, V_GetColorFromString(cl_color), D_ColorPreset(cl_colorpreset.cstring()));
-	R_BuildPlayerTranslation(consoleplayer_id, V_GetColorFromString(cl_color), D_ColorPreset(cl_colorpreset.cstring()));
+	R_BuildPlayerTranslation(cmdstate.GetConsolePlayerId(), V_GetColorFromString(cl_color), D_ColorPreset(cl_colorpreset.cstring()));
 
 	I_FinishClockCalibration();
 
@@ -1158,7 +1158,9 @@ void D_DoomMain()
 		freecams.clear();
 		players.emplace_back();
 		players.back().playerstate = PST_REBORN;
-		consoleplayer_id = displayplayer_id = players.back().id = 1;
+		players.back().id = 1;
+		cmdstate.SetConsolePlayerId(1);
+		cmdstate.SetDisplayPlayerId(1);
 
 		G_InitNew(startmap);
 	}

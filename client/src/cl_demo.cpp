@@ -1608,8 +1608,8 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 
 void NetDemo::readSnapshotData(std::vector<byte>& buf)
 {
-	byte cid = consoleplayer_id;
-	byte did = displayplayer_id;
+	byte cid = cmdstate.GetConsolePlayerId();
+	byte did = cmdstate.GetDisplayPlayerId();
 
 	for (auto& freecam : freecams)
 	{
@@ -1742,7 +1742,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	G_SerializeSnapshots(arc);
 
 	G_InitNew(mapname);
-	consoleplayer_id = 1;
+	cmdstate.SetConsolePlayerId(1);
 	savegamerestore = false;
 
 	P_SerializeSprees(arc);
@@ -1756,14 +1756,14 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	if (check != 0x1d)
 		fatalError("Bad snapshot");
 
-	consoleplayer_id = cid;
+	cmdstate.SetConsolePlayerId(cid);
 
 	// try to restore display player
 	player_t *disp = &idplayer(did);
-	if (not freecamIsActive() and validplayer(*disp) and disp->ingame() and not disp->spectator)
-		displayplayer_id = did;
-	else if (not freecamIsActive())
-		displayplayer_id = cid;
+	if (not cmdstate.IsFreecam() and validplayer(*disp) and disp->ingame() and not disp->spectator)
+		cmdstate.SetDisplayPlayerId(did);
+	else if (not cmdstate.IsFreecam())
+		cmdstate.SetDisplayPlayerId(cid);
 
 	// Link the CTF flag actors to CTFdata[i].actor
 	TThinkerIterator<AActor> flagiterator;

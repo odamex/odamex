@@ -943,9 +943,9 @@ void P_SwitchSpyOnNoLives(const player_t& player)
 	{
 		// [AM] If the player runs out of lives in an LMS gamemode, having
 		//      them spectate another player after a beat is expected.
-		if (::g_lives && player.lives < 1 &&
-		    player.id == displayplayer_id &&
-		    level.time >= player.death_time + (TICRATE * 2) &&
+		if (::g_lives and player.lives < 1 and
+		    player.id == cmdstate.GetDisplayPlayerId() and
+		    level.time >= player.death_time + (TICRATE * 2) and
 		    ::levelstate.getState() == LevelState::INGAME)
 		{
 			// CL_SpyCycle is located in cl and templated, so we use this

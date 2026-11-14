@@ -235,7 +235,7 @@ void P_ProcessMultiKills(const AActor* source, const player_t* target)
 		return;
 	#endif
 
-	if (displayplayer_id == source->player->id && status.multiKills > 1)
+	if (cmdstate.GetDisplayPlayerId() == source->player->id and status.multiKills > 1)
 	{
 		const MultiKillLevel_s& level = manager.getMultiKillLevel(status.multiKills);
 		// Play the gamesfx sound from the multi kill first.

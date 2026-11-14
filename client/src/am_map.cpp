@@ -549,7 +549,7 @@ void AM_initVariables()
 	}
 
 	// prioritize active freecam
-	const AActor* camera = freecamIsActive() ? CL_GetDisplayCamera() : pl->camera;
+	const AActor* camera = cmdstate.IsFreecam() ? CL_GetDisplayCamera() : pl->camera;
 
 	if (not camera)
 		return;

@@ -985,7 +985,7 @@ void ST_Ticker()
 	if (!multiplayer && !demoplayback && (ConsoleState == c_down || ConsoleState == c_falling))
 		return;
 
-	if (freecamIsActive())
+	if (cmdstate.IsFreecam())
 		return;
 
 	st_randomnumber = M_Random();
@@ -1063,18 +1063,20 @@ static void ST_refreshBackground()
 
 	if (multiplayer)
 	{
+		const byte display_id = cmdstate.GetDisplayPlayerId();
+
 		if (!demoplayback)
 		{
 			// [RH] Always draw faceback with the player's color
 			//		using a translation rather than a different patch.
-			V_ColorMap = translationref_t(translationtables + displayplayer_id * 256, displayplayer_id);
+			V_ColorMap = translationref_t(translationtables + display_id * 256, display_id);
 			stbar_canvas->DrawTranslatedPatch(W_ResolvePatchHandle(faceback), ST_FX + scaled_x,
 			                                  ST_FY);
 		}
 		else
 		{
 			stbar_canvas->DrawPatch(
-			    W_ResolvePatchHandle(faceclassic[displayplayer_id - 1]), ST_FX + scaled_x, ST_FY);
+			    W_ResolvePatchHandle(faceclassic[display_id - 1]), ST_FX + scaled_x, ST_FY);
 		}
 	}
 

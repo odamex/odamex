@@ -535,7 +535,7 @@ void HU_Drawer()
 
 	if (gamestate == GS_LEVEL)
 	{
-		bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
+		bool spechud = consoleplayer().spectator and cmdstate.IsSpyingSelf();
 
 		hud::ResetMessageColumn();
 
@@ -547,7 +547,7 @@ void HU_Drawer()
 			{
 				if (spechud)
 					hud::SpectatorHUD();
-				else if (freecamIsActive())
+				else if (cmdstate.IsFreecam())
 					hud::FreecamHUD();
 				else
 					hud::OdamexHUD();
@@ -599,7 +599,7 @@ void HU_Drawer()
 	{
 		if ((gamestate != GS_INTERMISSION and Actions[ACTION_SHOWSCORES]) or
 		    (::multiplayer and hud_show_scoreboard_ondeath and
-		     displayplayer().health <= 0 and not displayplayer().spectator and not freecamIsActive()))
+		     displayplayer().health <= 0 and not displayplayer().spectator and not cmdstate.IsFreecam()))
 		{
 			HU_DrawScores(&displayplayer());
 		}
@@ -1357,7 +1357,7 @@ void Scoreboard(player_t *player)
 
 	// Reset playerID to self if ever happening to spy.
 	if (gamestate == GS_INTERMISSION)
-		displayplayer_id = consoleplayer_id;
+		cmdstate.ResetDisplayPlayer();
 
 	int extraQuadRows = 0;
 

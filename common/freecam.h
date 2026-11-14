@@ -24,13 +24,8 @@
 #include "odamex.h"
 #include <list>
 
-inline constexpr byte nullcam_id = 0;
-
 // the freecam that is auto-added when CL_FreecamAllowedOnLevel
 inline constexpr byte firstcam_id = 1;
-
-// the freecam currently being displayed and controlled
-inline byte freecam_id = 0;
 
 struct save_pos_t
 {

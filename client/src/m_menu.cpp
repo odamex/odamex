@@ -1790,7 +1790,7 @@ static void SendNewColor(int red, int green, int blue)
 		R_BuildPlayerTranslation(menuplayer_id, V_GetColorFromString(cl_color), colorpreset);
 
 		if (consoleplayer().ingame())
-			R_CopyTranslationRGB(menuplayer_id, consoleplayer_id);
+			R_CopyTranslationRGB(menuplayer_id, cmdstate.GetConsolePlayerId());
 	}
 }
 

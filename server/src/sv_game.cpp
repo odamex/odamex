@@ -76,12 +76,12 @@ wbstartstruct_t wminfo; 				// parms for world map / intermission
 
 player_t		&consoleplayer()
 {
-	return idplayer(consoleplayer_id);
+	return idplayer(cmdstate.GetConsolePlayerId());
 }
 
 player_t		&displayplayer()
 {
-	return idplayer(displayplayer_id);
+	return idplayer(cmdstate.GetDisplayPlayerId());
 }
 
 BEGIN_COMMAND (pause)

@@ -625,20 +625,69 @@ size_t P_NumPlayersInGame();
 size_t P_NumReadyPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);
 
-inline byte consoleplayer_id = 1; // player taking events and displaying
-inline byte displayplayer_id = 1; // view being displayed
 inline constexpr byte nullplayer_id = 0; // invalid player
 inline constexpr byte menuplayer_id = 0; // fake player id used by translations for the player setup menu
 
-inline bool playerIsDisplayed()
+//
+// CommandingState
+//
+// what object is currently commanding and/or displaying
+// note custom setters to allow moving control to another object while enforcing state
+//
+struct CommandingState
 {
-	return (displayplayer_id != nullplayer_id and freecam_id == nullcam_id);
-}
+private:
+	byte consoleplayer_id = 1;  // player taking events
+	byte displayplayer_id = 1;  // player being displayed
+	byte freecam_id = 0;        // freecam being displayed and controlled, default OFF
 
-inline bool freecamIsActive()
-{
-  return (displayplayer_id == nullplayer_id and freecam_id != nullcam_id);
-}
+public:
+	byte GetConsolePlayerId() const { return consoleplayer_id; }
+	byte GetDisplayPlayerId() const { return displayplayer_id; }
+	byte GetFreecamId() const { return freecam_id; }
+
+	void SetConsolePlayerId(byte id) { consoleplayer_id = id; }
+	void ResetDisplayPlayer()
+	{
+		displayplayer_id = consoleplayer_id;
+		freecam_id = nullplayer_id;
+	}
+
+	void SetDisplayPlayerId(byte id)
+	{
+		displayplayer_id = id;
+		freecam_id = nullplayer_id;
+	}
+
+	void SetFreecamId(byte id)
+	{
+		freecam_id = id;
+		displayplayer_id = nullplayer_id;
+	}
+
+	[[nodiscard]] bool IsPlayer() const
+	{
+		return (displayplayer_id != nullplayer_id and freecam_id == nullplayer_id);
+	}
+
+	[[nodiscard]] bool IsFreecam() const
+	{
+		return (displayplayer_id == nullplayer_id and freecam_id != nullplayer_id);
+	}
+
+	[[nodiscard]] bool IsSpying() const
+	{
+		return (displayplayer_id != consoleplayer_id and displayplayer_id != nullplayer_id);
+	}
+
+	[[nodiscard]] bool IsSpyingSelf() const
+	{
+		return (displayplayer_id == consoleplayer_id and displayplayer_id != nullplayer_id);
+	}
+};
+
+// cmdstate is passed around and keeps track of all ids that can be controlled and/or displayed
+inline CommandingState cmdstate;
 
 //
 

@@ -870,7 +870,7 @@ void R_SetupFrame (AActor::AActorPtr *cam)
 		return;
 
 	player_t &consolePlayer = consoleplayer();
-	const bool use_localview = consolePlayer.id == displayplayer_id and
+	const bool use_localview = consolePlayer.id == cmdstate.GetDisplayPlayerId() and
 	                           consolePlayer.health > 0 and
 	                           not consolePlayer.mo->reactiontime and
 	                           not netdemo.isInPlayback() and not demoplayback;
@@ -1389,7 +1389,7 @@ bool R_BorderVisible()
 //
 bool R_StatusBarVisible()
 {
-	return (setblocks <= 10 or AM_ClassicAutomapVisible()) and not (displayplayer().spectator or freecamIsActive());
+	return (setblocks <= 10 or AM_ClassicAutomapVisible()) and not (displayplayer().spectator or cmdstate.IsFreecam());
 }
 
 //
