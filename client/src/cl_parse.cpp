@@ -1419,11 +1419,17 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 
 	P_ClearId(netid);
 
-	// first disassociate the corpse
+	// First, disassociate the corpse or the temporary placeholder mobj.
 	if (p.mo)
 	{
 		p.mo->player = nullptr;
 		p.mo->health = 0;
+
+		// Don't leave a stale placeholder mobj hanging around forever, if that's what it is!
+		if (p.mo->oflags & MFO_ISAWAITINGSPAWN)
+		{
+			p.mo->Destroy();
+		}
 	}
 
 	G_PlayerReborn(p);
