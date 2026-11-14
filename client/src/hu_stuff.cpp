@@ -1356,7 +1356,7 @@ void Scoreboard(player_t *player)
 	int extra_player_rows = 0;
 
 	// Reset playerID to self if ever happening to spy.
-	if (gamestate == GS_INTERMISSION)
+	if (gamestate == GS_INTERMISSION and not (netdemo.isInPlayback() and cmdstate.IsFreecam()))
 		cmdstate.ResetDisplayPlayer();
 
 	int extraQuadRows = 0;
