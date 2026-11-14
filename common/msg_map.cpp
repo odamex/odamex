@@ -58,12 +58,16 @@ static void MapProto(const msg_t header, const google::protobuf::Descriptor* des
  */
 static void InitMap()
 {
+	// Lower level protocol-originated:
+
 	MapProto(msg_noop,   odaproto::Noop::descriptor());
 	MapProto(msg_header, odaproto::Header::descriptor());
 
 	MapProto(msg_largemessagestart,    odaproto::LargeMessageStart::descriptor());
 	MapProto(msg_largemessagefragment, odaproto::LargeMessageFragment::descriptor());
 	MapProto(msg_largemessageend,      odaproto::LargeMessageEnd::descriptor());
+
+	// Server-originated:
 
 	MapProto(svc_disconnect, odaproto::svc::Disconnect::descriptor());
 	MapProto(svc_playerinfo, odaproto::svc::PlayerInfo::descriptor());
@@ -146,6 +150,9 @@ static void InitMap()
 
 	MapProto(svc_configureavatar, odaproto::svc::ConfigureAvatar::descriptor());
 	MapProto(svc_wakeupmobj,      odaproto::svc::WakeupMobj::descriptor());
+	MapProto(svc_sharekeys,       odaproto::svc::ShareKeys::descriptor());
+
+	// Client-originated:
 
 	MapProto(clc_playerinput,    odaproto::clc::PlayerInput::descriptor());
 	MapProto(clc_disconnectme,   odaproto::clc::DisconnectMe::descriptor());

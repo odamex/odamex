@@ -96,7 +96,7 @@ void PickupMessage(const AActor *toucher, const char *message);
 void WeaponPickupMessage(const AActor *toucher, const weapontype_t &Weapon);
 
 #ifdef SERVER_APP
-void SV_ShareKeys(card_t card, const player_t& player);
+void SV_PickupShareableKey(card_t card, const player_t& player);
 #endif
 
 static void PersistPlayerDamage(const player_t& p)
@@ -562,7 +562,7 @@ ItemEquipVal P_GiveCard(player_t& player, card_t card)
 	{
 #ifdef SERVER_APP
 		// Register the key
-		SV_ShareKeys(card, player);
+		SV_PickupShareableKey(card, player);
 #endif
 
 
