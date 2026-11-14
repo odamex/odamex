@@ -6,7 +6,7 @@ updates:
       interval: weekly
     groups:
       actions:
-        patterns: '*'
+        patterns: ['*']
 
   - package-ecosystem: github-actions
     directory: /
@@ -15,12 +15,12 @@ updates:
       interval: weekly
     groups:
       actions:
-        patterns: '*'
+        patterns: ['*']
 
-  - package-ecosystem: gitsubmodules
+  - package-ecosystem: gitsubmodule
     directory: /
     target-branch: protobreak
     ignore:
-      dependency-name: 'libraries/protobuf'
+      - dependency-name: 'libraries/protobuf'
     schedule:
       interval: weekly
