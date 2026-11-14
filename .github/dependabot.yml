@@ -20,5 +20,7 @@ updates:
   - package-ecosystem: gitsubmodules
     directory: /
     target-branch: protobreak
+    ignore:
+      dependency-name: 'libraries/protobuf'
     schedule:
       interval: weekly
