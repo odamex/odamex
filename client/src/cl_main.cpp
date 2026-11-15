@@ -192,12 +192,12 @@ constexpr int NETWORK_ERROR_ICON_THRESHOLD_TICS = TICRATE;            // 1 secon
 
 bool CL_PacketLossHaltIsInEffect()
 {
-	return gametic - last_received > PACKET_LOSS_HALT_THRESHOLD_TICS;
+	return connected and gametic - last_received > PACKET_LOSS_HALT_THRESHOLD_TICS;
 }
 
 bool CL_NetworkErrorIsIndicated()
 {
-	return gametic - last_received > NETWORK_ERROR_ICON_THRESHOLD_TICS;
+	return connected and gametic - last_received > NETWORK_ERROR_ICON_THRESHOLD_TICS;
 }
 
 //
