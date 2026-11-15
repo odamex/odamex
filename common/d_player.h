@@ -686,7 +686,7 @@ public:
 	}
 };
 
-// cmdstate is passed around and keeps track of all ids that can be controlled and/or displayed
+// cmdstate - what is currently being displayed and controlled?
 inline CommandingState cmdstate;
 
 //

@@ -3403,7 +3403,7 @@ void CL_Spree(const odaproto::svc::Spree* msg)
 		return;
 
 	// No need to check cl_showofflinesprees here since this will only fire online or during a netdemo.
-	if (cl_showsprees and sv_showsprees and cmdstate.GetDisplayPlayerId() == playerId and update)
+	if (cl_showsprees and sv_showsprees and std::cmp_equal(cmdstate.GetDisplayPlayerId(), playerId) and update)
 	{
 		// Play the sound for the new multi kill
 		// S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);
