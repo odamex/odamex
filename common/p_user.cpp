@@ -1032,7 +1032,13 @@ void P_SetPlayerPowerupStatuses(player_t& player, std::span<const int, NUMPOWERS
 //
 void P_FreecamThink(freecam_t& freecam)
 {
-	
+	if (not freecam.mo)
+	{
+		PrintFmt("Warning: freecam does not have a valid Actor, resetting to consoleplayer\n");
+		cmdstate.ResetDisplayPlayer();
+		return;
+	}
+
 	P_MoveFreecam(freecam);
 
 	// calc height
