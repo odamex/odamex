@@ -46,11 +46,11 @@
 # define bit_CONFIG_NO_BUILTINS  0
 #endif
 
-#if bit_CONFIG_NO_BUILTINS
-# pragma message("bit.hpp: Note: Using portable code (no platform-dependent builtins).")
-#else
-# pragma message("bit.hpp: Note: Using platform-dependent builtins.")
-#endif
+// #if bit_CONFIG_NO_BUILTINS
+// # pragma message("bit.hpp: Note: Using portable code (no platform-dependent builtins).")
+// #else
+// # pragma message("bit.hpp: Note: Using platform-dependent builtins.")
+// #endif
 
 // C++ language version detection (C++23 is speculative):
 // Note: VC14.0/1900 (VS2015) lacks too much from C++14.
