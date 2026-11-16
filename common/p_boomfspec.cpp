@@ -1930,8 +1930,6 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	if (side) // jff 6/1/98 fix inadvertent deletion of side test
 		return false;
 
-	P_ClearJustTeleported();
-
 	// jff 02/04/98 add check here for generalized floor/ceil mover
 
 	// pointer to line function is NULL by default, set non-null if
@@ -3371,15 +3369,17 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			// the special, resulting in a 0 special on both the Switch and ActivateLine messages.
 			SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
 
-			// Send an UpdateMobj immediately after the ActivatedLine if a teleport happened,
-			// because client-side prediction immediately followed by the ActivateLine _may_
-			// result in a wildly inaccurate position, depending on a variety of factors, and
-			// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
-			if (P_JustTeleported(thing))
-			{
-				SV_ArmMobj(thing);
-				P_ClearJustTeleported();
-			}
+			// Arm the mobj so that its final state goes out to the clients at the end of this
+			// tic.  We do this because of the possibility that an attempt was made to teleport
+			// the mobj.  Regardless of whether or not the teleport was successful, the client
+			// may have predicted the opposite outcome (i.e. the mobj teleported successfully on
+			// the server, but not the client.  Also possible that the server failed the teleport
+			// due to other mobjs/monsters overlapping the current mobj's endpoint, but the client
+			// has a slight misprediction on that other mobj, allowing the teleport to succeed.)
+			//
+			// We mitigate this risk by always arming the mobj for update.
+
+			SV_ArmMobj(thing);
 
 			P_ChangeSwitchTexture(line, reuse, true);
 			OnChangedSwitchTexture(line, reuse);
