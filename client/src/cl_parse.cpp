@@ -3612,7 +3612,7 @@ void CL_ShareKeys(const odaproto::svc::ShareKeys* msg)
 	s_playerIds.insert(msg->pids().begin(),
 	                   msg->pids().end());
 
-	std::array<bool, NUMCARDS> cards;
+	std::array<bool, NUMCARDS> cards;       // NOLINT (cppcoreguidelines-pro-type-member-init)
 	UnpackBoolArray(cards, msg->cards());
 
 	for (auto& player : players)

@@ -5576,7 +5576,7 @@ void SV_UpdateShareKeys(std::optional<uint32_t> optionalPickupPlayerId)
 	for (auto& player : players)
 	{
 		// Player needs to be valid to get a card.
-		if (!validplayer(player))
+		if (not validplayer(player))
 			continue;
 
 		// Spectators don't get cards.
