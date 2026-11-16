@@ -780,12 +780,13 @@ bool G_Responder (const event_t& ev)
 				"chase",
 				"+showscores",
 				"bumpgamma",
+				"screenshot",
 				"stepmode",
 				"step",
 			};
 			if (cmd.empty() or
 			    (not cmd.starts_with("menu_") and
-				 std::ranges::none_of(idk, [&cmd](const auto& str){ return cmd != str; })))
+				 std::ranges::none_of(idk, [&cmd](const auto& str){ return cmd == str; })))
 			{
 				M_StartControlPanel ();
 				return true;
