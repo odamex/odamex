@@ -3259,7 +3259,7 @@ void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 void SV_ArmMobj(AActor* mobj)
 {
 	// Don't use this function to update players.
-	if (mobj->player)
+	if (not mobj or mobj->player)
 		return;
 
 	mobj->updatedDuringLocalTic = gametic;
