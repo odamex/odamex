@@ -83,7 +83,7 @@ if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
     odamex_define_fltk_targets(
       "${_FLTK_LOCAL_LIBDIR}"
       "${_FLTK_LOCAL_INCDIR}"
-      "-framework Cocoa;-framework ApplicationServices;-framework UniformTypeIdentifiers")
+      "-framework Cocoa;-framework ApplicationServices;-framework UniformTypeIdentifiers;-weak_framework ScreenCaptureKit")
   else()
     find_package(FLTK CONFIG REQUIRED)
     set_target_properties(fltk::fltk PROPERTIES IMPORTED_GLOBAL True)
