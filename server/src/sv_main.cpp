@@ -3540,19 +3540,32 @@ void SV_SendPackets()
 	}
 }
 
-void SV_SendPlayerStateUpdate(client_t* client, player_t* player)
+//
+// SendPlayerState - Send information about a player to another client.
+//
+void SV_SendPlayerState(MessageQueue& outgoingQueue, client_t& client, player_t& player)
 {
-	if (!client || !player || !player->mo)
+	if (not player.mo)
 		return;
 
-	if (client != &player->client)
+	if (&client != &player.client)
 	{
-		client->messenger->Reliable().Write( SVC_PlayerState(*player));
+		outgoingQueue.Write( SVC_PlayerState(player));
 	}
 	else
 	{
-		client->messenger->Reliable().Write (SVC_PlayerInfo(*player));
+		outgoingQueue.Write (SVC_PlayerInfo(player));
 	}
+}
+
+void SV_SendPlayerStateHighPriority(client_t& client, player_t& player)
+{
+	SV_SendPlayerState(client.messenger->HighPriority(), client, player);
+}
+
+void SV_SendPlayerStateReliable(client_t& client, player_t& player)
+{
+	SV_SendPlayerState(client.messenger->Reliable(), client, player);
 }
 
 void SV_SpyPlayer(player_t& viewer, const odaproto::clc::Spy& msg)
@@ -3564,7 +3577,7 @@ void SV_SpyPlayer(player_t& viewer, const odaproto::clc::Spy& msg)
 		return;
 
 	viewer.spying = id;
-	SV_SendPlayerStateUpdate(&viewer.client, &other);
+	SV_SendPlayerStateHighPriority(viewer.client, other);
 }
 
 // When we break up the mobjs into 3 groups based on relative distance, there are two boundaries:
@@ -3746,7 +3759,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	player_t& target = idplayer(player.spying);
 	if (validplayer(target) && &player != &target && P_CanSpy(player, target))
 	{
-		SV_SendPlayerStateUpdate(&(player.client), &target);
+		SV_SendPlayerStateHighPriority(player.client, target);
 	}
 
 	SV_UpdateConsolePlayer(player);
@@ -4511,7 +4524,7 @@ void SV_Cheat(player_t &player, const odaproto::clc::Cheat& msg)
 		{
 			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 			{
-				SV_SendPlayerStateUpdate(&it->client, &player);
+				SV_SendPlayerStateReliable(it->client, player);
 			}
 		}
 	}
@@ -4525,7 +4538,7 @@ void SV_CheatGive(player_t &player, const odaproto::clc::CheatGive& msg)
 
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
-			SV_SendPlayerStateUpdate(&it->client, &player);
+			SV_SendPlayerStateReliable(it->client, player);
 		}
 
 	}
