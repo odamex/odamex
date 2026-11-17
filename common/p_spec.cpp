@@ -2241,8 +2241,8 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 
 		SV_ArmMobj(thing);
 
-		if (serverside && !(thing->player && (thing->player->spectator ||
-		                                      thing->player->playerstate != PST_LIVE)))
+		if (serverside and not (thing->player and (thing->player->spectator or
+		                                           thing->player->playerstate != PST_LIVE)))
 		{
 			bool repeat;
 
