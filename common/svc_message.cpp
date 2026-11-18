@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2021 by Alex Mayfield.
 //
 // This program is free software; you can redistribute it and/or
@@ -1827,4 +1825,3 @@ odaproto::svc::ConfigureAvatar SVC_ConfigureAvatar(const MapThing& mapthing, uin
 
 	return msg;
 }
-VERSION_CONTROL(svc_message, "$Id$")

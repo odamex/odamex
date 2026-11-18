@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -313,7 +311,7 @@ void OScanner::mustScanInt()
 	}
 
 	std::string str = m_token;
-	if (IsNum(str.c_str()) == false && str != "MAXINT")
+	if (not IsNum(str) and str != "MAXINT")
 	{
 		error("Expected integer, got \"{}\".", m_token);
 	}
@@ -330,7 +328,7 @@ void OScanner::mustScanFloat()
 	}
 
 	std::string str = m_token;
-	if (IsRealNum(str.c_str()) == false)
+	if (IsRealNum(str) == false)
 	{
 		error("Expected float, got \"{}\".", m_token);
 	}
@@ -511,5 +509,3 @@ bool OScanner::compareTokenNoCase(std::string_view string) const
 {
 	return iequals(m_token, string);
 }
-
-VERSION_CONTROL(oscanner_cpp, "$Id$")
