@@ -3603,17 +3603,8 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	const bool isMusicChanger = (mthing.type >= 14100 && mthing.type <= 14165);
 	const bool isSpringPad = inSpawnMap && spawn_map[mthing.type]->type == MT_SPRINGPAD;
 
-	// only servers control spawning of items
-	// EXCEPT the client must spawn Type 14 (teleport exit) and player spawn points for avatars.
-	// otherwise teleporters or avatars won't work well.
-	// Also spawn sector special things, fixes some other teleport issues.
-	if (!serverside && !(isPlayerCoopSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger || isSpringPad))
-	{
-		return;
-	}
-
 	//
-	// Clients also exclusively handle spawning of ambient sounds and music changers
+	// Clients exclusively handle spawning of ambient sounds and music changers
 	//
 	if (!clientside && (isSoundSource || isMusicChanger))
 	{
@@ -3645,6 +3636,22 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 				return;
 			}
 		}
+	}
+
+	// only servers control spawning of items
+	// EXCEPT the client must spawn Type 14 (teleport exit) and player spawn points for avatars.
+	// otherwise teleporters or avatars won't work well.
+	// Also spawn sector special things, fixes some other teleport issues.
+	if (not serverside and
+		not (isPlayerCoopSpawnPoint or
+			 isTeleportDest or
+			 isSecAct or
+			 isSoundSource or
+			 isMusicChanger or
+			 isSpringPad)
+		)
+	{
+		return;
 	}
 
 	// [RH] Record polyobject-related things
