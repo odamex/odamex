@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1192,5 +1190,3 @@ static void BuildTransTable(const argb_t* palette_colors)
 							 (((palette_colors[y].getb() * x) >> 4) << 10);
 }
 
-
-VERSION_CONTROL (v_video_cpp, "$Id$")

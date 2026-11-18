@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -467,5 +465,3 @@ void P_DisconnectEffect (const AActor *actor)
 		p->size = 4;
 	}
 }
-
-VERSION_CONTROL (p_effect_cpp, "$Id$")
