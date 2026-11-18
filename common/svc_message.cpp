@@ -1825,3 +1825,15 @@ odaproto::svc::ConfigureAvatar SVC_ConfigureAvatar(const MapThing& mapthing, uin
 
 	return msg;
 }
+
+odaproto::svc::ShareKeys SVC_ShareKeys(const std::vector<uint32_t>&         playerIds,
+                                       const std::array<bool, NUMCARDS>&    cards)
+{
+	odaproto::svc::ShareKeys msg;
+
+	msg.mutable_pids()->Assign(playerIds.begin(), playerIds.end());
+	msg.set_cards(PackBoolArray(cards));
+
+	return msg;
+}
+
