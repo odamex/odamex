@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -54,5 +52,3 @@ void DBoundingBox::AddToBox (fixed_t x, fixed_t y)
 	else if (y > m_Box[BOXTOP])
 		m_Box[BOXTOP] = y;
 }
-
-VERSION_CONTROL (m_bbox_cpp, "$Id$")

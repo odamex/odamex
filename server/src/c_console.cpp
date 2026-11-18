@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -248,5 +246,3 @@ void C_RemoveTabCommand (const char *name)
 		if(!--i->second)
 			TabCommands().erase(i);
 }
-
-VERSION_CONTROL (c_console_cpp, "$Id$")
