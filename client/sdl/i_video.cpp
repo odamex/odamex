@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -1461,5 +1459,3 @@ int I_GetAspectCorrectWidth(int surface_height, int asset_height, int asset_widt
 	float aspect_scale_ratio = static_cast<float>(surface_height) / static_cast<float>(asset_height);
 	return aspect_scale_ratio * asset_width;
 }
-
-VERSION_CONTROL (i_video_cpp, "$Id$")

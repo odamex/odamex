@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 //  Copyright (C) 1999, 2000, 2002 Aladdin Enterprises.  All rights reserved.
 //
 //  This software is provided 'as-is', without any express or implied
@@ -419,5 +417,3 @@ std::string MD5SUM(std::string in)
 {
 	return MD5SUM(in.c_str(), in.length());
 }
-
-VERSION_CONTROL (md5_cpp, "$Id$")

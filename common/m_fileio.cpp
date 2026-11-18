@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -686,5 +684,3 @@ bool M_GetAbsPath(const std::string& path, std::string& out)
 	}
 #endif
 }
-
-VERSION_CONTROL(m_fileio_cpp, "$Id$")
