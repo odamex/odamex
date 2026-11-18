@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -498,5 +496,3 @@ FArchive &operator>> (FArchive &arc, flagdata &flag)
 {
 	return arc;
 }
-
-VERSION_CONTROL (sv_ctf_cpp, "$Id$")
