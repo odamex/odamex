@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -197,14 +195,14 @@ int main(int argc, char *argv[])
 		// proper termination needs to occur -- Hyper_Eye
 		call_terms ();
 	}
-	catch (CDoomError &error)
+	catch (const CDoomError& error)
 	{
 		if (LOG.is_open())
 		{
 			LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
 		}
 
-		I_ErrorMessageBox(error.GetMsg().c_str());
+		I_ErrorMessageBox(error.GetMsg());
 
 		call_terms();
 		exit(EXIT_FAILURE);
@@ -224,5 +222,3 @@ int main(int argc, char *argv[])
 #endif
 	return 0;
 }
-
-VERSION_CONTROL (i_main_cpp, "$Id$")

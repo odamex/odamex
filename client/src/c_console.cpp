@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -2580,5 +2578,3 @@ void C_RevealSecret()
 	if (hud_revealsecrets == 1 || hud_revealsecrets == 3)
 		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
 }
-
-VERSION_CONTROL (c_console_cpp, "$Id$")
