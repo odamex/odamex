@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1154,7 +1152,7 @@ static void AddCommandLineOptionFiles(OWantFiles& out, const std::string& option
 //
 // Adds files passed without a parameter, as happens when they are dropped onto
 // the executable.
-// 
+//
 // Sorted by extension so a dropped patch is not also loaded as a WAD.
 //
 // No extension is assumed to be a WAD.
@@ -1558,5 +1556,3 @@ void D_RunTics(void (*sim_func)(), void(*display_func)())
 		I_Sleep(sleep_amount);
 	}
 }
-
-VERSION_CONTROL (d_main_cpp, "$Id$")
