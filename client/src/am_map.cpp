@@ -57,6 +57,7 @@
 #include "g_skill.h"
 #include "p_mapformat.h"
 
+AActor::AActorPtr& CL_GetDisplayCamera();
 argb_t CL_GetPlayerColor(const player_t&);
 
 EXTERN_CVAR(am_followplayer)
@@ -387,6 +388,8 @@ void AM_saveScaleAndLoc()
 //
 void AM_restoreScaleAndLoc()
 {
+	const AActor* camera = CL_GetDisplayCamera();
+
 	m_wh = old_m_wh;
 	if (!am_followplayer)
 	{
@@ -394,8 +397,7 @@ void AM_restoreScaleAndLoc()
 	}
 	else
 	{
-		M_SetVec2Fixed64(&m_ll, FIXED2FIXED64(displayplayer().camera->x) - m_wh.x / 2,
-			                  FIXED2FIXED64(displayplayer().camera->y) - m_wh.y / 2);
+		M_SetVec2Fixed64(&m_ll, FIXED2FIXED64(camera->x) - (m_wh.x / 2), FIXED2FIXED64(camera->y) - (m_wh.y / 2));
 	}
 	M_AddVec2Fixed64(&m_ur, &m_ll, &m_wh);
 
@@ -546,11 +548,14 @@ void AM_initVariables()
 		}
 	}
 
-	if (!pl->camera)
+	// prioritize active freecam
+	const AActor* camera = cmdstate.IsFreecam() ? CL_GetDisplayCamera() : pl->camera;
+
+	if (not camera)
 		return;
 
-	m_ll.x = FIXED2FIXED64(pl->camera->x) - m_wh.x / 2;
-	m_ll.y = FIXED2FIXED64(pl->camera->y) - m_wh.y / 2;
+	m_ll.x = FIXED2FIXED64(camera->x) - (m_wh.x / 2);
+	m_ll.y = FIXED2FIXED64(camera->y) - (m_wh.y / 2);
 	AM_changeWindowLoc();
 
 	AM_saveScaleAndLoc();
@@ -1610,7 +1615,7 @@ void AM_rotate(mpoint_t& pt, angle_t a)
 
 void AM_rotatePoint(mpoint_t& pt)
 {
-	player_t* player = &displayplayer();
+	const AActor* camera = CL_GetDisplayCamera();
 
 	OInterpolation& oi = OInterpolation::getInstance();
 
@@ -1621,21 +1626,21 @@ void AM_rotatePoint(mpoint_t& pt)
 	if (oi.enabled())
 	{
 		x = FIXED2FIXED64(
-			player->camera->prevx +
-			FixedMul(player->camera->x - player->camera->prevx, render_lerp_amount));
+			camera->prevx +
+			FixedMul(camera->x - camera->prevx, render_lerp_amount));
 
 		y = FIXED2FIXED64(
-			player->camera->prevy +
-			FixedMul(player->camera->y - player->camera->prevy, render_lerp_amount));
+			camera->prevy +
+			FixedMul(camera->y - camera->prevy, render_lerp_amount));
 
-		pangle = player->camera->prevangle +
-			FixedMul(player->camera->angle - player->camera->prevangle, render_lerp_amount);
+		pangle = camera->prevangle +
+			FixedMul(camera->angle - camera->prevangle, render_lerp_amount);
 	}
 	else
 	{
-		x = FIXED2FIXED64(player->camera->x);
-		y = FIXED2FIXED64(player->camera->y);
-		pangle = player->camera->angle;
+		x = FIXED2FIXED64(camera->x);
+		y = FIXED2FIXED64(camera->y);
+		pangle = camera->angle;
 	}
 
 	pt.x -= x;
@@ -1679,11 +1684,10 @@ void AM_drawLineCharacter(std::span<const mline_t> lineguy, fixed64_t scale,
 
 void AM_drawPlayers()
 {
-	angle_t angle;
-	player_t& conplayer = displayplayer();
-
+	const AActor* camera = CL_GetDisplayCamera();
 	OInterpolation& oi = OInterpolation::getInstance();
 
+	angle_t angle;
 	fixed64_t x;
 	fixed64_t y;
 	fixed_t cangle;
@@ -1691,21 +1695,21 @@ void AM_drawPlayers()
 	if (oi.enabled())
 	{
 		x = FIXED2FIXED64(
-			conplayer.camera->prevx +
-			FixedMul(conplayer.camera->x - conplayer.camera->prevx, render_lerp_amount));
+			camera->prevx +
+			FixedMul(camera->x - camera->prevx, render_lerp_amount));
 
 		y = FIXED2FIXED64(
-			conplayer.camera->prevy +
-			FixedMul(conplayer.camera->y - conplayer.camera->prevy, render_lerp_amount));
+			camera->prevy +
+			FixedMul(camera->y - camera->prevy, render_lerp_amount));
 
-		cangle = conplayer.camera->prevangle +
-			FixedMul(conplayer.camera->angle - conplayer.camera->prevangle, render_lerp_amount);
+		cangle = camera->prevangle +
+			FixedMul(camera->angle - camera->prevangle, render_lerp_amount);
 	}
 	else
 	{
-		x = FIXED2FIXED64(conplayer.camera->x);
-		y = FIXED2FIXED64(conplayer.camera->y);
-		cangle = conplayer.camera->angle;
+		x = FIXED2FIXED64(camera->x);
+		y = FIXED2FIXED64(camera->y);
+		cangle = camera->angle;
 	}
 
 	if (!multiplayer)
@@ -1728,12 +1732,19 @@ void AM_drawPlayers()
 	{
 		am_color_t color;
 
-		if (!(p.ingame()) || !p.mo ||
-		    (((G_IsFFAGame() && &p != &conplayer) ||
-		      (G_IsTeamGame() && p.userinfo.team != conplayer.userinfo.team)) &&
-		     !netdemo.isInPlayback() && !demoplayback &&
-		     !(conplayer.spectator)) ||
-		    p.spectator)
+		if (not p.ingame() or not p.mo or p.spectator)
+			continue;
+
+		if (camera->player
+			and not netdemo.isInPlayback()
+			and not demoplayback
+			and not camera->player->spectator
+			and
+			(
+				(G_IsFFAGame() and &p != camera->player) or
+				(G_IsTeamGame() and p.userinfo.team != camera->player->userinfo.team)
+			)
+		)
 		{
 			continue;
 		}
@@ -1800,6 +1811,53 @@ void AM_drawPlayers()
 		}
 
 		AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED64(16), angle, color, pt.x, pt.y);
+	}
+}
+
+void AM_drawFreecams()
+{
+	const AActor* camera = CL_GetDisplayCamera();
+	OInterpolation& oi = OInterpolation::getInstance();
+	const argb_t* palette = V_GetDefaultPalette()->colors;
+	const am_color_t fcam_color = AM_GetColorFromString(palette, "FF FF FF");
+
+	for (auto& f : freecams)
+	{
+		mpoint_t pt;
+
+		angle_t angle;
+		fixed_t cangle;
+		fixed_t moangle;
+		fixed_t mox;
+		fixed_t moy;
+
+		if (oi.enabled())
+		{
+			moangle = f.mo->prevangle + FixedMul(f.mo->angle - f.mo->prevangle, render_lerp_amount);
+			mox = f.mo->prevx + FixedMul(f.mo->x - f.mo->prevx, render_lerp_amount);
+			moy = f.mo->prevy + FixedMul(f.mo->y - f.mo->prevy, render_lerp_amount);
+			cangle = camera->prevangle +
+			         FixedMul(camera->angle - camera->prevangle, render_lerp_amount);
+		}
+		else
+		{
+			moangle = f.mo->angle;
+			mox = f.mo->x;
+			moy = f.mo->y;
+			cangle = camera->angle;
+		}
+
+		M_SetVec2Fixed64(&pt, FIXED2FIXED64(mox), FIXED2FIXED64(moy));
+
+		angle = moangle;
+
+		if (am_rotate)
+		{
+			AM_rotatePoint(pt);
+			angle -= cangle - ANG90;
+		}
+
+		AM_drawLineCharacter(gameinfo.mapArrow, INT2FIXED64(8), angle, fcam_color, pt.x, pt.y);
 	}
 }
 
@@ -1927,19 +1985,17 @@ void AM_drawCheatThing(const AActor* t)
 	if (am_rotate)
 	{
 		AM_rotatePoint(p);
+		const AActor* camera = CL_GetDisplayCamera();
 
 		fixed_t conangle;
 
 		if (oi.enabled())
 		{
-			conangle = displayplayer().camera->prevangle +
-				FixedMul(displayplayer().camera->angle -
-				displayplayer().camera->prevangle,
-				render_lerp_amount);
+			conangle = camera->prevangle + FixedMul(camera->angle - camera->prevangle, render_lerp_amount);
 		}
 		else
 		{
-			conangle = displayplayer().camera->angle;
+			conangle = camera->angle;
 		}
 
 		rotate_angle = ANG90 - conangle;
@@ -2501,6 +2557,8 @@ void AM_Drawer()
 
 	AM_drawWalls();
 	AM_drawPlayers();
+	AM_drawFreecams();
+
 	if (G_IsHordeMode() || G_GetCurrentSkill().easy_key || (am_cheating == 2))
 		AM_drawThings();
 

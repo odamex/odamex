@@ -862,18 +862,18 @@ argb_t R_GetSectorBlend()
 // R_SetupFrame
 //
 //
-void R_SetupFrame (player_t *player)
+void R_SetupFrame (AActor::AActorPtr *cam)
 {
-	camera = player->camera;	// [RH] Use camera instead of viewplayer
+	camera = cam->get();	// [RH] Use camera instead of viewplayer
 
 	if (!camera || !camera->subsector)
 		return;
 
 	player_t &consolePlayer = consoleplayer();
-	const bool use_localview = consolePlayer.id == displayplayer().id &&
-	                           consolePlayer.health > 0 &&
-	                           not consolePlayer.mo->reactiontime &&
-	                           not netdemo.isInPlayback() && not demoplayback;
+	const bool use_localview = consolePlayer.id == cmdstate.GetDisplayPlayerId() and
+	                           consolePlayer.health > 0 and
+	                           not consolePlayer.mo->reactiontime and
+	                           not netdemo.isInPlayback() and not demoplayback;
 
 	if (camera->player && camera->player->xviewshift && !paused)
 	{
@@ -882,7 +882,8 @@ void R_SetupFrame (player_t *player)
 		viewy += ((M_Random() % (intensity << 2)) - (intensity << 1)) << FRACBITS;
 	}
 
-	extralight = camera == player->mo ? player->extralight : 0;
+	if (camera->player)
+		extralight = camera == camera->player->mo ? camera->player->extralight : 0;
 
 	viewsin = finesine[viewangle>>ANGLETOFINESHIFT];
 	viewcos = finecosine[viewangle>>ANGLETOFINESHIFT];
@@ -926,22 +927,26 @@ void R_SetupFrame (player_t *player)
 	fixedlightlev = 0;
 	const palette_t* pal = V_GetDefaultPalette();
 
-	if (camera == player->mo && player->fixedcolormap)
+	if (camera->player)
 	{
-		if (player->fixedcolormap < NUMCOLORMAPS)
+		if (camera == camera->player->mo and camera->player->fixedcolormap)
 		{
-			fixedlightlev = player->fixedcolormap;
-			fixedcolormap = shaderef_t(&pal->maps, 0);
-		}
-		else
-		{
-			fixedcolormap = shaderef_t(&pal->maps, player->fixedcolormap);
-		}
+			if (camera->player->fixedcolormap < NUMCOLORMAPS)
+			{
+				fixedlightlev = camera->player->fixedcolormap;
+				fixedcolormap = shaderef_t(&pal->maps, 0);
+			}
+			else
+			{
+				fixedcolormap = shaderef_t(&pal->maps, camera->player->fixedcolormap);
+			}
 
-		walllights = scalelightfixed;
+			walllights = scalelightfixed;
 
-		memset (scalelightfixed, 0, MAXLIGHTSCALE*sizeof(*scalelightfixed));
+			memset(scalelightfixed, 0, MAXLIGHTSCALE * sizeof(*scalelightfixed));
+		}
 	}
+	
 
 	if ((use_localview && !::localview.skippitch) || netdemo.isPaused())
 	{
@@ -1090,10 +1095,11 @@ void R_SetSkyForegroundDrawFuncs()
 }
 
 //
-// R_RenderPlayerView
+// R_RenderView
 //
-void R_RenderPlayerView(player_t* player)
+void R_RenderView(AActor::AActorPtr *cam)
 {
+
 	// Recalculate the viewing window dimensions, if needed.
 	if (setsizeneeded)
 	{
@@ -1102,12 +1108,12 @@ void R_RenderPlayerView(player_t* player)
 		setsizeneeded = false;
 	}
 
-	OInterpolation::getInstance().interpolateView(player, render_lerp_amount);
+	OInterpolation::getInstance().interpolateView(cam, render_lerp_amount);
 
 	if (!viewactive)
 		return;
 
-	R_SetupFrame(player);
+	R_SetupFrame(cam);
 
 	// Clear buffers.
 	R_ClearClipSegs();
@@ -1138,7 +1144,7 @@ void R_RenderPlayerView(player_t* player)
 
     // [Russell] - From zdoom 1.22 source, added camera pointer check
 	// Never draw the player unless in chasecam mode
-	if (camera && camera->player && !(player->cheats & CF_CHASECAM))
+	if (camera and camera->player and not (camera->player->cheats & CF_CHASECAM))
 	{
 		const auto flags2_backup = camera->flags2;
 		camera->flags2 |= MF2_DONTDRAW;
@@ -1383,7 +1389,7 @@ bool R_BorderVisible()
 //
 bool R_StatusBarVisible()
 {
-	return (setblocks <= 10 || AM_ClassicAutomapVisible()) && !displayplayer().spectator;
+	return (setblocks <= 10 or AM_ClassicAutomapVisible()) and not (displayplayer().spectator or cmdstate.IsFreecam());
 }
 
 //

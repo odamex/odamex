@@ -784,7 +784,7 @@ void P_ProcessSpreeKill(const AActor* source, const player_t* target)
 		return;
 #endif
 
-	if (displayplayer_id == source->player->id && update)
+	if (cmdstate.GetDisplayPlayerId() == source->player->id and update)
 	{
 		// Play the game sfx first.
 		const SpreeRecord_t& record = manager.getSpreeRecord(source->player->id);
@@ -828,7 +828,7 @@ void P_ProcessSpreeDamage(const player_t* source, const AActor* target,
 		return;
 #endif
 
-	if (displayplayer_id == source->id && update)
+	if (cmdstate.GetDisplayPlayerId() == source->id and update)
 	{
 		// Play the game sfx first.
 		const SpreeRecord_t& record = manager.getSpreeRecord(source->id);

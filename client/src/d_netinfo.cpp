@@ -215,7 +215,7 @@ void D_SetupUserInfo(void)
 
 	// update color translation
 	if (!demoplayback && !connected)
-		R_BuildPlayerTranslation(consoleplayer_id, coninfo->color, coninfo->colorpreset);
+		R_BuildPlayerTranslation(cmdstate.GetConsolePlayerId(), coninfo->color, coninfo->colorpreset);
 }
 
 void D_UserInfoChanged (cvar_t *cvar)

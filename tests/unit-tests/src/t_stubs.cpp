@@ -60,8 +60,8 @@ void C_RemoveTabCommand(char const *) {}
 void P_ShowSpawns(const mapthing2_t&) {}
 void P_SpawnPlayer(player_t&, const mapthing2_t&) {}
 void G_DeathMatchSpawnPlayer(player_t&) {}
-player_t& consoleplayer() { return idplayer(consoleplayer_id); }
-player_t& displayplayer() { return idplayer(displayplayer_id); }
+player_t& consoleplayer() { return idplayer(cmdstate.GetConsolePlayerId()); }
+player_t& displayplayer() { return idplayer(cmdstate.GetDisplayPlayerId()); }
 
 void BuildDefaultShademap(palette_t const *, shademap_t &) {}
 palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b) { return 0; }

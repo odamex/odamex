@@ -45,6 +45,7 @@
 
 size_t P_NumPlayersInGame(void);
 argb_t CL_GetPlayerColor(const player_t&);
+AActor::AActorPtr& CL_GetDisplayMobj();
 
 extern NetDemo netdemo;
 extern fixed_t FocalLengthX;
@@ -140,7 +141,7 @@ bool inTeamPlayer(const player_t& player, const byte team)
 // Returns true if a player is a spectator
 bool spectatingPlayer(const player_t& player)
 {
-	return (not player.ingame() || player.spectator) && not player.isFreecam;
+	return (not player.ingame() or player.spectator);
 }
 
 // Returns a sorted player list.  Calculates at most once a gametic.
@@ -516,7 +517,8 @@ int DrawRespawnText(int y)
 std::string SpyPlayerName()
 {
 	const player_t& plyr = displayplayer();
-	if (plyr.id == consoleplayer().id)
+
+	if (plyr.id == cmdstate.GetConsolePlayerId() or cmdstate.IsFreecam())
 	{
 		return "";
 	}
@@ -1927,8 +1929,11 @@ void EATargets(int x, int y, const float scale,
 		return;
 	}
 
-	if(!displayplayer().mo) {
-		// For some reason, the displayed player doesn't have a mobj, so
+	const AActor* displaymobj = CL_GetDisplayMobj();
+
+	if (not displaymobj)
+	{
+		// For some reason, the displayed object doesn't have a mobj, so
 		// if we let this function run we're going to crash.
 		return;
 	}
@@ -1940,6 +1945,8 @@ void EATargets(int x, int y, const float scale,
 
 	const bool netdemoplaying = ::netdemo.isInPlayback();
 	std::vector<TargetInfo_t> Targets;
+	const float fov = 45.0f;
+	const fixed_t distance = 512 * FRACUNIT;
 
 	// What players should be drawn?
 	for (auto& player : players)
@@ -1948,15 +1955,18 @@ void EATargets(int x, int y, const float scale,
 			continue;
 
 		// We don't care about the player whose eyes we are looking through.
-		if (&player == &(displayplayer()))
+		if (player.id == cmdstate.GetDisplayPlayerId())
 			continue;
 
-		if (!P_ActorInFOV(displayplayer().mo, player.mo, 45.0f, 512 * FRACUNIT))
+		if (not P_ActorInFOV(displaymobj, player.mo, fov, distance))
 			continue;
 
 		// The server doesn't want us to see enemy target names.
-		if (!netdemoplaying && !::sv_allowtargetnames && !consoleplayer().spectator &&
-		    !P_AreTeammates(displayplayer(), player))
+		if (cmdstate.IsPlayer()
+			and not netdemoplaying
+			and not ::sv_allowtargetnames
+			and not consoleplayer().spectator
+			and not P_AreTeammates(displayplayer(), player))
 		{
 			continue;
 		}
@@ -1973,7 +1983,7 @@ void EATargets(int x, int y, const float scale,
 		// Ok, make the temporary player info then add it
 		TargetInfo_t temp = {
 			&player,
-			P_AproxDistance2(displayplayer().mo, player.mo) >> FRACBITS,
+			P_AproxDistance2(displaymobj, player.mo) >> FRACBITS,
 			color
 		};
 		Targets.push_back(temp);
@@ -2006,7 +2016,7 @@ void EATargets(int x, int y, const float scale,
 			break;
 		}
 
-		if (target.PlayPtr == &(consoleplayer()) && not displayplayer().isFreecam)
+		if (target.PlayPtr == &(consoleplayer()) and not cmdstate.IsFreecam())
 		{
 			// You're looking at yourself.
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin, "You",

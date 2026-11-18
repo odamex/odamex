@@ -96,7 +96,7 @@ void P_SpawnPlayer(player_t& player, const fixed_t x, const fixed_t y,
 	// set color translations for player sprites
 	// [RH] Different now: MF_TRANSLATION is not used.
 	mobj->translation = translationref_t(translationtables + 256 * player.id, player.id);
-	if (player.id == consoleplayer_id)
+	if (player.id == cmdstate.GetConsolePlayerId())
 	{
 		// NOTE(jsd): Copy the player setup menu's translation to the player_id's:
 		// [SL] don't screw with vanilla demo player colors

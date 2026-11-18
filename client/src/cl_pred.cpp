@@ -32,6 +32,7 @@
 #include "clc_message.h"
 
 #include "p_snapshot.h"
+#include "freecam.h"
 
 EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_prednudge)
@@ -254,7 +255,8 @@ void CL_PredictAllSectors(const player_t& player)
 void CL_PredictSpying()
 {
 	player_t& player = displayplayer();
-	if (consoleplayer_id == displayplayer_id)
+
+	if (not cmdstate.IsSpying())
 		return;
 
 	// Save and restore the prevangle and prevpitch so that the client viewangle interpolation
@@ -286,9 +288,9 @@ void CL_PredictRemotePlayers()
 	for (auto& player : players)
 	{
 		if (player.ingame() 
-			&& player.mo 
-			&& player.id != consoleplayer_id   // handled in CL_PredictWorld
-			&& player.id != displayplayer_id)  // handled in CL_PredictSpying
+			and player.mo 
+			and player.id != cmdstate.GetConsolePlayerId()   // handled in CL_PredictWorld
+			and player.id != cmdstate.GetDisplayPlayerId())  // handled in CL_PredictSpying
 		{
 			P_BumpPlayerCounters(player);
 		}
@@ -301,22 +303,23 @@ void CL_PredictRemotePlayers()
 //
 void CL_PredictFreecam()
 {
-	player_t& player = displayplayer();
-	if (not player.isFreecam)
+	freecam_t* freecam = freecam_t::getfreecam(cmdstate.GetFreecamId());
+
+	if (not freecam or not cmdstate.IsFreecam())
 		return;
 
-	if (player.mo)
+	if (freecam->mo)
 	{
-		player.mo->prevx = player.mo->x;
-		player.mo->prevy = player.mo->y;
-		player.mo->prevz = player.mo->z;
+		freecam->mo->prevx = freecam->mo->x;
+		freecam->mo->prevy = freecam->mo->y;
+		freecam->mo->prevz = freecam->mo->z;
+		freecam->mo->prevangle = freecam->mo->angle;
+		freecam->mo->prevpitch = freecam->mo->pitch;
+		freecam->mo->prevviewz = freecam->mo->viewz;
 	}
 
-	predicting = true;
+	P_FreecamThink(*freecam);
 
-	P_PlayerThink(player);
-
-	predicting = false;
 }
 
 //
@@ -450,7 +453,7 @@ bool CL_PredictWorld()
 	if (gamestate != GS_LEVEL)
 		return false;
 
-	if (netdemo.isPaused() && displayplayer().isFreecam)
+	if (netdemo.isPaused() and cmdstate.IsFreecam())
 	{
 		CL_PredictFreecam();
 		return false;
@@ -464,10 +467,10 @@ bool CL_PredictWorld()
 	// tenatively tell the netgraph that our prediction was successful
 	netgraph.setMisprediction(false);
 
-	if (consoleplayer_id != displayplayer_id && displayplayer().isFreecam)
+	if (cmdstate.IsFreecam())
 		CL_PredictFreecam();
 
-	if (consoleplayer_id != displayplayer_id && not displayplayer().isFreecam)
+	if (cmdstate.IsSpying())
 		CL_PredictSpying();
 
 	CL_PredictRemotePlayers();

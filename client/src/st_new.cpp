@@ -1125,7 +1125,7 @@ void OdamexHUD() {
 
 	iy = hud::DrawRespawnText(iy);
 
-	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
+	if (::hud_speedometer and cmdstate.IsSpyingSelf())
 	{
 		if (::hud_bigfont)
 			V_SetFont("BIGFONT");
@@ -1732,11 +1732,10 @@ void SpreeHud()
 
 void MultiKillHud()
 {
-	if (!validplayer(displayplayer()) ||
-    !cl_showmultikills ||
-    (!cl_showofflinemultikills && !network_game) ||
-    (!sv_showmultikills && network_game) ||
-    displayplayer().isFreecam)
+	if (not validplayer(displayplayer()) or
+		not cl_showmultikills or
+		(not cl_showofflinemultikills and not network_game) or
+		(not sv_showmultikills and network_game))
 	{
 		return;
 	}
@@ -1801,7 +1800,7 @@ void LevelStateHUD()
 	switch (::levelstate.getState())
 	{
 	case LevelState::WARMUP: {
-		if (consoleplayer().spectator || displayplayer().isFreecam)
+		if (consoleplayer().spectator or cmdstate.IsFreecam())
 		{
 			break;
 		}
@@ -2055,7 +2054,7 @@ void DoomHUD()
 
 	st_y = hud::DrawRespawnText(st_y);
 
-	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
+	if (::hud_speedometer and cmdstate.IsSpyingSelf())
 	{
 		std::string buf;
 		buf = fmt::sprintf("%d" TEXTCOLOR_DARKGREY "ups",
@@ -2068,6 +2067,14 @@ void DoomHUD()
 	// Draw other player name, if spying
 	hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_UNTRANSLATED);
+
+	// when using automap
+	if (cmdstate.IsFreecam())
+	{
+		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, "Freecam", CR_WHITE);
+	}
+
 	st_y += V_LineHeight() + 1;
 
 	// Draw targeted player names.

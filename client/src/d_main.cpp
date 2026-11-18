@@ -92,6 +92,7 @@ END_DISABLE_WARNING_GNU
 #include "g_episode.h"
 #include "g_multikill.h"
 #include "g_spreedef.h"
+#include "freecam.h"
 
 extern size_t got_heapsize;
 
@@ -216,8 +217,8 @@ void D_ProcessEvents (void)
 //
 void D_PostEvent(const event_t& ev)
 {
-	if (ev.type == ev_mouse && !menuactive && gamestate == GS_LEVEL &&
-		(!paused || displayplayer().isFreecam) && ConsoleState != c_down && ConsoleState != c_falling)
+	if (ev.type == ev_mouse and not menuactive and gamestate == GS_LEVEL and
+		(not paused or cmdstate.IsFreecam()) and ConsoleState != c_down and ConsoleState != c_falling)
 	{
 		G_Responder(ev);
 		return;
@@ -293,7 +294,8 @@ void D_Display()
 			V_DoPaletteEffects();
 
 			// Drawn to R_GetRenderingSurface()
-			R_RenderPlayerView(&displayplayer());
+			R_RenderView(&CL_GetDisplayCamera());
+
 			R_DrawViewBorder();
 			ST_Drawer();
 
@@ -390,6 +392,7 @@ void D_DoomLoop()
 			DThinker::DestroyAllThinkers();
 
 			::players.clear();
+			::freecams.clear();
 
 			::gameaction = ga_fullconsole;
 			::gamestate = GS_FULLCONSOLE;
@@ -1047,7 +1050,7 @@ void D_DoomMain()
 	EXTERN_CVAR(cl_colorpreset);
 	EXTERN_CVAR(cl_color);
 	R_BuildPlayerTranslation(menuplayer_id, V_GetColorFromString(cl_color), D_ColorPreset(cl_colorpreset.cstring()));
-	R_BuildPlayerTranslation(consoleplayer_id, V_GetColorFromString(cl_color), D_ColorPreset(cl_colorpreset.cstring()));
+	R_BuildPlayerTranslation(cmdstate.GetConsolePlayerId(), V_GetColorFromString(cl_color), D_ColorPreset(cl_colorpreset.cstring()));
 
 	I_FinishClockCalibration();
 
@@ -1152,9 +1155,12 @@ void D_DoomMain()
 		sv_allowredscreen = 1;
 
 		players.clear();
+		freecams.clear();
 		players.emplace_back();
 		players.back().playerstate = PST_REBORN;
-		consoleplayer_id = displayplayer_id = players.back().id = 1;
+		players.back().id = 1;
+		cmdstate.SetConsolePlayerId(1);
+		cmdstate.SetDisplayPlayerId(1);
 
 		G_InitNew(startmap);
 	}

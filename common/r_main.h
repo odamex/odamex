@@ -193,7 +193,7 @@ int R_GetWidescreen(void);
 //
 
 // Called by G_Drawer.
-void R_RenderPlayerView (player_t *player);
+void R_RenderView (AActor::AActorPtr *cam);
 
 // Called by startup code.
 void R_Init();

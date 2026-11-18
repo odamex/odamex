@@ -346,6 +346,9 @@ public:
 	fixed_t		prevy = 0;
 	fixed_t		prevz = 0;
 
+  fixed_t   viewz = 0;
+  fixed_t   prevviewz = 0;
+
 	AActor		*snext = nullptr, **sprev = nullptr;	// links in sector (if needed)
 
     //More drawing info: to determine current sprite.

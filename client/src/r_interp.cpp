@@ -479,7 +479,7 @@ void OInterpolation::interpolateCamera(fixed_t amount, bool use_localview,
 	{
 		fixed_t x = camera->x;
 		fixed_t y = camera->y;
-		fixed_t z = camera->player ? camera->player->viewz : camera->z;
+		fixed_t z = camera->player ? camera->player->viewz : camera->viewz;
 		fixed_t angle = camera->angle;
 		sector_t* vs = camera->subsector->sector;
 
@@ -526,7 +526,7 @@ void OInterpolation::interpolateCamera(fixed_t amount, bool use_localview,
 					        FixedMul(amount,
 					                 camera->player->viewz - camera->player->prevviewz);
 				else
-					viewz = camera->prevz + FixedMul(amount, z - camera->prevz);
+					viewz = camera->prevviewz + FixedMul(amount, z - camera->prevviewz);
 
 				viewsector = R_PointInSubsector(viewx, viewy)->sector;
 			}
@@ -542,20 +542,22 @@ void OInterpolation::interpolateCamera(fixed_t amount, bool use_localview,
 	}
 }
 
-void OInterpolation::interpolateView(player_t* player, fixed_t amount)
+void OInterpolation::interpolateView(AActor::AActorPtr* cam, fixed_t amount)
 {
-	camera = player->camera; // [RH] Use camera instead of viewplayer
+	camera = cam->get(); // [RH] Use camera instead of viewplayer
 
 	if (!camera || !camera->subsector)
 		return;
 
-	player_t& consolePlayer = consoleplayer();
-	const bool use_localview = consolePlayer.id == displayplayer().id &&
-	                           consolePlayer.health > 0 &&
-	                           not consolePlayer.mo->reactiontime &&
-	                           not netdemo.isInPlayback() && not demoplayback;
+	const bool chase = (camera->player and camera->player->cheats & CF_CHASECAM);
 
-	interpolateCamera(amount, use_localview, player->cheats & CF_CHASECAM);
+	player_t& consolePlayer = consoleplayer();
+	const bool use_localview = consolePlayer.id == cmdstate.GetDisplayPlayerId() and
+	                           consolePlayer.health > 0 and
+	                           not consolePlayer.mo->reactiontime and
+	                           not netdemo.isInPlayback() and not demoplayback;
+
+	interpolateCamera(amount, use_localview, chase);
 }
 
 //
@@ -572,7 +574,7 @@ void OInterpolation::disable()
 }
 
 //
-// The stuff below runs even if R_RenderPlayerView won't run.
+// The stuff below runs even if R_RenderView won't run.
 //
 
 //

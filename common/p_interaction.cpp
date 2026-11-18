@@ -1415,10 +1415,10 @@ void P_TouchSpecialThing(AActor& special, AActor& toucher)
 
 	// Only allow clients to predict touching weapons, not health, armor, etc.
 	// Furthermore, they can only predict for themselves, no one else.
-	if (not serverside && not  (cl_predictpickup
+	if (not serverside and not  (cl_predictpickup
 	                            and P_SpecialIsWeapon(special)
 	                            and toucher.player
-	                            and toucher.player->id == consoleplayer_id))
+	                            and toucher.player->id == cmdstate.GetConsolePlayerId()))
 		return;
 
 	// [Blair] Execute ZDoom thing specials on items that are picked up.

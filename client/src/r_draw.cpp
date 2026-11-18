@@ -560,8 +560,8 @@ void R_CopyTranslationRGB (int fromplayer, int toplayer)
 */
 bool R_IsForcedColor(int player, bool forceteamcolor, bool forceenemycolor)
 {
-	return G_IsTeamGame() || (player != displayplayer_id && !consoleplayer().spectator &&
-	       player != nullplayer_id && ((forceteamcolor && G_IsCoopGame()) || (forceenemycolor && G_IsFFAGame())));
+	return G_IsTeamGame() or (player != cmdstate.GetDisplayPlayerId() and not consoleplayer().spectator and
+	       player != nullplayer_id and ((forceteamcolor and G_IsCoopGame()) or (forceenemycolor and G_IsFFAGame())));
 }
 
 CVAR_FUNC_IMPL(cl_customcolor)
