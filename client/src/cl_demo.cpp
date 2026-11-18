@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -1556,8 +1554,6 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	for (int i = 0; i < NUMTEAMS; i++)
 		arc << GetTeamInfo(static_cast<team_t>(i))->Points;
 
-	arc << level.time;
-
 	for (int i = 0; i < NUM_WORLDVARS; i++)
 	{
 		arc << ACS_WorldVars[i];
@@ -1588,6 +1584,9 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	// Storing the level-snapshots at this location is critically important.  Please see corresponding
 	// comment in readSnapshotData.
 	G_SerializeSnapshots(arc);
+
+	// This must come after the snapshots so that we load it after the G_InitNew in readSnapshotData.
+	arc << level.time;
 
 	P_SerializeSprees(arc);
 
@@ -1696,8 +1695,6 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	for (int i = 0; i < NUMTEAMS; i++)
 		arc >> GetTeamInfo(static_cast<team_t>(i))->Points;
 
-	arc >> level.time;
-
 	for (int i = 0; i < NUM_WORLDVARS; i++)
 	{
 		arc >> ACS_WorldVars[i];
@@ -1744,6 +1741,9 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	displayplayer_id = consoleplayer_id = 1;
 	savegamerestore = false;
 
+	// Read the level time AFTER G_InitNew, which would wipe it out otherwise.
+	arc >> level.time;
+
 	P_SerializeSprees(arc);
 
 	// read consistancy marker
@@ -1784,5 +1784,3 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	// Especially important for rollback replication.
 	::hasReceivedFullUpdate = true;
 }
-
-VERSION_CONTROL (cl_demo_cpp, "$Id$")

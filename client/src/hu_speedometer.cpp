@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Marisa "Randi" Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -32,7 +30,7 @@ double gDisplaySpeed;
 
 /**
  * @brief Add the given player's speed to the speedometer
- * 
+ *
  * @param id ID of the player to check speed for.
  * @param start Starting position.
  * @param end Ending position.
@@ -46,7 +44,7 @@ void HU_AddPlayerSpeed(const v3double_t& start, const v3double_t& end)
 
 /**
  * @brief Calculate and retrieve the current player speed.
- * 
+ *
  * @return Speed in map units.
  */
 double HU_GetPlayerSpeed()

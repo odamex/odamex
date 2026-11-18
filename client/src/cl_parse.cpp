@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1394,11 +1392,17 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 
 	P_ClearId(netid);
 
-	// first disassociate the corpse
+	// First, disassociate the corpse or the temporary placeholder mobj.
 	if (p.mo)
 	{
 		p.mo->player = nullptr;
 		p.mo->health = 0;
+
+		// Don't leave a stale placeholder mobj hanging around forever, if that's what it is!
+		if (p.mo->oflags & MFO_ISAWAITINGSPAWN)
+		{
+			p.mo->Destroy();
+		}
 	}
 
 	G_PlayerReborn(p);
@@ -4049,5 +4053,3 @@ void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 
 	CL_ParseBuffer(::net_message, currentExpectedNewestPacket);
 }
-
-VERSION_CONTROL (cl_parse_cpp, "$Id$")
