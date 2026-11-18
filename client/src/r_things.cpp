@@ -1168,8 +1168,6 @@ void R_DrawSprite (vissprite_t *spr)
 }
 
 
-vissprite_t* closestNonCredibleVisSprite;
-
 //
 // R_DrawMasked
 //
@@ -1179,16 +1177,9 @@ void R_DrawMasked (void)
 
 	R_SortVisSprites ();
 
-	closestNonCredibleVisSprite = nullptr;
-
 	for (auto& vis : std::views::reverse(spritesorter))
 	{
 		R_DrawSprite(vis);
-
-        if (vis->mo and vis->mo->credibility.Get() == CredibilityEnum::NOT_CREDIBLE and not (vis->mo->flags & MF_CORPSE))
-        {
-            closestNonCredibleVisSprite = vis;
-        }
 	}
 
 	// render any remaining masked mid textures
