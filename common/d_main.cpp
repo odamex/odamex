@@ -1079,7 +1079,7 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 
 		D_Init();
 	}
-	catch (CRecoverableError& error)
+	catch (const CRecoverableError& error)
 	{
 		failmsg = error.GetMsg();
 	}
@@ -1104,7 +1104,7 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 
 			D_Init();
 		}
-		catch (CRecoverableError& error)
+		catch (const CRecoverableError& error)
 		{
 			// Something is seriously wrong.
 			fatalmsg = error.GetMsg();
