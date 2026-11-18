@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1081,5 +1079,3 @@ void I_SetPort(netadr_t &addr, int port)
 {
    addr.port = htons(port);
 }
-
-VERSION_CONTROL (i_net_cpp, "$Id$")

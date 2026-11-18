@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2021 by Alex Mayfield.
 //
 // This program is free software; you can redistribute it and/or
@@ -1839,4 +1837,3 @@ odaproto::svc::ShareKeys SVC_ShareKeys(const std::vector<uint32_t>&         play
 	return msg;
 }
 
-VERSION_CONTROL(svc_message, "$Id$")
