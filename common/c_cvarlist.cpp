@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -555,5 +553,3 @@ CVAR(				waddirs, "", "Allow custom WAD directories to be specified",
 
 CVAR(				sv_weapondrop, "0", "Enable/disable weapon drop.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-
-VERSION_CONTROL (c_cvarlist_cpp, "$Id$")

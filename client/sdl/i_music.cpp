@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -340,5 +338,3 @@ bool I_QrySongPlaying (int handle)
 
 	return false;
 }
-
-VERSION_CONTROL (i_music_cpp, "$Id$")

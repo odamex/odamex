@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -100,15 +98,6 @@
 
 int VersionCompat(const int server, const int client);
 std::string VersionMessage(const int server, const int client, const char* email);
-
-// denis - per-file svn version stamps
-class file_version
-{
-public:
-	file_version(const char *uid, const char *id, const char *p, int l, const char *t, const char *d);
-};
-
-#define VERSION_CONTROL(uid, id) namespace { file_version file_version_unique_##uid(#uid, id, __FILE__, __LINE__, __TIME__, __DATE__); }
 
 const char* GitHash();
 const char* GitBranch();
