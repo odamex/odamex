@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1321,5 +1319,3 @@ unsigned int SlopeDiv (unsigned int num, unsigned int den)
 
 	return ans <= SLOPERANGE ? ans : SLOPERANGE;
 }
-
-VERSION_CONTROL (r_data_cpp, "$Id$")

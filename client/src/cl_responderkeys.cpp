@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -37,7 +35,7 @@ bool Key_IsUpKey(int key, bool numlock)
     switch (platform)
     {
         case PF_SWITCH:
-            return (key == OKEY_JOY12);    
+            return (key == OKEY_JOY12);
     default:
         break;
     }
@@ -53,7 +51,7 @@ bool Key_IsDownKey(int key, bool numlock)
     switch (platform)
     {
         case PF_SWITCH:
-            return (key == OKEY_JOY13);   
+            return (key == OKEY_JOY13);
     default:
         break;
     }
@@ -72,7 +70,7 @@ bool Key_IsLeftKey(int key, bool numlock)
     switch (platform)
     {
         case PF_SWITCH:
-            return (key == OKEY_JOY14);   
+            return (key == OKEY_JOY14);
     default:
         break;
     }
@@ -93,7 +91,7 @@ bool Key_IsRightKey(int key, bool numlock)
     case PF_WII:
         return keyboard;
     case PF_SWITCH:
-        return (key == OKEY_JOY15);  
+        return (key == OKEY_JOY15);
     default:
         break;
     }
@@ -110,7 +108,7 @@ bool Key_IsPageUpKey(int key, bool numlock)
         case PF_XBOX:
             return (key == OKEY_JOY7 || keyboard);
         case PF_SWITCH:
-            return (key == OKEY_JOY11);  
+            return (key == OKEY_JOY11);
         default:
             break;
     }
@@ -127,7 +125,7 @@ bool Key_IsPageDownKey(int key, bool numlock)
         case PF_XBOX:
             return (key == OKEY_JOY8 || keyboard);
         case PF_SWITCH:
-            return (key == OKEY_JOY10);  
+            return (key == OKEY_JOY10);
     default:
         break;
     }
@@ -168,7 +166,7 @@ bool Key_IsAcceptKey(int key)
         case PF_WII:
             return (key == OKEY_JOY10 || keyboard);
         case PF_SWITCH:
-            return (key == OKEY_JOY2);  
+            return (key == OKEY_JOY2);
         default:
             break;
     }
@@ -189,7 +187,7 @@ bool Key_IsCancelKey(int key)
         case PF_WII:
             return (key == OKEY_JOY11 || key == OKEY_JOY1 || keyboard);
         case PF_SWITCH:
-            return (key == OKEY_JOY1);  
+            return (key == OKEY_JOY1);
         default:
             break;
     }
@@ -207,7 +205,7 @@ bool Key_IsYesKey(int key)
     case PF_WII:
         return (key == OKEY_JOY10 || key == OKEY_JOY1); // A | (a)
     case PF_SWITCH:
-            return (key == OKEY_JOY2);  
+            return (key == OKEY_JOY2);
     default:
         break;
     }
@@ -228,7 +226,7 @@ bool Key_IsNoKey(int key)
     case PF_WII:
         return (key == OKEY_JOY11 || key == OKEY_JOY2 || keyboard);
     case PF_SWITCH:
-        return (key == OKEY_JOY2); 
+        return (key == OKEY_JOY2);
    default:
         break;
     }
@@ -321,7 +319,7 @@ bool Key_IsSpyPrevKey(int key)
     }
 
     return (mouse || key == OKEY_JOY14);
-} 
+}
 
 bool Key_IsTabulationKey(int key)
 {

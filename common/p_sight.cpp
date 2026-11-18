@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -949,5 +947,3 @@ bool P_CheckFov(const AActor* t1, const AActor* t2, angle_t fov)
 	return ((minang > maxang) ? angle >= minang || angle <= maxang
 	                          : angle >= minang && angle <= maxang);
 }
-
-VERSION_CONTROL (p_sight_cpp, "$Id$")
