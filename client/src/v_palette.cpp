@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -580,7 +578,7 @@ argb_t V_GetColorFromString(const std::string& input_string)
 			while (p < 4)
 				val[p++] = *g++;
 
-			c[i] = ParseHex(val);
+			c[i] = ParseNum<int32_t>(val, 16).value_or(0);
 		}
 	}
 
@@ -1253,5 +1251,3 @@ void V_ResetPalette()
 }
 
 
-
-VERSION_CONTROL (v_palette_cpp, "$Id$")

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -27,8 +25,10 @@
 
 #include "d_event.h"
 #include "hashtable.h"
+#include "istring.h"
 #include <queue>
 #include <list>
+#include <optional>
 
 #define MOUSE_DOOM 0
 #define MOUSE_ZDOOM_DI 1
@@ -43,7 +43,7 @@ std::string I_GetJoystickNameFromIndex (int index);
 bool I_OpenJoystick();
 void I_CloseJoystick();
 std::string I_GetKeyName(int key);
-int I_GetKeyFromName(const std::string& name);
+std::optional<int32_t> I_GetKeyFromName(IStringView name);
 
 enum keydevice_t
 {
@@ -245,5 +245,5 @@ private:
 	IInputDevice*		mJoystickInputDevice;
 };
 
-typedef OHashTable<int, std::string> KeyNameTable;
+using KeyNameTable = OHashTable<int, std::string>;
 extern KeyNameTable key_names;

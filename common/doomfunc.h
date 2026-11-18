@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -235,6 +233,15 @@ consteval int64_t operator ""_i64(unsigned long long x)
 consteval uint64_t operator ""_u64(unsigned long long x)
 {
 	if (x > std::numeric_limits<uint64_t>::max())
-		throw "Literal out of range for type uint65_t";
+		throw "Literal out of range for type uint64_t";
 	return static_cast<uint64_t>(x);
+}
+
+// C++23's uz suffix
+[[nodiscard]]
+consteval size_t operator ""_uz(unsigned long long x)
+{
+	if (x > std::numeric_limits<uint64_t>::max())
+		throw "Literal out of range for type size_t";
+	return static_cast<size_t>(x);
 }

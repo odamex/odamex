@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -344,5 +342,3 @@ bool M_FindFreeName(std::string &filename, const std::string &extension)
 	else
 		return true;
 }
-
-VERSION_CONTROL (m_misc_cpp, "$Id$")

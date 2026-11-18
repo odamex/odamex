@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1997-2000 by id Software Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -719,5 +717,3 @@ rectInt_t M_RectFromDimensions(const v2int_t& origin, const v2int_t& dims)
 	rvo.max.y += dims.y;
 	return rvo;
 }
-
-VERSION_CONTROL (m_vectors_cpp, "$Id$")
