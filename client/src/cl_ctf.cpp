@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -526,5 +524,3 @@ void CTF_Message(team_t flag, team_t team, flag_score_t ev)
 		break;
 	}
 }
-
-VERSION_CONTROL (cl_ctf_cpp, "$Id$")

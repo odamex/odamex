@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -3235,5 +3233,3 @@ BEGIN_COMMAND (menu_video)
 	SetVidMode ();
 }
 END_COMMAND (menu_video)
-
-VERSION_CONTROL (m_options_cpp, "$Id$")

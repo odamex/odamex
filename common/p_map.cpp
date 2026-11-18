@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -4552,5 +4550,3 @@ void P_CopySector(sector_t *dest, sector_t *src)
 		dest->lightingdata = NULL;
 }
 
-
-VERSION_CONTROL (p_map_cpp, "$Id$")

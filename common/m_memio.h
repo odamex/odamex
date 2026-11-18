@@ -1,7 +1,5 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
-//
-// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2005 by Simon Howard
@@ -19,14 +17,14 @@
 //
 // DESCRIPTION:
 //	[Russell] - Added some functions and cleaned up a few areas
-//    
+//
 //-----------------------------------------------------------------------------
 
 #pragma once
 
 typedef struct _MEMFILE MEMFILE;
 
-typedef enum 
+typedef enum
 {
 	MEM_SEEK_SET,
 	MEM_SEEK_CUR,
@@ -43,4 +41,4 @@ long mem_ftell(MEMFILE *stream);
 int mem_fseek(MEMFILE *stream, signed long offset, mem_rel_t whence);
 size_t mem_fsize(MEMFILE *stream); // [Russell] - get size of stream
 char *mem_fgetbuf(MEMFILE *stream); // [Russell] - return stream buffer
-	  
+

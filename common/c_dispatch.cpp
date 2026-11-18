@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1048,5 +1046,3 @@ BEGIN_COMMAND (error)
 	I_Error ("{}", text);
 }
 END_COMMAND (error)
-
-VERSION_CONTROL (c_dispatch_cpp, "$Id$")
