@@ -42,7 +42,6 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_IMAGE_H
-#include FT_OUTLINE_H
 #include FT_MULTIPLE_MASTERS_H
 
 extern byte* Ranges;
@@ -903,8 +902,12 @@ void TrueTypeFont::buildGlyphs()
 	// No-op for a static face.
 	V_ApplyFontVariations(ftlibrary, face, lumpname, mVariations);
 
-	// Bold if the font size is too small so we don't alias away any details.
-	const FT_Pos embolden = (size < 13) ? std::min((13 - size) * 6, 48) : 0;
+	// At small sizes a stroke is only a pixel or two wide, and anti-aliasing
+	// smears it into its grey edges. Hint and rasterize those sizes for a
+	// monochrome grid instead to maximize legibility.
+	const bool monochrome = size < 13;
+	const FT_Int32 load_flags = monochrome ? FT_LOAD_TARGET_MONO : FT_LOAD_DEFAULT;
+	const FT_Render_Mode render_mode = monochrome ? FT_RENDER_MODE_MONO : FT_RENDER_MODE_NORMAL;
 
 	const Texture* background_texture = nullptr;
 	if (stylemask & TTF_TEXTURE)
@@ -938,17 +941,14 @@ void TrueTypeFont::buildGlyphs()
 		if (FT_Get_Char_Index(face, charnum) == 0)
 			continue;
 
-		error = FT_Load_Char(face, charnum, FT_LOAD_DEFAULT);
+		error = FT_Load_Char(face, charnum, load_flags);
 		if (error)
 		{
 			PrintFmt(PRINT_HIGH, "Error loading TrueType font {} glyph {}: {}\n", lumpname, charnum, error);
 			continue;
 		}
 
-		if (embolden > 0 and face->glyph->format == FT_GLYPH_FORMAT_OUTLINE)
-			FT_Outline_Embolden(&face->glyph->outline, embolden);
-
-		error = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
+		error = FT_Render_Glyph(face->glyph, render_mode);
 		if (error)
 		{
 			PrintFmt(PRINT_HIGH, "Error rendering TrueType font {} glyph {}: {}\n", lumpname, charnum, error);
@@ -1037,7 +1037,12 @@ void TrueTypeFont::buildGlyphs()
 		{
 			for (int gy = 0; gy < height; gy++)
 			{
-				const byte pixel = *(source + (pitch * gy) + gx);
+				const byte* row = source + (pitch * gy);
+				byte pixel;
+				if (face->glyph->bitmap.pixel_mode == FT_PIXEL_MODE_MONO)
+					pixel = ((row[gx >> 3] >> (7 - (gx & 7))) & 1) ? 255 : 0;	// 1 bit per pixel, MSB first
+				else
+					pixel = row[gx];
 				const int index = ((gx + pad_left) * tex_height) + (gy + pad_top);
 
 				coverage[index] = pixel;
