@@ -933,7 +933,7 @@ void TrueTypeFont::buildGlyphs()
 	// how far the top of a capital rises above the baseline
 	int cap_bitmap_top = -1;
 
-	for (int charnum = ' '; charnum < '~'; charnum++)
+	for (int charnum = ' '; charnum <= '~'; charnum++)
 	{
 		if (FT_Get_Char_Index(face, charnum) == 0)
 			continue;
