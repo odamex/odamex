@@ -281,8 +281,12 @@ ConsoleLine ConsoleLine::split(size_t max_width)
 			if (break_pos == 0)
 				break_pos = s - text.c_str();
 
+			// The whitespace at the break stays at the end of this line
+			while (break_pos < text.length() and
+			       (text[break_pos] == ' ' or text[break_pos] == '\t'))
+				break_pos++;
+
 			ConsoleLine new_line(text.substr(break_pos, std::string::npos));
-			TrimStringStart(new_line.text);
 
 			// continue the color markup onto the next line
 			if (*wrapped_color_code)
