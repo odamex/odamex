@@ -2051,7 +2051,7 @@ void ParseMapInfoLump(const std::string& lumpname)
 {
 	ResourceId res_id = Res_GetResourceId(lumpname, NS_GLOBAL);
 	if (res_id == ResourceId::INVALID_ID)
-		I_Error("Unable to locate mapinfo lump \"%s\"", lumpname.c_str());
+		I_Error("Unable to locate mapinfo lump \"{}\"", lumpname);
 	ParseMapInfoLump(res_id, lumpname);
 }
 

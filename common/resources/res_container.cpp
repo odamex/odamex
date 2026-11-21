@@ -1541,7 +1541,7 @@ uint32_t ZipResourceContainer::loadEntryData(const ZipDirectoryEntry* entry, uin
 
 			status_code = inflateInit2(&mStream, -MAX_WBITS);
 			if (status_code != Z_OK)
-				I_Error("ZIPDeflateReader: inflateInit2 failed with code %d", status_code); 
+				I_Error("ZIPDeflateReader: inflateInit2 failed with code {}", status_code); 
 
 			mStream.next_out  = static_cast<Bytef*>(data);
 			mStream.avail_out = static_cast<uInt>(size);
