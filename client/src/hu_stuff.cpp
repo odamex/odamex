@@ -1872,6 +1872,9 @@ void LowScoreboard(player_t *player)
 
 void HU_DrawScores(player_t *player)
 {
+	// the scoreboard draws in a face of its own, sized for its rows
+	const V_FaceSubstitution scoreboard_face(FACE_SMALL, FACE_SCOREBOARD);
+
 	if (hud::XSize(hud_scalescoreboard) >= HiResolutionWidth)
 		hud::Scoreboard(player);
 	else

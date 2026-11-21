@@ -735,7 +735,7 @@ void LargeDoomFont::buildGlyphs()
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
 		const std::vector<OFontVariation>& variations) :
 	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0), mCapTop(0),
-	mCapHeight(0), mCellWidth(0),
+	mCapHeight(0), mCellWidth(0), mDigitWidth(0),
 	mHasGradientColors(false), mVariations(variations)
 {
 	load();
@@ -744,7 +744,7 @@ TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemas
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
 		ScaleFunc scale_func, const std::vector<OFontVariation>& variations) :
 	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0), mCapTop(0),
-	mCapHeight(0), mCellWidth(0),
+	mCapHeight(0), mCellWidth(0), mDigitWidth(0),
 	mHasGradientColors(false), mVariations(variations)
 {
 	setScale(scale_func);
@@ -754,7 +754,7 @@ TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemas
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
 		argb_t grad_top, argb_t grad_bottom, const std::vector<OFontVariation>& variations) :
 	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0), mCapTop(0),
-	mCapHeight(0), mCellWidth(0),
+	mCapHeight(0), mCellWidth(0), mDigitWidth(0),
 	mHasGradientColors(true), mGradTop(grad_top), mGradBottom(grad_bottom),
 	mVariations(variations)
 {
@@ -771,6 +771,13 @@ void TrueTypeFont::setVariations(const std::vector<OFontVariation>& variations)
 void TrueTypeFont::setCellWidth(int cell_width)
 {
 	mCellWidth = std::max(0, cell_width);
+	if (isLoaded())
+		load();
+}
+
+void TrueTypeFont::setDigitWidth(int digit_width)
+{
+	mDigitWidth = std::max(0, digit_width);
 	if (isLoaded())
 		load();
 }
@@ -919,11 +926,11 @@ void TrueTypeFont::buildGlyphs()
 	// every vertical stroke alike and leaves the horizontal ones be.
 	const int bold = monochrome ? 1 : 0;
 
-	// A cell font and a bold one are both scaled narrower or wider than they
-	// are tall, which the face's own hints are not written for: they round
-	// some stems to one pixel and others to two. FreeType's autohinter snaps
-	// them all alike.
-	const bool rescaled = (mCellWidth > 0 or bold > 0);
+	// A cell font, a digit-width font and a bold one are all scaled narrower
+	// or wider than they are tall, which the face's own hints are not written
+	// for: they round some stems to one pixel and others to two. FreeType's
+	// autohinter snaps them all alike.
+	const bool rescaled = (mCellWidth > 0 or mDigitWidth > 0 or bold > 0);
 	const FT_Int32 load_flags = (monochrome ? FT_LOAD_TARGET_MONO : FT_LOAD_DEFAULT) |
 	                            (rescaled ? FT_LOAD_FORCE_AUTOHINT : 0);
 	const FT_Render_Mode render_mode = monochrome ? FT_RENDER_MODE_MONO : FT_RENDER_MODE_NORMAL;
@@ -931,6 +938,7 @@ void TrueTypeFont::buildGlyphs()
 	// Scale the face horizontally until the digit 0 advances fit_width:
 	// - A cell font fills all but the cell's last column, which stays clear
 	//   for the drop shadow so that neighbouring glyphs never run together.
+	// - A digit-width font has its 0 as wide as asked.
 	// - Otherwise the face keeps its own width.
 	// A bold font is then narrowed by the column its smear adds, so that bold
 	// text takes the room the plain face would, and layouts that place text
@@ -941,6 +949,8 @@ void TrueTypeFont::buildGlyphs()
 		int fit_width = (face->glyph->advance.x >> 6) - bold;
 		if (mCellWidth > 0)
 			fit_width = mCellWidth - std::max(1, mCellWidth / 8) - bold;
+		else if (mDigitWidth > 0)
+			fit_width = mDigitWidth - bold;
 
 		int x_size = size;
 		for (int attempt = 0; attempt < 4 and fit_width > 0; attempt++)

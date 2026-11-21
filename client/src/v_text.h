@@ -80,6 +80,7 @@ enum fontface_t
 	FACE_SMALL,
 	FACE_BIG,
 	FACE_DIGITS,
+	FACE_SCOREBOARD,
 };
 
 //
@@ -90,6 +91,27 @@ enum fontface_t
 // same scale.
 //
 OFont* V_GetFaceFont(fontface_t face, int pixel_scale);
+
+//
+// V_FaceSubstitution
+//
+// While one is alive, V_GetFaceFont hands out the face `to` wherever `from`
+// is asked for. This draws a whole screen, like the scoreboard, in a face of
+// its own without threading the face through every call that draws on it.
+//
+class V_FaceSubstitution
+{
+public:
+	V_FaceSubstitution(fontface_t from, fontface_t to);
+	~V_FaceSubstitution();
+
+	V_FaceSubstitution(const V_FaceSubstitution&) = delete;
+	V_FaceSubstitution& operator=(const V_FaceSubstitution&) = delete;
+
+private:
+	fontface_t	mFrom;
+	fontface_t	mPrevious;
+};
 
 OFont* V_GetHudFont(int pixel_scale);
 

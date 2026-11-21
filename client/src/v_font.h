@@ -299,6 +299,11 @@ public:
 	// 0 lays the face out with its own advances.
 	void setCellWidth(int cell_width);
 
+	// Narrows or widens the face until the digit 0 advances digit_width
+	// pixels, keeping every other glyph's own proportional advance. Rebuilds
+	// the glyphs if already loaded. 0 leaves the face's width alone.
+	void setDigitWidth(int digit_width);
+
 protected:
 	void buildGlyphs() override;
 	int getGlyphAdvance(char c) const override;
@@ -313,6 +318,7 @@ private:
 	int				mCapTop;
 	int				mCapHeight;
 	int				mCellWidth;
+	int				mDigitWidth;
 
 	int				mAdvanceX[256];
 	int				mAdvanceY[256];

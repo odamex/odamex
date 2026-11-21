@@ -368,7 +368,76 @@ static const hudfacedef_t hud_faces[] =
 	{ "FONT_SM",  8 },		// FACE_SMALL
 	{ "FONT_BIG", 12 },		// FACE_BIG
 	{ "FONT_DIG", 8 },		// FACE_DIGITS
+	{ "FONT_SM",  8 },		// FACE_SCOREBOARD
 };
+
+
+// The face each face is currently drawn as -- see V_FaceSubstitution.
+static fontface_t face_substitutes[] = { FACE_SMALL, FACE_BIG, FACE_DIGITS, FACE_SCOREBOARD };
+
+V_FaceSubstitution::V_FaceSubstitution(fontface_t from, fontface_t to) :
+	mFrom(from), mPrevious(face_substitutes[from])
+{
+	face_substitutes[from] = to;
+}
+
+V_FaceSubstitution::~V_FaceSubstitution()
+{
+	face_substitutes[mFrom] = mPrevious;
+}
+
+
+//
+// V_GetScoreboardFont
+//
+// The scoreboard's TrueType face. Its rows are eight units apart, laid out
+// for the bitmap font's seven-unit capitals, so the face is built at
+// whatever size gives it capitals that tall -- larger than the HUD face,
+// whose capitals are only six pixels at its smallest, too few to keep the
+// openings of S and 3. It is then narrowed until its 0 is as wide as the
+// HUD face's, so the scoreboard's text takes the room it always has.
+//
+static OFont* V_GetScoreboardFont(int pixel_scale)
+{
+	typedef std::map<int, OFont*> FontCache;
+	static FontCache cache;
+
+	FontCache::iterator it = cache.find(pixel_scale);
+	if (it != cache.end())
+		return it->second;
+
+	const hudfacedef_t& def = hud_faces[FACE_SCOREBOARD];
+	const unsigned int style = TrueTypeFont::TTF_TEXTURE | TrueTypeFont::TTF_SHADOW;
+	const OFont* hud = V_GetShadowFont(def.lumpname, def.base_size * pixel_scale);
+	const int cap_height = (def.base_size - 1) * pixel_scale;
+	const int digit_width = hud->getTextWidth('0');
+
+	const FontBuildScope building;
+	const char* lump = V_FontLumpExists(def.lumpname) ? def.lumpname : TTF_LUMP_NAME;
+
+	// Capitals grow with the size, so step up from the HUD face's size to
+	// the first one tall enough.
+	int size = def.base_size * pixel_scale;
+	for (; size < 2 * def.base_size * pixel_scale; size++)
+	{
+		const TrueTypeFont probe(lump, size, style);
+		if (not probe.isUsable() or probe.getCapHeight() >= cap_height)
+			break;
+	}
+
+	TrueTypeFont* ttf = new TrueTypeFont(lump, size, style);
+	ttf->setDigitWidth(digit_width);
+
+	OFont* font = ttf;
+	if (not font->isUsable())
+	{
+		delete font;
+		font = V_GetShadowFont(def.lumpname, def.base_size * pixel_scale);
+	}
+
+	cache[pixel_scale] = font;
+	return font;
+}
 
 
 //
@@ -380,10 +449,14 @@ OFont* V_GetFaceFont(fontface_t face, int pixel_scale)
 	// face built at N times its base size.
 	pixel_scale = std::max(1, pixel_scale);
 
+	face = face_substitutes[face];
+
 	const hudfacedef_t& def = hud_faces[face];
 	const int size = def.base_size * pixel_scale;
 	if (ui_font_hud.asInt() == FONT_BITMAP)
 		return V_GetBitmapFont(def.lumpname, size);
+	if (face == FACE_SCOREBOARD)
+		return V_GetScoreboardFont(pixel_scale);
 	return V_GetShadowFont(def.lumpname, size);
 }
 
