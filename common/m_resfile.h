@@ -159,7 +159,15 @@ struct scannedPWAD_t
 std::string M_ResFilesToString(const OResFiles& files);
 const std::vector<std::string>& M_FileTypeExts(ofile_t type);
 std::vector<std::string> M_FileSearchDirs();
-bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted);
+// How M_ResolveWantedFile treats a wanted path that already exists verbatim.
+enum class resolve_policy_t
+{
+	OPEN_AS_GIVEN, // take a file or directory at the wanted path before searching
+	SEARCH_FIRST,  // search the WAD directories first -- a directory is the last resort
+};
+
+bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted,
+                         resolve_policy_t policy = resolve_policy_t::OPEN_AS_GIVEN);
 std::vector<scannedIWAD_t> M_ScanIWADs();
 std::vector<scannedPWAD_t> M_ScanPWADs();
 OMD5Hash M_DirectoryMarkerHash(const std::string& basename);

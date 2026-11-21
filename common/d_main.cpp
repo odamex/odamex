@@ -484,7 +484,7 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 		// odamex.pk3, or an "odamex" directory - in that order of preference.
 		OWantFile want_odamex;
 		OWantFile::make(want_odamex, "odamex", OFILE_WAD);
-		if (!M_ResolveWantedFile(odamex_wad, want_odamex))
+		if (!M_ResolveWantedFile(odamex_wad, want_odamex, resolve_policy_t::SEARCH_FIRST))
 		{
 			I_FatalError("Could not resolve the \"{}\" engine resource "
 			             "(odamex.wad, odamex.pk3/zip, or an odamex directory).  "

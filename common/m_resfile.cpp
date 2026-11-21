@@ -357,13 +357,22 @@ bool M_IsDirectoryMarkerHash(const OMD5Hash& hash, const std::string& basename)
 	return not hash.empty() and hash == M_DirectoryMarkerHash(basename);
 }
 
-bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
+bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted, resolve_policy_t policy)
 {
 	const OMD5Hash& want_digest = wanted.getWantedContentDigest();
 
+	// Don't open the wanted path as given when searching first.
+	// When searching for "odamex" as the "odamex.wad", on Linux it has a tendency
+	// of selecting "odamex" the executable instead of "odamex.wad", so the
+	// engine resource only takes a same-named directory as a last ditch
+	// effort.
+	// A user's wanted wad, like "wad mydir", still opens what it names.
+	const std::string& wanted_path = wanted.getWantedPath();
+	const bool open_as_given = (policy == resolve_policy_t::OPEN_AS_GIVEN);
+
 	// A directory can be loaded as a resource container directly.  If the
 	// want carries a content digest, the directory's contents must match it.
-	if (M_IsDirectory(wanted.getWantedPath()))
+	if (open_as_given and M_IsDirectory(wanted_path))
 	{
 		if (want_digest.empty() or Res_ContentDigest(wanted.getWantedPath()) == want_digest)
 		{
@@ -375,7 +384,7 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 
 	// If someone goes throught the effort of pointing directly to a file
 	// correctly, believe them.
-	if (M_FileExists(wanted.getWantedPath()))
+	if (open_as_given and M_FileExists(wanted_path))
 	{
 		if (wanted.getWantedMD5().empty() and want_digest.empty())
 		{
