@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2020 by The Odamex Team.
 //
@@ -119,6 +117,3 @@ fhfprint_t W_FarmHash128(const byte* lumpdata, int length)
 
 	return fhfngprnt;
 }
-
-
-VERSION_CONTROL (w_wad_cpp, "$Id$")

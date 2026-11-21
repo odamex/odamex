@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -1565,6 +1563,3 @@ uint32_t ZipResourceContainer::loadEntryData(const ZipDirectoryEntry* entry, uin
 	}
 	return 0;
 }
-
-
-VERSION_CONTROL (res_container_cpp, "$Id$")

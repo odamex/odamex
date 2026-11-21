@@ -1,8 +1,6 @@
 
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -818,6 +816,3 @@ std::vector<std::string> M_ListDirectoryContents(const std::string& base_path, s
 	std::sort(files.begin(), files.end());
 	return files;
 }
-
-
-VERSION_CONTROL (m_fileio_cpp, "$Id$")

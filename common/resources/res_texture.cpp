@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
@@ -859,9 +857,19 @@ void AnimatedTextureManager::loadAnimationsFromAnimatedLump()
 		return;
 
 	const uint8_t* data = Res_LoadResource<uint8_t>(res_id, PU_STATIC);
+	const uint8_t* const end = data + lumplen;
 
-	for (const uint8_t* ptr = data; *ptr != 255; ptr += 23)
+	static constexpr ptrdiff_t ENTRY_SIZE = 23;
+	for (const uint8_t* ptr = data; ; ptr += ENTRY_SIZE)
 	{
+		// The entries end at a 255 terminator, and each one before it must be
+		// whole: a lump missing either would be read past its end.
+		if (ptr >= end or (*ptr != 255 and end - ptr < ENTRY_SIZE))
+			I_Error("Tried to read past end of ANIMATED lump in {}",
+			        Res_GetResourceContainerFileName(res_id));
+		if (*ptr == 255)
+			break;
+
 		bool is_wall = *ptr & 1;
 		const OString start_name = OStringToUpper(reinterpret_cast<const char*>(ptr + 10), 8);
 		const OString end_name = OStringToUpper(reinterpret_cast<const char*>(ptr + 1), 8);

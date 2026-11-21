@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -695,6 +693,5 @@ void R_StreamStoredLines32_NEON(argb_t* dest, const argb_t* source, int destpitc
 	}
 }
 
-VERSION_CONTROL (r_drawt_neon_cpp, "$Id$")
 
 #endif

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2015 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -27,4 +25,3 @@
 
 // Just initialize static member variables
 const ResourceId ResourceId::INVALID_ID(0xFFFFFFFF);
-

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1622,5 +1620,3 @@ void R_DrawParticle(rendercontext_t& ctx, vissprite_t* vis)
 	for (ctx.draw.dspan.y = y1; ctx.draw.dspan.y <= y2; ctx.draw.dspan.y++)
 		R_FillTranslucentSpan(ctx);
 }
-
-VERSION_CONTROL (r_things_cpp, "$Id$")

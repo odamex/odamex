@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1328,6 +1326,3 @@ void DCanvas::GetTransposedBlock(int x, int y, int width, int height, byte* dest
 				x, y, width, height,
 				mSurface->getRowStepInPixels(), mSurface->getColStepInPixels());
 }
-
-VERSION_CONTROL (v_draw_cpp, "$Id$")
-

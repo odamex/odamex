@@ -480,7 +480,7 @@ void MIType_MapName(OScanner& os, bool newStyleMapInfo, OLumpName& out)
 	{
 		OLumpName map_name = os.getToken();
 
-		if (IsNum(map_name.c_str()))
+		if (IsNum(map_name))
 		{
 			const int map = std::atoi(map_name.c_str());
 			map_name = fmt::format("MAP{:02d}", map);
@@ -655,7 +655,7 @@ void MIType_Sky(OScanner& os, bool newStyleMapInfo, level_pwad_info_t& info)
 	{
 		os.mustScanFloat();
 	}
-	if (IsRealNum(os.getToken().c_str()))
+	if (IsRealNum(os.getToken()))
 	{
 		if constexpr (SKY == 1)
 		{
@@ -718,7 +718,7 @@ struct MIType_CompatFlag_t
 		}
 		else
 		{
-			if (IsNum(os.getToken().c_str()))
+			if (IsNum(os.getToken()))
 			{
 				if (os.getTokenInt())
 					out |= bits;
@@ -738,7 +738,7 @@ struct MIType_CompatFlag_t
 		os.scan();
 		if (os.compareToken("="))
 			os.mustScanInt();
-		else if (!IsNum(os.getToken().c_str()))
+		else if (not IsNum(os.getToken()))
 			os.unScan();
 	}
 };
@@ -922,7 +922,7 @@ void MIType_SpawnFilter(OScanner& os, bool newStyleMapInfo, MapThingFlags& out)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
-	if (IsNum(os.getToken().c_str()))
+	if (IsNum(os.getToken()))
 	{
 		const int num = os.getTokenInt();
 		switch (num)
@@ -1030,7 +1030,7 @@ void MIType_Border(OScanner& os, bool doEquals)
 
 	os.mustScan(); // can be string or int
 
-	if (IsNum(os.getToken().c_str()))
+	if (IsNum(os.getToken()))
 	{
 		gameborder_t& border = gameinfo.border;
 
@@ -1897,7 +1897,7 @@ void ParseMapInfoBuffer(const char* buffer, size_t length, const OLumpName& lump
 
 			OLumpName map_name = os.getToken();
 
-			if (IsNum(map_name.c_str()))
+			if (IsNum(map_name))
 			{
 				const int map = std::atoi(map_name.c_str());
 				map_name = fmt::format("MAP{:02d}", map);

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1111,5 +1109,3 @@ void R_ClearOpenings(rendercontext_t& ctx)
 	ctx.seg.sprclip_pool.clear();
 	ctx.seg.midscales_pool.clear();
 }
-
-VERSION_CONTROL (r_segs_cpp, "$Id$")

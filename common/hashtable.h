@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -250,6 +248,7 @@ public:
 		{ }
 
 		// allow implicit converstion from iterator to const_iterator
+		// NOLINTNEXTLINE(misc-explicit-constructor)
 		operator ConstThisClass() const
 		{
 			return ConstThisClass(mBucketNum, mHashTable);

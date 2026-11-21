@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -1136,5 +1134,3 @@ int ISDL20VideoSubsystem::getMonitorCount() const
 	return SDL_GetNumVideoDisplays();
 }
 #endif	// SDL20
-
-VERSION_CONTROL (i_video_sdl20_cpp, "$Id$")

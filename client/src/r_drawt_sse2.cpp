@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -796,5 +794,3 @@ void R_StreamStoredLines32_SSE2(argb_t* dest, const argb_t* source, int destpitc
 }
 
 #endif
-
-VERSION_CONTROL(r_drawt_sse2_cpp, "$Id$")

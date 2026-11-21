@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1774,5 +1772,3 @@ bool W_IsIWADShareware(const std::string& filename)
 	const OString idname = identtab.identify(filename);
 	return idname.find("DOOM SHAREWARE") == 0;
 }
-
-VERSION_CONTROL (w_ident_cpp, "$Id$")

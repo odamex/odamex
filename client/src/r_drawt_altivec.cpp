@@ -1,7 +1,5 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
-//
-// $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -704,6 +702,5 @@ void R_StreamStoredLines32_ALTIVEC(argb_t* dest, const argb_t* source, int destp
 }
 
 
-VERSION_CONTROL (r_drawt_altivec_cpp, "$Id$")
 
 #endif

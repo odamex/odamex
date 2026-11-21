@@ -448,5 +448,3 @@ void R_ShowContexts()
 		canvas->Clear(stop, y1, stop + 1, y2, slicecolor);
 	}
 }
-
-VERSION_CONTROL (r_context_cpp, "$Id$")
