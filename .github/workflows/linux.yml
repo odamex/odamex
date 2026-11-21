@@ -79,7 +79,7 @@ jobs:
     name: Build (ARM64)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     steps:
     - name: Checkout source
       uses: actions/checkout@v7
@@ -152,7 +152,7 @@ jobs:
     name: Build Flatpak (Ubuntu 24.04 ARM)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
       options: --privileged

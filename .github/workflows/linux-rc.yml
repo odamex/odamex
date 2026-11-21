@@ -115,7 +115,7 @@ jobs:
   build-arm:
     name: Build (ARM64)
     needs: pre_job
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     steps:
     - name: Checkout source
       uses: actions/checkout@v7
@@ -199,7 +199,7 @@ jobs:
   build-flatpak-arm:
     name: Build Flatpak (arm64)
     needs: pre_job
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
       options: --privileged

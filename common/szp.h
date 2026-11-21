@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -134,12 +132,14 @@ public:
 	}
 
 	// use as raw pointer
+	// NOLINTNEXTLINE(misc-explicit-constructor)
 	operator T*() noexcept
 	{
 		return get();
 	}
 
 	// use as raw pointer
+	// NOLINTNEXTLINE(misc-explicit-constructor)
 	operator const T*() const noexcept
 	{
 		return get();

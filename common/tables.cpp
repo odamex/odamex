@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -2135,6 +2133,4 @@ void Table_SetTanToAngle(int version)
    else
       p_tantoangle = tantoangle_acc; // newer versions use the more accurate one
 }
-
-VERSION_CONTROL (tables_cpp, "$Id$")
 

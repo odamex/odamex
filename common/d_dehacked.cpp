@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -2863,5 +2861,3 @@ BEGIN_COMMAND(playstate)
 	}
 }
 END_COMMAND(playstate)
-
-VERSION_CONTROL(d_dehacked_cpp, "$Id$")

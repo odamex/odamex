@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -766,24 +764,27 @@ bool G_Responder (const event_t& ev)
 	if (gameaction == ga_nothing &&
 		(demoplayback || gamestate == GS_DEMOSCREEN))
 	{
-		const char *cmd = Bindings.GetBind(ev.data1).c_str();
+		const IStringView cmd = Bindings.GetBind(ev.data1);
 
 		if (ev.type == ev_keydown)
 		{
 
-			if (!cmd || (
-				strnicmp (cmd, "menu_", 5) &&
-				stricmp (cmd, "toggleconsole") &&
-				stricmp (cmd, "sizeup") &&
-				stricmp (cmd, "sizedown") &&
-				stricmp (cmd, "togglemap") &&
-				stricmp (cmd, "spynext") &&
-				stricmp (cmd, "chase") &&
-				stricmp (cmd, "+showscores") &&
-				stricmp (cmd, "bumpgamma") &&
-				stricmp (cmd, "screenshot") &&
-                stricmp (cmd, "stepmode") &&
-                stricmp (cmd, "step")))
+			static constexpr std::array idk {
+				"toggleconsole",
+				"sizeup",
+				"sizedown",
+				"togglemap",
+				"spynext",
+				"chase",
+				"+showscores",
+				"bumpgamma",
+				"screenshot",
+				"stepmode",
+				"step",
+			};
+			if (cmd.empty() or
+			    (not cmd.starts_with("menu_") and
+				 std::ranges::none_of(idk, [&cmd](const auto& str){ return cmd == str; })))
 			{
 				M_StartControlPanel ();
 				return true;
@@ -793,13 +794,13 @@ bool G_Responder (const event_t& ev)
 				return C_DoKey(ev, &Bindings, &DoubleBindings);
 			}
 		}
-		if (cmd && cmd[0] == '+')
+		if (not cmd.empty() and cmd[0] == '+')
 			return C_DoKey(ev, &Bindings, &DoubleBindings);
 
 		return false;
 	}
 
-	if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
+	if (gamestate == GS_LEVEL or gamestate == GS_INTERMISSION)
 	{
 		if (C_DoNetDemoKey(ev))	// netdemo playback ate the event
 			return true;
@@ -2307,5 +2308,3 @@ bool G_CheckDemoStatus (void)
 	return false;
 }
 
-
-VERSION_CONTROL (g_game_cpp, "$Id$")

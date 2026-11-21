@@ -93,7 +93,7 @@ jobs:
         MINORVERSION: ${{ needs.pre_job.outputs.minor }}
         PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
     - name: Cache macOS universal deps
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: deps/universal
         key: macos-universal-deps-${{ env.sdl2_version }}-${{ env.sdl2_mixer_version }}-${{ env.pcre2_version }}-${{ env.wxwidgets_version }}-${{ env.zlib_version }}-${{ env.libpng_version }}-${{ env.zstd_version }}-${{ env.macos_deployment_target }}

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -2534,5 +2532,3 @@ CVAR_FUNC_IMPL(sv_intermissionlimit)
 
 	level.inttimeleft = var;
 }
-
-VERSION_CONTROL (p_setup_cpp, "$Id$")
