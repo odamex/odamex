@@ -292,6 +292,13 @@ public:
 	// the font is already loaded.
 	void setVariations(const std::vector<OFontVariation>& variations);
 
+	// Fits the face to a fixed character cell: its glyphs are widened or
+	// narrowed to fill the cell but for a column left clear between
+	// neighbours, and every glyph then advances by the cell. Rebuilds the
+	// glyphs if already loaded.
+	// 0 lays the face out with its own advances.
+	void setCellWidth(int cell_width);
+
 protected:
 	void buildGlyphs() override;
 	int getGlyphAdvance(char c) const override;
@@ -305,6 +312,7 @@ private:
 	int				mAscent;
 	int				mCapTop;
 	int				mCapHeight;
+	int				mCellWidth;
 
 	int				mAdvanceX[256];
 	int				mAdvanceY[256];

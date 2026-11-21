@@ -131,6 +131,15 @@ OFont* V_GetFont(const char* lumpname, int pixel_size);
 OFont* V_GetStyledFont(const char* lumpname, int pixel_size, unsigned int stylemask);
 
 //
+// V_GetCellFont
+//
+// Like V_GetStyledFont, but fitted to a fixed character cell: pixel_size
+// sets the height, and every character advances cell_width pixels.
+//
+OFont* V_GetCellFont(const char* lumpname, int pixel_size, int cell_width,
+                     unsigned int stylemask);
+
+//
 // V_GetGradientFont
 //
 // A TTF_GRADIENT font filled with a fixed top-to-bottom color gradient. The

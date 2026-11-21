@@ -239,6 +239,43 @@ OFont* V_GetStyledFont(const char* lumpname, int pixel_size, unsigned int stylem
 
 
 //
+// V_GetCellFont
+//
+OFont* V_GetCellFont(const char* lumpname, int pixel_size, int cell_width,
+                     unsigned int stylemask)
+{
+	typedef std::map<std::string, OFont*> FontCache;
+	static FontCache cache;
+
+	pixel_size = std::clamp(pixel_size, 4, 128);
+	cell_width = std::clamp(cell_width, 1, 128);
+	const std::string key = fmt::format("{}:{}:{}:{}", lumpname, pixel_size, cell_width, stylemask);
+
+	FontCache::iterator it = cache.find(key);
+	if (it != cache.end())
+		return it->second;
+
+	const FontBuildScope building;
+
+	if (not V_FontLumpExists(lumpname))
+		lumpname = TTF_LUMP_NAME;
+
+	TrueTypeFont* ttf = new TrueTypeFont(lumpname, pixel_size, stylemask);
+	ttf->setCellWidth(cell_width);
+
+	OFont* font = ttf;
+	if (not font->isUsable())
+	{
+		delete font;
+		font = new SmallDoomFont(std::max(1, pixel_size / 8) * FRACUNIT);
+	}
+
+	cache[key] = font;
+	return font;
+}
+
+
+//
 // V_GetShadowFont
 //
 OFont* V_GetShadowFont(const char* lumpname, int pixel_size)

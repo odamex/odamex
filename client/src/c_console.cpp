@@ -81,20 +81,25 @@ EXTERN_CVAR(ui_font_messages)
 //
 // C_Font
 //
-// The console's text face. The console lays text out proportionally, so its
-// metrics come from the font rather than from a fixed character cell. The
-// TrueType face has a drop shadow like the HUD's, which pads each glyph
-// without changing its advance or the line height.
+// The console's text face. Both faces lay out on the CONCHARS grid of one
+// cell per character, and widths still come from the font. The TrueType
+// face has a drop shadow like the HUD's, which pads each glyph without
+// changing its advance or the line height.
 //
 static const OFont* C_Font()
 {
 	if (not V_FontsReady())
 		return nullptr;
 
-	const int size = 8 * std::max(1u, ConScale);
+	const int cell = 8 * std::max(1u, ConScale);
 	if (ui_font_console.asInt() == FONT_BITMAP)
-		return V_GetBitmapFont("FONT_CON", size);
-	return V_GetShadowFont("FONT_CON", size);
+		return V_GetBitmapFont("FONT_CON", cell);
+
+	// Built a quarter taller than the cell, which gives the TrueType
+	// capitals about the height of CONCHARS', then widened until every
+	// character advances one cell -- the same grid CONCHARS lays out on.
+	return V_GetCellFont("FONT_CON", cell * 5 / 4, cell,
+	                     TrueTypeFont::TTF_TEXTURE | TrueTypeFont::TTF_SHADOW);
 }
 
 //
@@ -127,6 +132,34 @@ static const OFont* C_MessageFont()
 
 static bool				cursoron = false;
 static int				ConBottom = 0;
+
+//
+// C_RowHeight
+//
+// Distance between console rows. CONCHARS keeps its descenders inside its
+// cell, but a TrueType face's hang below the baseline and its brackets
+// rise above the capitals, so its rows are spaced by the face's line
+// height -- top of its tallest glyph to the bottom of its deepest shadow.
+//
+static int C_RowHeight()
+{
+	const int cell = static_cast<int>(ConCharSize);
+	const OFont* font = C_Font();
+	if (not font or ui_font_console.asInt() == FONT_BITMAP)
+		return std::max(1, cell);
+
+	return std::max(cell, font->getHeight());
+}
+
+//
+// C_VisibleRows
+//
+// How many console rows the console's current height holds.
+//
+static unsigned int C_VisibleRows()
+{
+	return static_cast<unsigned int>(std::max(0, ConBottom) / C_RowHeight());
+}
 static int RowAdjust = 0;
 
 static const int		CONSOLE_WHEEL_LINES = 3;
@@ -1607,8 +1640,8 @@ void C_Ticker()
 			else
 				RowAdjust++;
 
-			if (RowAdjust > ConRows - ConBottom / ConCharSize)
-				RowAdjust = ConRows - ConBottom / ConCharSize;
+			if (RowAdjust > ConRows - C_VisibleRows())
+				RowAdjust = ConRows - C_VisibleRows();
 		}
 		else if (ScrollState == SCROLLDN)
 		{
@@ -1623,8 +1656,8 @@ void C_Ticker()
 				RowAdjust = 0;
 		}
 
-		if (RowAdjust + (ConBottom/ConCharSize) + 1 > static_cast<unsigned int>(con_buffersize.asInt()))
-			RowAdjust = con_buffersize.asInt() - (ConBottom/ConCharSize);
+		if (RowAdjust + C_VisibleRows() + 1 > static_cast<unsigned int>(con_buffersize.asInt()))
+			RowAdjust = con_buffersize.asInt() - C_VisibleRows();
 	}
 
 	if (--CursorTicker <= 0)
@@ -1897,8 +1930,8 @@ void C_DisplayTicker()
 		}
 	}
 
-	if (RowAdjust + (ConBottom / ConCharSize) + 1 > static_cast<unsigned int>(con_buffersize.asInt()))
-		RowAdjust = con_buffersize.asInt() - (ConBottom / ConCharSize);
+	if (RowAdjust + C_VisibleRows() + 1 > static_cast<unsigned int>(con_buffersize.asInt()))
+		RowAdjust = con_buffersize.asInt() - C_VisibleRows();
 }
 
 
@@ -1914,13 +1947,14 @@ void C_DrawConsole()
 	int primary_surface_height = primary_surface->getHeight();
 
 	int left = CONPX(8);
-	int lines = (ConBottom - CONPX(12)) / CONPX(8);
 
-	int offset;
-	if (lines * CONPX(8) > ConBottom - CONPX(16))
-		offset = CONPX(-16);
-	else
-		offset = CONPX(-12);
+	// Rows stack upward from the command line, the newest a full row above
+	// it, so no row's descenders reach the one below.
+	const int row_height = C_RowHeight();
+	const int prompt_top = ConBottom - CONPX(20);
+	int lines = std::max(0, prompt_top) / row_height;
+	const int rows = lines;
+	const auto row_top = [&](int row) { return prompt_top - ((rows - row + 1) * row_height); };
 
 	if (ConsoleState == c_up || ConBottom == 0)
 	{
@@ -2097,7 +2131,7 @@ void C_DrawConsole()
 			// backwards "N".
 			for (size_t l = 0; l < cLines; l++)
 			{
-				const int row_y = offset + ((lines + l + 1) * ConCharSize);
+				const int row_y = row_top(lines + static_cast<int>(l) + 1);
 
 				for (size_t col = 0; col < cColumns; col++)
 				{
@@ -2118,7 +2152,7 @@ void C_DrawConsole()
 				snprintf(rowstring, ARRAY_LENGTH(rowstring), "...and %zu more...",
 				         ::CmdCompletions.size() - (cLines * cColumns));
 				screen->DrawFontText(cfont, CR_YELLOW, left,
-				                     offset + ((lines + cLines + 1) * ConCharSize), rowstring);
+				                     row_top(lines + static_cast<int>(cLines) + 1), rowstring);
 			}
 		}
 
@@ -2133,7 +2167,7 @@ void C_DrawConsole()
 			const char* str = current_line_it->text.c_str();
 			std::string_view color_code = current_line_it->color_code;
 			int color = color_code[0] != '\0' ? V_GetTextColor(color_code) : CR_GRAY;
-			screen->DrawFontText(C_Font(), color, left, offset + (lines * ConCharSize), str);
+			screen->DrawFontText(C_Font(), color, left, row_top(lines), str);
 		}
 
 		if (ConBottom >= CONPX(20))
@@ -2173,7 +2207,7 @@ void C_DrawConsole()
 				// and if we can scroll no further (12)
 				const char scrolled_up_str[] = "\012";		// 10 = \012 octal
 				const char no_scroll_str[] = "\014";		// 12 = \014 octal
-				const char* str = (RowAdjust + (ConBottom/ConCharSize) < ConRows) ? scrolled_up_str : no_scroll_str;
+				const char* str = (RowAdjust + C_VisibleRows() < ConRows) ? scrolled_up_str : no_scroll_str;
 				// CONCHARS arrow glyphs, again not present in a TrueType face
 				screen->PrintStr(0, ConBottom - CONPX(28), str, -1, true, ConScale);
 			}
@@ -2283,11 +2317,11 @@ static bool C_HandleKey(const event_t& ev)
 		}
 		else if (Key_IsPageUpKey(ch, NumLockEnabled))
 		{
-			if (static_cast<int>(ConRows) > static_cast<int>(ConBottom / ConCharSize))
+			if (static_cast<int>(ConRows) > static_cast<int>(C_VisibleRows()))
 			{
 				if (KeysShifted)
 					// Move to top of console buffer
-					RowAdjust = ConRows - ConBottom / ConCharSize;
+					RowAdjust = ConRows - C_VisibleRows();
 				else
 					// Start scrolling console buffer up
 					ScrollState = SCROLLUP;
@@ -2307,11 +2341,11 @@ static bool C_HandleKey(const event_t& ev)
 		else if (ch == OKEY_MWHEELUP)
 		{
 			// Scroll the console buffer up a few lines at a time
-			if (static_cast<int>(ConRows) > static_cast<int>(ConBottom / ConCharSize))
+			if (static_cast<int>(ConRows) > static_cast<int>(C_VisibleRows()))
 			{
 				RowAdjust += CONSOLE_WHEEL_LINES;
-				if (RowAdjust > static_cast<int>(ConRows - ConBottom / ConCharSize))
-					RowAdjust = ConRows - ConBottom / ConCharSize;
+				if (RowAdjust > static_cast<int>(ConRows - C_VisibleRows()))
+					RowAdjust = ConRows - C_VisibleRows();
 			}
 			return true;
 		}

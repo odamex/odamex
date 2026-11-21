@@ -735,7 +735,7 @@ void LargeDoomFont::buildGlyphs()
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
 		const std::vector<OFontVariation>& variations) :
 	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0), mCapTop(0),
-	mCapHeight(0),
+	mCapHeight(0), mCellWidth(0),
 	mHasGradientColors(false), mVariations(variations)
 {
 	load();
@@ -744,7 +744,7 @@ TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemas
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
 		ScaleFunc scale_func, const std::vector<OFontVariation>& variations) :
 	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0), mCapTop(0),
-	mCapHeight(0),
+	mCapHeight(0), mCellWidth(0),
 	mHasGradientColors(false), mVariations(variations)
 {
 	setScale(scale_func);
@@ -754,7 +754,7 @@ TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemas
 TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemask,
 		argb_t grad_top, argb_t grad_bottom, const std::vector<OFontVariation>& variations) :
 	mLumpName(lumpname), mBaseSize(size), mStyleMask(stylemask), mHeight(0), mAscent(0), mCapTop(0),
-	mCapHeight(0),
+	mCapHeight(0), mCellWidth(0),
 	mHasGradientColors(true), mGradTop(grad_top), mGradBottom(grad_bottom),
 	mVariations(variations)
 {
@@ -764,6 +764,13 @@ TrueTypeFont::TrueTypeFont(const char* lumpname, int size, unsigned int stylemas
 void TrueTypeFont::setVariations(const std::vector<OFontVariation>& variations)
 {
 	mVariations = variations;
+	if (isLoaded())
+		load();
+}
+
+void TrueTypeFont::setCellWidth(int cell_width)
+{
+	mCellWidth = std::max(0, cell_width);
 	if (isLoaded())
 		load();
 }
@@ -906,8 +913,36 @@ void TrueTypeFont::buildGlyphs()
 	// smears it into its grey edges. Hint and rasterize those sizes for a
 	// monochrome grid instead to maximize legibility.
 	const bool monochrome = size < 13;
-	const FT_Int32 load_flags = monochrome ? FT_LOAD_TARGET_MONO : FT_LOAD_DEFAULT;
+
+	// A cell font is scaled wider than it is tall, which the face's own
+	// hints are not written for: they round some stems to one pixel and
+	// others to two. FreeType's autohinter snaps them all alike.
+	const FT_Int32 load_flags = (monochrome ? FT_LOAD_TARGET_MONO : FT_LOAD_DEFAULT) |
+	                            ((mCellWidth > 0) ? FT_LOAD_FORCE_AUTOHINT : 0);
 	const FT_Render_Mode render_mode = monochrome ? FT_RENDER_MODE_MONO : FT_RENDER_MODE_NORMAL;
+
+	// Fit a character cell by scaling the face horizontally until a glyph's
+	// advance fills all but the cell's last column, which stays clear for
+	// the drop shadow so that neighbouring glyphs never run together.
+	// Hinting rounds advances, so this converges in steps.
+	if (mCellWidth > 0)
+	{
+		const int fit_width = std::max(1, mCellWidth - std::max(1, mCellWidth / 8));
+		int x_size = size;
+		for (int attempt = 0; attempt < 4; attempt++)
+		{
+			if (FT_Load_Char(face, '0', load_flags) != 0)
+				break;
+
+			const int advance = face->glyph->advance.x >> 6;
+			if (advance <= 0 or advance == fit_width)
+				break;
+
+			x_size = std::max(1, ((x_size * fit_width) + (advance / 2)) / advance);
+			if (FT_Set_Pixel_Sizes(face, x_size, size) != 0)
+				break;
+		}
+	}
 
 	const Texture* background_texture = nullptr;
 	if (stylemask & TTF_TEXTURE)
@@ -936,6 +971,10 @@ void TrueTypeFont::buildGlyphs()
 	// how far the top of a capital rises above the baseline
 	int cap_bitmap_top = -1;
 
+	// how far any glyph reaches above and below the baseline
+	int ink_above = -1;
+	int ink_below = 0;
+
 	for (int charnum = ' '; charnum <= '~'; charnum++)
 	{
 		if (FT_Get_Char_Index(face, charnum) == 0)
@@ -962,7 +1001,13 @@ void TrueTypeFont::buildGlyphs()
 		if (charnum == 'T')
 			cap_bitmap_top = face->glyph->bitmap_top;
 
-		mAdvanceX[charnum] = face->glyph->advance.x >> 6;
+		if (width > 0 and height > 0)
+		{
+			ink_above = std::max(ink_above, face->glyph->bitmap_top + pad_top);
+			ink_below = std::max(ink_below, height - face->glyph->bitmap_top + pad_bottom);
+		}
+
+		mAdvanceX[charnum] = (mCellWidth > 0) ? mCellWidth : (face->glyph->advance.x >> 6);
 		mAdvanceY[charnum] = face->glyph->advance.y >> 6;
 
 		const int tex_width = (width > 0) ? width + pad_left + pad_right : 0;
@@ -1150,6 +1195,18 @@ void TrueTypeFont::buildGlyphs()
 	else
 	{
 		mCapHeight = mAscent;
+	}
+
+	// A cell font lays out like a bitmap one: its line is exactly as tall as
+	// its glyphs reach, from the top of the tallest (a bracket or ascender,
+	// a little above the capitals) to the bottom of the deepest descender and
+	// its decoration, with none of the face's spare ascent space. Lines then
+	// stack without one's glyphs reaching into the next.
+	if (mCellWidth > 0 and ink_above > 0)
+	{
+		mAscent = ink_above;
+		mHeight = ink_above + ink_below;
+		mCapTop = std::max(0, mAscent - mCapHeight);
 	}
 
 	FT_Done_Face(face);
