@@ -136,12 +136,12 @@ function CopyFiles {
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\SDL2_mixer.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\SDL2.dll", `
         "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\odalaunch.exe", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxbase332u_net_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxbase332u_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxbase332u_xml_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxmsw332u_core_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxmsw332u_html_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxmsw332u_xrc_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxbase334u_net_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxbase334u_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxbase334u_xml_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxmsw334u_core_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxmsw334u_html_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxmsw334u_xrc_vc14x_x64.dll", `
         "${CurrentDir}\BuildX64\server\RelWithDebInfo\odasrv.exe" `
         -Destination "${X64Dir}\"
 

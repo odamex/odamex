@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -23,7 +21,7 @@
 
 #pragma once
 
-#include <cstdint> // bit.hpp is supposed to include this itself, but a bug in 2.0.0 prevents it
+#include <cstdint>
 #include <nonstd/bit.hpp>
 
 #if TARGET_CPU_X86 || TARGET_CPU_X86_64

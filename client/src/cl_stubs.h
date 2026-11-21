@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -22,5 +20,12 @@
 
 #pragma once
 
+#include "doomtype.h"
+
+class AActor;
+
+struct line_t;
+
 void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* activator, int arg0, int arg1, int arg2, int arg3, int arg4);
+void SV_ArmMobj(AActor* mo);
 void SV_UpdateMobj(AActor* mo);

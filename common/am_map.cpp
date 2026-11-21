@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -45,7 +43,7 @@ static bool ScanAndCompareString(OScanner& os, std::string cmp)
 static bool ScanAndSetRealNum(OScanner& os, fixed64_t& num)
 {
 	os.scan();
-	if (!IsRealNum(os.getToken().c_str()))
+	if (not IsRealNum(os.getToken()))
 	{
 		os.warning("Expected number, got \"{}\". Aborting parsing", os.getToken());
 		return false;

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -76,6 +74,7 @@ END_DISABLE_WARNING_GNU
 #include "p_setup.h"
 #include "r_local.h"
 #include "r_sky.h"
+#include "r_voxel.h"
 #include "d_main.h"
 #include "d_dehacked.h"
 #include "cl_download.h"
@@ -375,7 +374,7 @@ void D_DoomLoop()
 		{
 			D_RunTics(CL_RunTics, CL_DisplayTics);
 		}
-		catch (CRecoverableError &error)
+		catch (const CRecoverableError& error)
 		{
 			PrintFmt(PRINT_ERROR, "\nERROR: {}\n", error.GetMsg());
 
@@ -767,6 +766,10 @@ void D_Init()
 	if (first_time)
 		PrintFmt(PRINT_HIGH, "ST_Init: Init status bar.\n");
 	ST_Init();
+
+	if (first_time)
+		PrintFmt(PRINT_HIGH, "VX_Init: scanning voxels directory.\n");
+	VX_Init();
 
 	first_time = false;
 }
@@ -1164,5 +1167,3 @@ void D_DoomMain()
 
 	D_DoomLoop();		// never returns
 }
-
-VERSION_CONTROL (d_main_cpp, "$Id$")

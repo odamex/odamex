@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -35,6 +33,7 @@
 
 #include "r_local.h"
 #include "r_interp.h"
+#include "r_voxel.h"
 #include "p_local.h"
 
 #include "c_console.h"
@@ -467,6 +466,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	vis->FakeFlat = fakeside;
 	vis->colormap = basecolormap;
 	vis->spectator = false;
+	vis->voxel = nullptr;
 
 	fixed_t iscale = FixedDiv(ty, FocalLengthX);
 	if (flip)
@@ -693,6 +693,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	vis->translucency = thing->translucency;
 	vis->patch = lump;
 	vis->mo = thing;
+	VX_ProjectVoxel(thing, thing->frame & FF_FRAMEMASK, vis);
 
 	// get light level
 	if (fixedlightlev)
@@ -1154,7 +1155,10 @@ void R_DrawSprite (vissprite_t *spr)
 	// all clipping has been performed, so draw the sprite
 	mfloorclip = clipbot;
 	mceilingclip = cliptop;
-	R_DrawVisSprite (spr, spr->x1, spr->x2);
+	if (spr->voxel != nullptr)
+		VX_DrawVoxel(spr);
+	else
+		R_DrawVisSprite (spr, spr->x1, spr->x2);
 
 	#if 0
 	EXTERN_CVAR (r_drawhitboxes)
@@ -1351,5 +1355,3 @@ void R_DrawParticle(vissprite_t* vis)
 	for (dspan.y = y1; dspan.y <= y2; dspan.y++)
 		R_FillTranslucentSpan();
 }
-
-VERSION_CONTROL (r_things_cpp, "$Id$")

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -34,6 +32,7 @@
 #include "r_local.h"
 #include "r_sky.h"
 #include "r_interp.h"
+#include "r_voxel.h"
 #include "st_stuff.h"
 #include "v_video.h"
 #include "stats.h"
@@ -1114,6 +1113,7 @@ void R_RenderPlayerView(player_t* player)
 	R_ClearOpenings();
 	R_ClearPlanes(true);
 	R_ClearSprites();
+	VX_ClearVoxels();
 
 	R_ResetDrawFuncs();
 
@@ -1145,6 +1145,8 @@ void R_RenderPlayerView(player_t* player)
 	}
 	else
 		R_RenderBSPNode(numnodes - 1);	// The head node is the last node output.
+
+	VX_NearbySprites();
 
 	R_DrawPlanes();
 	R_DrawPortals();
@@ -1410,5 +1412,3 @@ void R_ExitLevel()
 
 	r_underwater = false;
 }
-
-VERSION_CONTROL (r_main_cpp, "$Id$")

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -292,4 +290,4 @@ cvar_t* GetFirstCvar(void);
 
 #define CVAR_FUNC_IMPL(name) \
     EXTERN_CVAR(name) \
-    void cvarfunc_##name(cvar_t &var)
+    void cvarfunc_##name([[maybe_unused]]cvar_t& var)

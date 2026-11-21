@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -656,6 +654,7 @@ public:
 		return reinterpret_cast<tallpost_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + ofs));
 	}
 };
+struct voxelvis_t;
 
 // A vissprite_t is a thing
 //	that will be drawn during a refresh.
@@ -701,6 +700,7 @@ struct vissprite_t
 	byte			FakeFlat;		// [RH] which side of fake/floor ceiling sprite is on
 
 	AActor*			mo;
+	voxelvis_t*			voxel;
 };
 
 //

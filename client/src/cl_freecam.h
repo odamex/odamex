@@ -1,9 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
-// Copyright (C) 2006-2026 by The Odamex Team.
+// Copyright (C) 2026 by Jess W
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,11 +32,13 @@ namespace Freecam
 	void addFreecamPlayer();
 	void savePosition();
 	void reset();
-	void setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
+  void setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
+  void moveToPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
 	bool needPosition();
 	bool allowAdd();
+  bool isActive();
 	bool allowSpy();
-	void retireFor255thPlayer(player_t* cam);	
+	void retireFor255thPlayer(player_t* cam);
 	bool wipedOnLevelChange(player_t* cam);
 	void buildCam(player_t* p_cam);
 };

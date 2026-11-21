@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1237,7 +1235,7 @@ void DPlaneWatcher::RunThink ()
 
 			if (P_JustTeleported(Activator))
 			{
-				SV_UpdateMobj(Activator);
+				SV_ArmMobj(Activator);
 				P_ClearJustTeleported();
 			}
 		}
@@ -1742,7 +1740,7 @@ void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activ
 		SV_SendExecuteLineSpecial(special, line, activator, arg0, arg1, arg2, arg3, arg4);
 		if (P_JustTeleported(activator))
 		{
-			SV_UpdateMobj(activator);
+			SV_ArmMobj(activator);
 			P_ClearJustTeleported();
 		}
 	}
@@ -4675,4 +4673,3 @@ void DACSThinker::DumpScriptStatus ()
 		script = script->next;
 	}
 }
-VERSION_CONTROL (p_acs_cpp, "$Id$")

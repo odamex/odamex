@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2026 by Jim Thoenen.
 //
 // This program is free software; you can redistribute it and/or
@@ -30,12 +28,10 @@ enum class AwarenessEnum
 	ALWAYS_AWARE,       ///< Permanently fully aware.  Avatars and all players.  Key part of nth_element comparator.
 	FULLY_AWARE,        ///< All messages active, full fidelity.
 	SEMI_AWARE,         ///< Reduced reliable traffic.
-	BARELY_AWARE,       ///< On life support.
-
-	AWARENESS_LEVEL_COUNT
+	BARELY_AWARE        ///< On life support.
 };
 
-template <size_t MAX_PLAYER_COUNT>
+template <std::size_t MAX_PLAYER_COUNT>
 class ActorAwarenessState
 {
 	public:

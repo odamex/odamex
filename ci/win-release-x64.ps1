@@ -17,7 +17,7 @@ if ($env:new_version.length -gt 0)
 }
 else
 {
-    Set-Variable -Name "OdamexVersion" -Value "10.2.0"
+    Set-Variable -Name "OdamexVersion" -Value "13.0.0"
 }
 
 if ($env:build_number.length -gt 0)
@@ -96,21 +96,21 @@ function CopyFilesX64 {
         -Destination "${CommonDir}\README.txt"
     Copy-Item -Force -Path "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\odamex.wad" `
         -Destination "${CommonDir}"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.1\LICENSE.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.2\LICENSE.txt" `
         -Destination "${CommonDir}\licenses\COPYING.SDL2_mixer.txt"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.1\lib\x64\optional\LICENSE.xmp.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.2\lib\x64\optional\LICENSE.xmp.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.1\lib\x64\optional\LICENSE.ogg-vorbis.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.2\lib\x64\optional\LICENSE.ogg-vorbis.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.1\lib\x64\optional\LICENSE.opus.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.2\lib\x64\optional\LICENSE.opus.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.1\lib\x64\optional\LICENSE.opusfile.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.2\lib\x64\optional\LICENSE.opusfile.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.1\lib\x64\optional\LICENSE.wavpack.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.2\lib\x64\optional\LICENSE.wavpack.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.1\lib\x64\optional\LICENSE.gme.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.2\lib\x64\optional\LICENSE.gme.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2-2.32.8\LICENSE.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2-2.32.10\LICENSE.txt" `
         -Destination "${CommonDir}\licenses\LICENSE.SDL2.txt"
 
     ########################################
@@ -131,12 +131,12 @@ function CopyFilesX64 {
         "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\SDL2_mixer.dll", `
         "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\SDL2.dll", `
         "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\odalaunch.exe", `
-        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxbase332u_net_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxbase332u_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxbase332u_xml_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxmsw332u_core_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxmsw332u_html_vc14x_x64.dll", `
-        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxmsw332u_xrc_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxbase334u_net_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxbase334u_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxbase334u_xml_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxmsw334u_core_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxmsw334u_html_vc14x_x64.dll", `
+        "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\wxmsw334u_xrc_vc14x_x64.dll", `
         "${CurrentDir}\BuildX64\odamex\RelWithDebInfo\odasrv.exe" `
         -Destination "${X64Dir}\"
 

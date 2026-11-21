@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1388,8 +1386,6 @@ player_t::player_t() :
 	maxAmmoMonitors     { maxammo },
 	powerMonitors       { powers },
 	pspriteMonitors     { psprites },
-	attackdown(0),
-	usedown(0),
 	cheats(0),
 	refire(0),
 	damagecount(0),
@@ -1425,7 +1421,6 @@ player_t::player_t() :
 	hazardcount(0),
 	hazardinterval(0),
 	LastMessage(LastMessage_s()),
-	to_spawn(std::queue<AActor::AActorPtr>()),
 	playerInfoIsRequested(false),
 	inventoryCheckRequestsAreEnabled(false),
 	client{}
@@ -1454,5 +1449,3 @@ player_t::player_t() :
 player_t::~player_t()
 {
 }
-
-VERSION_CONTROL (p_user_cpp, "$Id$")

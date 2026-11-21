@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -196,6 +194,27 @@ CVAR_FUNC_IMPL(joy_freelook)
 	// [RV] - Center view, Update Skies
 	AddCommandString("centerview");
 	R_InitSkyMap();
+}
+
+CVAR_FUNC_IMPL(cl_noclip_spectator)
+{
+	player_t& c = consoleplayer();
+	player_t& d = displayplayer();
+
+	if (c.spectator and not netdemo.isInPlayback())
+	{
+		if (var.asInt())
+			c.cheats |= CF_NOCLIP;
+		else
+			c.cheats &= ~CF_NOCLIP;
+	}
+	if (d.isFreecam)
+	{
+		if (var.asInt())
+			d.cheats |= CF_NOCLIP;
+		else
+			d.cheats &= ~CF_NOCLIP;
+	}
 }
 
 char			demoname[256];
@@ -746,24 +765,27 @@ bool G_Responder (const event_t& ev)
 	if (gameaction == ga_nothing &&
 		(demoplayback || gamestate == GS_DEMOSCREEN))
 	{
-		const char *cmd = Bindings.GetBind(ev.data1).c_str();
+		const IStringView cmd = Bindings.GetBind(ev.data1);
 
 		if (ev.type == ev_keydown)
 		{
 
-			if (!cmd || (
-				strnicmp (cmd, "menu_", 5) &&
-				stricmp (cmd, "toggleconsole") &&
-				stricmp (cmd, "sizeup") &&
-				stricmp (cmd, "sizedown") &&
-				stricmp (cmd, "togglemap") &&
-				stricmp (cmd, "spynext") &&
-				stricmp (cmd, "chase") &&
-				stricmp (cmd, "+showscores") &&
-				stricmp (cmd, "bumpgamma") &&
-				stricmp (cmd, "screenshot") &&
-                stricmp (cmd, "stepmode") &&
-                stricmp (cmd, "step")))
+			static constexpr std::array idk {
+				"toggleconsole",
+				"sizeup",
+				"sizedown",
+				"togglemap",
+				"spynext",
+				"chase",
+				"+showscores",
+				"bumpgamma",
+				"screenshot",
+				"stepmode",
+				"step",
+			};
+			if (cmd.empty() or
+			    (not cmd.starts_with("menu_") and
+				 std::ranges::none_of(idk, [&cmd](const auto& str){ return cmd == str; })))
 			{
 				M_StartControlPanel ();
 				return true;
@@ -773,13 +795,13 @@ bool G_Responder (const event_t& ev)
 				return C_DoKey(ev, &Bindings, &DoubleBindings);
 			}
 		}
-		if (cmd && cmd[0] == '+')
+		if (not cmd.empty() and cmd[0] == '+')
 			return C_DoKey(ev, &Bindings, &DoubleBindings);
 
 		return false;
 	}
 
-	if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
+	if (gamestate == GS_LEVEL or gamestate == GS_INTERMISSION)
 	{
 		if (C_DoNetDemoKey(ev))	// netdemo playback ate the event
 			return true;
@@ -899,6 +921,7 @@ void CL_CheckDisplayPlayer();
 //
 extern DCanvas *page;
 extern int connecttimeout;
+extern int world_index;
 
 void G_Ticker (void)
 {
@@ -1045,7 +1068,10 @@ void G_Ticker (void)
 		{
 			// denis - don't accept candy from strangers
 			if (not NET_CompareAdr(serveraddr, net_from))
+			{
+				net_message.clear();
 				break;
+			}
 
 			realrate += packet_size;
 			last_received = gametic;
@@ -1216,7 +1242,10 @@ void G_Ticker (void)
 					// [SL] 2011-12-14 - Spawn message from server has not arrived
 					// yet.  Fake it and hope it arrives soon.
 					AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
-					mobj->flags &= ~MF_SOLID;
+
+					// Clear all flags that need to be cleared to trigger the "can't hit thing"
+					// case in PIT_CheckThing.
+					mobj->flags &= ~(MF_SOLID | MF_SPECIAL | MF_SHOOTABLE | MF_TOUCHY | MF_PICKUP);
 					mobj->flags2 |= MF2_DONTDRAW;
 					mobj->oflags |= MFO_ISAWAITINGSPAWN;
 					consoleplayer().mo = consoleplayer().camera = mobj->ptr();
@@ -1227,6 +1256,10 @@ void G_Ticker (void)
 
 				CL_SimulateWorld();
 				thinkersHaveRun = CL_PredictWorld();
+				if (not thinkersHaveRun and not netdemo.isPaused())
+				{
+					CL_SimulatePlayers(world_index);
+				}
 
 				// Replay item pickups if the items arrived now.
 				ClientReplay::getInstance().itemReplay();
@@ -2311,5 +2344,3 @@ bool G_CheckDemoStatus (void)
 	return false;
 }
 
-
-VERSION_CONTROL (g_game_cpp, "$Id$")

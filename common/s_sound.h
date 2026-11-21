@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -208,7 +206,7 @@ void S_NoiseDebug();
 // The following functions work seamlessly on local clients and networked games.
 
 #if SERVER_APP
-#include "sv_main.h"
+#include "sv_sound.h"
 #endif
 
 inline static void S_NetSound(const AActor* mo, byte channel, const char* name, const byte attenuation)

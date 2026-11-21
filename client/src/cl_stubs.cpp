@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -59,9 +57,8 @@ void SV_SpawnHighPriorityMobj(AActor*) {}
 void SV_SpawnMobj(AActor *mobj) {}
 void SV_TouchSpecial(AActor& special, player_t& player) {}
 void SV_UpdateFrags(player_t &player) {}
+void SV_ArmMobj(AActor* mo) {}
 void SV_UpdateMobj(AActor* mo) {}
-void SV_UpdateMobjBestEffort(AActor* mo) {}
-void SV_UpdateMobjReliable(AActor* mo) {}
 void SV_UpdateMobjState(const AActor* mo) {}
 void SV_UpdateMonsterRespawnCount() {}
 void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound) {};
@@ -71,5 +68,3 @@ void CTF_SpawnFlag(team_t f) {}
 
 
 CVAR_FUNC_IMPL(sv_sharekeys) {}
-
-VERSION_CONTROL (cl_stubs_cpp, "$Id$")

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -46,7 +44,11 @@
 #include "p_unlag.h"
 
 #ifdef SERVER_APP
-#include "sv_main.h"
+#   include "sv_main.h"
+#elif defined CLIENT_APP
+#   include "cl_stubs.h"
+#elif defined TEST_APP
+#   include "t_stubs.h"
 #endif
 
 extern bool predicting;
@@ -88,8 +90,6 @@ void SV_SocketTouch(player_t &player, team_t f);
 void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill);
 void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
-void SV_UpdateMobj(AActor* mo);
-void SV_UpdateMobjReliable(AActor* mo);
 void PickupMessage(const AActor *toucher, const char *message);
 void WeaponPickupMessage(const AActor *toucher, const weapontype_t &Weapon);
 
@@ -2595,12 +2595,12 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		}
 		if (clientsNeedUpdate and not clientsWereUpdated)
 		{
-			SV_UpdateMobj(target);
+			SV_ArmMobj(target);
 		}
 	}
 	else
 	{
-		SV_UpdateMobj(target);
+		SV_ArmMobj(target);
 	}
 }
 
@@ -2675,5 +2675,3 @@ void P_HealMobj(AActor* mo, int num)
 			mo->health = max;
 	}
 }
-
-VERSION_CONTROL (p_interaction_cpp, "$Id$")

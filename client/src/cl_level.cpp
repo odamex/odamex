@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -709,7 +707,7 @@ void G_DoLoadLevel (int position)
 	level.starttime = I_MSTime() * TICRATE / 1000;
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
 
-	// clientside only freecam, added after demo players are added in G_UnSnapshotLevel
+	// clientside only freecam, added after other players are added in G_UnSnapshotLevel
 	if (Freecam::allowAdd())
 	{
 		if (Freecam::needPosition())
@@ -727,7 +725,7 @@ void G_DoLoadLevel (int position)
 		Freecam::addFreecamPlayer();
 	}
 
-    P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
+	P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
 
 	::levelstate.reset();
 
@@ -828,5 +826,3 @@ void G_WorldDone()
 		}
 	}
 }
-
-VERSION_CONTROL (g_level_cpp, "$Id$")

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -52,5 +50,6 @@ const Protos& CL_GetTicProtos();
 ParseResultType CL_ParseCommand(buf_t& buffer);
 parseError_e    CL_ProcessCommand(const ParseResultType& parsedCommand);
 void            CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader = std::nullopt);
+void            CL_ProcessDeferredCommands();
 
 void CL_SetCurrentHeaderForParse(const PacketHeaderType& packetHeader);

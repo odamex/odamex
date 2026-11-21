@@ -83,8 +83,8 @@ modules:
     sources:
       - type: git
         url: https://github.com/wxWidgets/wxWidgets.git
-        tag: v3.3.3
-        commit: 670835aec7e54b9e9d5a50d6a1aea1e8ba0bcdb2
+        tag: v3.3.4
+        commit: 6a42a4b999b127cf28a8b5fe686da6b8ca93a9b8
   # Odamex (combined)
   - name: Odamex
     buildsystem: cmake-ninja

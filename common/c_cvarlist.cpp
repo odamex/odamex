@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -83,6 +81,9 @@ CVAR(				sv_freelook, "0", "Allow Looking up and down",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR(				sv_allowtargetnames, "0", "When set, names of players appear in the FOV",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR(				sv_allowvoxels, "1", "Allow clients to load custom voxel models from external directory. Does not affect voxels contained within server loaded wads.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR_RANGE(			sv_fraglimit,     "0", "Sets the amount of frags a player can accumulate before the game ends",
@@ -555,5 +556,3 @@ CVAR(				waddirs, "", "Allow custom WAD directories to be specified",
 
 CVAR(				sv_weapondrop, "0", "Enable/disable weapon drop.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-
-VERSION_CONTROL (c_cvarlist_cpp, "$Id$")

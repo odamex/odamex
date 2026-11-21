@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -74,8 +72,10 @@ MessageResultEnum CL_ProcessCurrentAvailableMessages();
 void CL_SendCmd();
 void CL_SaveCmd();
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
+void CL_SimulatePlayers(int serverTic);
 bool CL_PredictWorld();
 void CL_ResetWorldPrediction();
+void CL_AdvanceWorldPredictionTic(int serverTic);
 void CL_SendUserInfo(buf_t& netBuf);
 bool CL_Connect();
 

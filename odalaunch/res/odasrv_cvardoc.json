@@ -676,6 +676,13 @@
       },
       {
          "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to load custom voxel models from external directory. Does not affect voxels contained within server loaded wads.",
+         "name" : "sv_allowvoxels",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
          "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
          "helptext" : "Allow clients to use true widescreen",
          "name" : "sv_allowwidescreen",
