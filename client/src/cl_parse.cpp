@@ -1754,8 +1754,8 @@ void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 	int sectornum = msg->sectornum();
 	fixed_t floorheight = msg->sector().floor_height();
 	fixed_t ceilingheight = msg->sector().ceiling_height();
-	int floorpic = msg->sector().floorpic();
-	int ceilingpic = msg->sector().ceilingpic();
+	const ResourceId floor_res_id = Res_GetResourceIdByKey(msg->sector().floorpic());
+	const ResourceId ceiling_res_id = Res_GetResourceIdByKey(msg->sector().ceilingpic());
 	int special = msg->sector().special();
 
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
@@ -1765,8 +1765,8 @@ void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 	P_SetCeilingHeight(sector, ceilingheight);
 	P_SetFloorHeight(sector, floorheight);
 
-	sector->floor_res_id = ResourceId(floorpic);
-	sector->ceiling_res_id = ResourceId(ceilingpic);
+	sector->floor_res_id = floor_res_id;
+	sector->ceiling_res_id = ceiling_res_id;
 	sector->special = special;
 	sector->moveable = true;
 
@@ -2244,7 +2244,7 @@ void CL_Switch(const odaproto::svc::Switch* msg)
 	byte switchactive = msg->switch_active();
 	unsigned int special = msg->special();
 	unsigned int state = msg->state(); // DActiveButton::EWhere
-	ResourceId texture = msg->button_texture();
+	const ResourceId texture = Res_GetResourceIdByKey(msg->button_texture());
 	unsigned int time = msg->timer();
 
 	if (!::lines || l < 0 || l >= ::numlines || state >= 3)
@@ -2890,8 +2890,8 @@ void CL_SectorProperties(const odaproto::svc::SectorProperties* msg)
 		switch (prop)
 		{
 		case SPC_FlatPic:
-			sector->floor_res_id = msg->sector().floorpic();
-			sector->ceiling_res_id = msg->sector().ceilingpic();
+			sector->floor_res_id = Res_GetResourceIdByKey(msg->sector().floorpic());
+			sector->ceiling_res_id = Res_GetResourceIdByKey(msg->sector().ceilingpic());
 			break;
 		case SPC_LightLevel:
 			sector->lightlevel = msg->sector().lightlevel();
@@ -2970,13 +2970,13 @@ void CL_LineSideUpdate(const odaproto::svc::LineSideUpdate* msg)
 		switch (prop)
 		{
 		case SDPC_TexTop:
-			currentSidedef->toptexture = msg->toptexture();
+			currentSidedef->toptexture = Res_GetResourceIdByKey(msg->toptexture());
 			break;
 		case SDPC_TexMid:
-			currentSidedef->midtexture = msg->midtexture();
+			currentSidedef->midtexture = Res_GetResourceIdByKey(msg->midtexture());
 			break;
 		case SDPC_TexBottom:
-			currentSidedef->bottomtexture = msg->bottomtexture();
+			currentSidedef->bottomtexture = Res_GetResourceIdByKey(msg->bottomtexture());
 			break;
 		default:
 			break;

@@ -59,6 +59,15 @@ private:
 
 using ResourceIdList = std::vector<ResourceId>;
 
+// A ResourceKey is a hash of the resource's path instead of
+// the order a resource is loaded in, which is what ResourceId is.
+// 
+// This can be used to look up a resource without needing to know
+// its load order.
+// 
+// 0 is no resource.
+using ResourceKey = uint64_t;
+
 // ----------------------------------------------------------------------------
 // hash function for OHashTable class
 // ----------------------------------------------------------------------------

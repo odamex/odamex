@@ -157,6 +157,19 @@ public:
 		return mNameTranslator.getAllTranslations(path);
 	}
 
+	ResourceKey getResourceKey(const ResourceId res_id) const
+	{
+		const ResourceRecord* res_rec = getResourceRecord(res_id);
+		return res_rec ? res_rec->mKey : 0;
+	}
+
+	// The most recently loaded resource with the key, as a path lookup gives.
+	const ResourceId getResourceIdByKey(const ResourceKey key) const
+	{
+		auto it = mResourceIdByKey.find(key);
+		return (it != mResourceIdByKey.end()) ? it->second : ResourceId::INVALID_ID;
+	}
+
 	const ResourceIdList getAllResourceIds() const;
 
 	const ResourcePathList listResourceDirectory(const ResourcePath& path) const;
@@ -207,6 +220,7 @@ private:
 			if (&other != this)
 			{
 				mPath = other.mPath;
+				mKey = other.mKey;
 				mResourceContainer = other.mResourceContainer;
 				mResourceLoader = other.mResourceLoader;
 			}
@@ -214,12 +228,15 @@ private:
 		}
 
 		ResourcePath				mPath;
+		ResourceKey					mKey = 0;
 		const ResourceContainer*	mResourceContainer;
 		const ResourceLoader*		mResourceLoader;
 	};
 
 	typedef std::vector<ResourceRecord> ResourceRecordTable;
 	ResourceRecordTable			mResources;
+
+	OHashTable<ResourceKey, ResourceId>	mResourceIdByKey;
 
 	// ---------------------------------------------------------------------------
 	// Private helper functions
@@ -364,6 +381,10 @@ const ResourceIdList Res_GetAllResourceIds(const ResourcePath& path);
 const OString& Res_GetResourceName(const ResourceId res_id);
 
 const ResourcePath& Res_GetResourcePath(const ResourceId res_id);
+
+const ResourceKey Res_GetResourceKey(const ResourceId res_id);
+
+const ResourceId Res_GetResourceIdByKey(const ResourceKey key);
 
 // ----------------------------------------------------------------------------
 // Res_CheckResource

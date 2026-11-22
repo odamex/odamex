@@ -71,7 +71,6 @@ typedef int SOCKET;
 #include "i_net.h"
 #include "msg_pack.h"
 #include "d_player.h"
-#include "resources/res_main.h"
 #include "m_alloc.h"
 
 BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
@@ -613,16 +612,6 @@ void MSG_WriteLong (buf_t *b, int c)
 }
 
 
-void MSG_WriteResourceId(buf_t* b, const ResourceId res_id)
-{
-	if (simulated_connection)
-		return;
-	if (not Res_CheckResource(res_id))
-		b->WriteShort(0xFFFF);
-	else
-		b->WriteShort(static_cast<uint32_t>(res_id) & 0xFFFF);
-}
-
 void MSG_WriteUnVarint(buf_t* b, unsigned int uv)
 {
 	if (simulated_connection)
@@ -819,14 +808,6 @@ unsigned int MSG_ReadUnVarint()
 int MSG_ReadVarint()
 {
 	return net_message.ReadVarint();
-}
-
-const ResourceId MSG_ReadResourceId()
-{
-	uint16_t value = net_message.ReadShort();
-	if (value == 0xFFFF)
-		return ResourceId::INVALID_ID;
-	return ResourceId(value);
 }
 
 //

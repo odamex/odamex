@@ -486,7 +486,7 @@ message Switch
 	bool switch_active = 2;
 	uint32 special = 3;
 	uint32 state = 4;
-	int32 button_texture = 5;
+	fixed64 button_texture = 5; // ResourceKey
 	uint32 timer = 6;
 }
 
@@ -648,9 +648,9 @@ message LineSideUpdate
 	int32 linenum = 1;
 	int32 side = 2;
 	uint32 changes = 3; // bitfield
-	int32 toptexture = 4;
-	int32 midtexture = 5;
-	int32 bottomtexture = 6;
+	fixed64 toptexture = 4; // ResourceKey
+	fixed64 midtexture = 5; // ResourceKey
+	fixed64 bottomtexture = 6; // ResourceKey
 }
 
 // svc_mobjstate

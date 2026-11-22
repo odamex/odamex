@@ -105,8 +105,8 @@ message Sector
 
 	sfixed32 floor_height = 1;
 	sfixed32 ceiling_height = 2;
-	int32 floorpic = 3;
-	int32 ceilingpic = 4;
+	fixed64 floorpic = 3; // ResourceKey
+	fixed64 ceilingpic = 4; // ResourceKey
 	int32 lightlevel = 5;
 	int32 special = 6;
 	Vec2 floor_offs = 7;

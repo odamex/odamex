@@ -170,7 +170,7 @@ extern std::list<sector_t*> specialdoors;
 extern bool s_SpecialFromServer;
 
 #define IgnoreSpecial !serverside && !s_SpecialFromServer
-#define NO_TEXTURE 0;
+inline constexpr ResourceId NO_TEXTURE = ResourceId();
 
 #define CEILSPEED FRACUNIT
 

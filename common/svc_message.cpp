@@ -856,8 +856,8 @@ odaproto::svc::UpdateSector SVC_UpdateSector(const sector_t& sector)
 
 	secmsg->set_floor_height(P_FloorHeight(&sector));
 	secmsg->set_ceiling_height(P_CeilingHeight(&sector));
-	secmsg->set_floorpic(sector.floor_res_id);
-	secmsg->set_ceilingpic(sector.ceiling_res_id);
+	secmsg->set_floorpic(Res_GetResourceKey(sector.floor_res_id));
+	secmsg->set_ceilingpic(Res_GetResourceKey(sector.ceiling_res_id));
 	secmsg->set_special(sector.special);
 
 	return msg;
@@ -1202,7 +1202,7 @@ odaproto::svc::Switch SVC_Switch(const line_t& line, uint32_t state, uint32_t ti
 	msg.set_switch_active(line.switchactive);
 	msg.set_special(line.special);
 	msg.set_state(state);
-	msg.set_button_texture(P_GetButtonTexture(&line));
+	msg.set_button_texture(Res_GetResourceKey(P_GetButtonTexture(&line)));
 	msg.set_timer(timer);
 
 	return msg;
@@ -1388,8 +1388,8 @@ odaproto::svc::SectorProperties SVC_SectorProperties(const sector_t& sector)
 		switch (prop)
 		{
 		case SPC_FlatPic:
-			secmsg->set_floorpic(sector.floor_res_id);
-			secmsg->set_ceilingpic(sector.ceiling_res_id);
+			secmsg->set_floorpic(Res_GetResourceKey(sector.floor_res_id));
+			secmsg->set_ceilingpic(Res_GetResourceKey(sector.ceiling_res_id));
 			break;
 		case SPC_LightLevel:
 			secmsg->set_lightlevel(sector.lightlevel);
@@ -1471,13 +1471,13 @@ odaproto::svc::LineSideUpdate SVC_LineSideUpdate(const line_t& line, const int s
 		switch (prop)
 		{
 		case SDPC_TexTop:
-			msg.set_toptexture(currentSideDef->toptexture);
+			msg.set_toptexture(Res_GetResourceKey(currentSideDef->toptexture));
 			break;
 		case SDPC_TexMid:
-			msg.set_midtexture(currentSideDef->midtexture);
+			msg.set_midtexture(Res_GetResourceKey(currentSideDef->midtexture));
 			break;
 		case SDPC_TexBottom:
-			msg.set_bottomtexture(currentSideDef->bottomtexture);
+			msg.set_bottomtexture(Res_GetResourceKey(currentSideDef->bottomtexture));
 			break;
 		default:
 			break;

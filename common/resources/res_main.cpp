@@ -286,6 +286,27 @@ void ResourceManager::closeAllResourceContainers()
 	mCache = nullptr;
 
 	mNameTranslator.clear();
+	mResourceIdByKey.clear();
+}
+
+
+//
+// Res_MakeResourceKey
+//
+// FNV-1a over the path's upper-cased text, which depends on nothing but the
+// path, so every build on every platform derives the same key for it.'
+// 
+// 0 is no resource.
+//
+const ResourceKey Res_MakeResourceKey(const ResourcePath& path)
+{
+	ResourceKey key = 0xcbf29ce484222325ULL;
+	for (const char* p = path.c_str(); *p != '\0'; p++)
+	{
+		key ^= static_cast<uint8_t>(std::toupper(static_cast<unsigned char>(*p)));
+		key *= 0x100000001b3ULL;
+	}
+	return (key != 0) ? key : 1;
 }
 
 
@@ -304,10 +325,15 @@ const ResourceId ResourceManager::addResource(
 	const ResourceId res_id = getResourceId(&res_rec);
 
 	res_rec.mPath = path;
+	res_rec.mKey = Res_MakeResourceKey(path);
 	res_rec.mResourceContainer = container;
 	res_rec.mResourceLoader = loader;
 
 	mNameTranslator.addTranslation(path, res_id);
+
+	// A later file's resource replaces an earlier one at the same path, as the
+	// name lookups that put textures on surfaces do.
+	mResourceIdByKey.insert(std::make_pair(res_rec.mKey, res_id));
 
 	return res_id;
 }
@@ -694,6 +720,24 @@ const ResourceId Res_GetResourceId(const OString& name, ResourceNamespace ns, bo
 const ResourcePath& Res_GetResourcePath(const ResourceId res_id)
 {
 	return resource_manager.getResourcePath(res_id);
+}
+
+
+//
+// Res_GetResourceKey
+//
+const ResourceKey Res_GetResourceKey(const ResourceId res_id)
+{
+	return resource_manager.getResourceKey(res_id);
+}
+
+
+//
+// Res_GetResourceIdByKey
+//
+const ResourceId Res_GetResourceIdByKey(const ResourceKey key)
+{
+	return resource_manager.getResourceIdByKey(key);
 }
 
 

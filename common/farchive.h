@@ -205,8 +205,8 @@ public:
 	FArchive& operator<< (const unsigned char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
 	FArchive& operator<< (const signed char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
 
-	// ResourceId is a class type, so the integral template above does not cover it.
-	FArchive& operator<< (const ResourceId& res_id) { return operator<< (static_cast<uint32_t>(res_id)); }
+	// Archived as the resource's ResourceKey, which survives a change of files.
+	FArchive& operator<< (const ResourceId& res_id);
 
 	// ------------ Streaming-out operations ---------------
 
@@ -270,7 +270,7 @@ public:
 	//FArchive& operator>> (unsigned char *&str) { return operator>> ((char *&)str); }
 	//FArchive& operator>> (signed char *&str) { return operator>> ((char *&)str); }
 	FArchive& operator>> (DObject* &object) { return ReadObject (object, RUNTIME_CLASS(DObject)); }
-	FArchive& operator>> (ResourceId& res_id) { uint32_t in; *this >> in; res_id = ResourceId(in); return *this; }
+	FArchive& operator>> (ResourceId& res_id);
 
 protected:
 	enum { EObjectHashSize = 137 };
