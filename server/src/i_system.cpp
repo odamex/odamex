@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -269,5 +267,3 @@ std::string I_ConsoleInput()
 
     return M_ConsoleInput();
 }
-
-VERSION_CONTROL (i_system_cpp, "$Id$")

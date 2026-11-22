@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -698,5 +696,3 @@ BEGIN_COMMAND(levelstateinfo)
 	PrintFmt("Last WinInfo ID: {}\n", sls.last_wininfo_id);
 }
 END_COMMAND(levelstateinfo)
-
-VERSION_CONTROL(g_levelstate, "$Id$")

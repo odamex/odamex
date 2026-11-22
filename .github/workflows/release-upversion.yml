@@ -82,7 +82,7 @@ jobs:
         MINORVERSION: ${{ needs.pre_job.outputs.minor }}
         PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
     - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v7
+      uses: peter-evans/create-pull-request@v8
       with:
         commit-message: upversion to version ${{env.new_version}}
         title: Upversion release branch to ${{env.new_version}}

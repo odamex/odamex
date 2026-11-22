@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -475,7 +473,7 @@ bool P_PlayerInputIsUnknown(const player_t& player)
 
 // We never see another player's ticcmd, so their weapon fire frames has to
 // be inferred.
-// 
+//
 // The server broadcasts the player's sprite every tic, and the attack frames
 // are only ever reached by firing, which makes them a usable stand-in for
 // BT_ATTACK.
@@ -1817,5 +1815,3 @@ FArchive &operator>> (FArchive &arc, pspdef_t &def)
 	def.statenum = state ? state->statenum : S_NULL;
 	return arc;
 }
-
-VERSION_CONTROL (p_pspr_cpp, "$Id$")

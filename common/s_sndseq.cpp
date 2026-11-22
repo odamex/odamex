@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -337,7 +335,7 @@ static void AssignTranslations (OScanner &os, int seq, seqtype_t type)
 
 	while (os.scan() && !os.crossed())
 	{
-		if (IsNum(os.getToken().c_str()))
+		if (IsNum(os.getToken()))
 		{
 			SeqTrans[(os.getTokenInt() & 63) + type * 64] = seq;
 		}
@@ -959,5 +957,3 @@ void DSeqNode::ChangeData (int seqOffset, int delayTics, float volume, int curre
 	m_SequencePtr += seqOffset;
 	m_CurrentSoundID = currentSoundID;
 }
-
-VERSION_CONTROL (s_sndseq_cpp, "$Id$")

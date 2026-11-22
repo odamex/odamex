@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -90,7 +88,7 @@ void MouseGraph::drawPlot(int x1, int y1)
 		const int scaledy = (mousey[in] * (MAX_HISTORY_TICS / 2)) / limit;
 
 		argb_t color;
-		
+
 		if (i == 0)
 			color = V_GetDefaultPalette()->basecolors[160];
 		else

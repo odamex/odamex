@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -362,6 +360,4 @@ bool P_ThinkerIsFreecamType(DThinker* thinker)
 
 	return thinker->IsKindOf(RUNTIME_CLASS(AActor)) and static_cast<AActor*>(thinker)->type == MT_FREECAM;
 }
-
-VERSION_CONTROL (dthinker_cpp, "$Id$")
 

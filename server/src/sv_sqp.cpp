@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -409,5 +407,3 @@ uint32_t SV_QryParseEnquiry(const uint32_t& Tag)
 
 	return IntQrySendResponse(TagId, TagApplication, TagQRId, TagPacketType);
 }
-
-VERSION_CONTROL(sv_sqp_cpp, "$Id$")

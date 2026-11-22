@@ -1,8 +1,6 @@
 	// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -902,5 +900,3 @@ CVAR_RANGE_FUNC_DECL(screenblocks, "10", "Selects the size of the visible window
 CVAR_RANGE_FUNC_DECL(vid_overscan, "1.0", "Overscan matting (as a percentage of the screen area)",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.5f, 1.0f)
 
-
-VERSION_CONTROL (cl_cvarlist_cpp, "$Id$")
