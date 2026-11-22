@@ -1973,6 +1973,13 @@
          "type" : "boolean"
       },
       {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Sizes the render slices by how long each takes, so they finish together",
+         "name" : "r_balanceslices",
+         "type" : "boolean"
+      },
+      {
          "default" : false,
          "flags" : [],
          "helptext" : "Vertically clip masked midtextures when surrounding sectors have differing specials (mimics Hexen and DSDA-Doom behavior)",
@@ -2077,6 +2084,13 @@
          "type" : "integer"
       },
       {
+         "default" : false,
+         "flags" : [],
+         "helptext" : "Draws a pink line at each render slice boundary",
+         "name" : "r_showcontexts",
+         "type" : "boolean"
+      },
+      {
          "default" : 0,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "Display the ENDDOOM text after quitting",
@@ -2091,6 +2105,15 @@
          "helptext" : "Invulnerability sphere changes the palette of the sky",
          "name" : "r_skypalette",
          "type" : "boolean"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Render slices per render thread -- more lets threads that start late or run fast take up each other's slack",
+         "max" : 4,
+         "min" : 1,
+         "name" : "r_slicesperthread",
+         "type" : "integer"
       },
       {
          "default" : true,
@@ -2121,6 +2144,15 @@
          "helptext" : "Things are lit according to the average of the transfered light levels (mimics MBF behavior)",
          "name" : "r_thingsectorlight",
          "type" : "boolean"
+      },
+      {
+         "default" : 0,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Number of render threads -- specify 0 to automatically determine the optimal thread count.",
+         "max" : 64,
+         "min" : 0,
+         "name" : "r_threads",
+         "type" : "integer"
       },
       {
          "default" : "0",
@@ -2826,6 +2858,42 @@
          "helptext" : "",
          "name" : "ui_dimcolor",
          "type" : "string"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Font used for the console (0 = bitmap, 1 = TrueType).",
+         "max" : 1,
+         "min" : 0,
+         "name" : "ui_font_console",
+         "type" : "integer"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Font used for the HUD (0 = bitmap, 1 = TrueType).",
+         "max" : 1,
+         "min" : 0,
+         "name" : "ui_font_hud",
+         "type" : "integer"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Font used for menus (0 = bitmap, 1 = TrueType).",
+         "max" : 1,
+         "min" : 0,
+         "name" : "ui_font_menu",
+         "type" : "integer"
+      },
+      {
+         "default" : 1,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Font used for in-game messages (0 = bitmap, 1 = TrueType).",
+         "max" : 1,
+         "min" : 0,
+         "name" : "ui_font_messages",
+         "type" : "integer"
       },
       {
          "default" : true,

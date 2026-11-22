@@ -34,6 +34,8 @@
 // Calculate # of glyphs in font.
 #define HU_FONTSIZE 	(HU_FONTEND - HU_FONTSTART + 1)
 
+class Texture;
+
 void HU_Init();
 void HU_Shutdown();
 

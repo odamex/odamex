@@ -49,6 +49,8 @@ misrepresented as being the original software.
 #include "i_music.h"
 #include "mus2midi.h"
 
+#include "resources/res_identifier.h"
+
 EXTERN_CVAR(snd_musicvolume);
 
 // ============================================================================
@@ -322,7 +324,7 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 	size_t reglength = length;
 	MEMFILE *mus = NULL, *midi = NULL;
 
-	if (S_MusicIsMus(data, length))
+	if (Res_MusicIsMus(data, length))
 	{
 		mus = mem_fopen_read(data, length);
 		midi = mem_fopen_write();
@@ -339,7 +341,7 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 			reglength = 0;
 		}
 	}
-	else if (!S_MusicIsMidi(data, length))
+	else if (not Res_MusicIsMidi(data, length))
 	{
 		PrintFmt(PRINT_HIGH, "I_PlaySong: AudioUnit does not support this music format\n");
 		return;

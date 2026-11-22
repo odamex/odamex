@@ -160,7 +160,7 @@ void DCeiling::RunThink ()
 				m_Sector->flags = m_NewFlags;
 				[[fallthrough]];
 			case genCeilingChg:
-				m_Sector->ceilingpic = m_Texture;
+				m_Sector->ceiling_res_id = m_Texture;
 				P_SetCeilingDestroy(this);
 				break;
 			case silentCrushAndRaise:
@@ -230,7 +230,7 @@ void DCeiling::RunThink ()
 				m_Sector->flags = m_NewFlags;
 				[[fallthrough]];
 			case genCeilingChg:
-				m_Sector->ceilingpic = m_Texture;
+				m_Sector->ceiling_res_id = m_Texture;
 				P_SetCeilingDestroy(this);
 				break;
 			case lowerAndCrush:
@@ -305,7 +305,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int silent, int speed)
 	  m_BottomHeight{P_FloorHeight(sec) + 8_fx},
 	  m_TopHeight{P_CeilingHeight(sec)},
 	  m_Crush{DOOM_CRUSH}, m_Silent{silent ? 2 : 1},
-	  m_Direction{-1}, m_Texture{sec->ceilingpic},
+	  m_Direction{-1}, m_Texture{sec->ceiling_res_id},
 	  m_NewSpecial{sec->special}, m_NewFlags{sec->flags},
 	  m_NewDamageRate{static_cast<int16_t>(sec->damageamount)},
 	  m_NewLeakRate{static_cast<byte>(sec->leakrate)},
@@ -346,7 +346,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 	m_CrushMode = crushDoom;
 	m_Direction = direction ? 1 : -1;
 	m_Sector = sec;
-	m_Texture = sec->ceilingpic;
+	m_Texture = sec->ceiling_res_id;
 	m_NewSpecial = sec->special;
 	m_NewDamageRate = sec->damageamount;
 	m_NewDmgInterval = sec->damageinterval;
@@ -434,7 +434,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 			          : P_FindModelCeilingSector(targheight, sec);
 			if (chgsec)
 			{
-				m_Texture = chgsec->ceilingpic;
+				m_Texture = chgsec->ceiling_res_id;
 				m_NewSpecial = chgsec->special;
 				m_NewDamageRate = chgsec->damageamount;
 				m_NewDmgInterval = chgsec->damageinterval;
@@ -470,7 +470,7 @@ DCeiling::DCeiling(sector_t* sec, line_t* line, int speed,
 		}
 		else // else if a trigger model change
 		{
-			m_Texture = line->frontsector->ceilingpic;
+			m_Texture = line->frontsector->ceiling_res_id;
 			m_NewSpecial = line->frontsector->special;
 			m_NewDamageRate = line->frontsector->damageamount;
 			m_NewDmgInterval = line->frontsector->damageinterval;
@@ -758,7 +758,7 @@ bool P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t
 
 				if (found != NULL)
 				{
-					ceiling->m_Texture = found->ceilingpic;
+					ceiling->m_Texture = found->ceiling_res_id;
 					switch (change & 3)
 					{
 					case 1: // type is zeroed
@@ -777,7 +777,7 @@ bool P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t
 			}
 			else if (line != NULL) // else if a trigger model change
 			{
-				ceiling->m_Texture = line->frontsector->ceilingpic;
+				ceiling->m_Texture = line->frontsector->ceiling_res_id;
 				switch (change & 3)
 				{
 				case 1: // type is zeroed
@@ -999,7 +999,7 @@ bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 
 				if (found != NULL)
 				{
-					ceiling->m_Texture = found->ceilingpic;
+					ceiling->m_Texture = sec->ceiling_res_id;
 					switch (change & 3)
 					{
 					case 1: // type is zeroed
@@ -1018,7 +1018,8 @@ bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 			}
 			else if (line != NULL) // else if a trigger model change
 			{
-				ceiling->m_Texture = line->frontsector->ceilingpic;
+
+				ceiling->m_Texture = line->frontsector->ceiling_res_id;
 				switch (change & 3)
 				{
 					case 1:		// type is zeroed

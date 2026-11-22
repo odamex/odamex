@@ -281,11 +281,11 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
 		// Prevent malicious under-ranged values from causing flooding of our
 		// services
-		m_RefreshInterval = clamp(m_RefreshInterval,
+		m_RefreshInterval = std::clamp(m_RefreshInterval,
 		                          ODA_UIARTREFINTERVAL,
 		                          ODA_UIARTREFMAX);
 
-		m_NewListInterval = clamp(m_NewListInterval,
+		m_NewListInterval = std::clamp(m_NewListInterval,
 		                          ODA_UIARTLISTINTERVAL,
 		                          ODA_UIARTLISTMAX);
 
@@ -1275,11 +1275,11 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent& event)
 
 		// Prevent malicious under-ranged values from causing flooding of our
 		// services
-		m_RefreshInterval = clamp(m_RefreshInterval,
+		m_RefreshInterval = std::clamp(m_RefreshInterval,
 		                          ODA_UIARTREFINTERVAL,
 		                          ODA_UIARTREFMAX);
 
-		m_NewListInterval = clamp(m_NewListInterval,
+		m_NewListInterval = std::clamp(m_NewListInterval,
 		                          ODA_UIARTLISTINTERVAL,
 		                          ODA_UIARTLISTMAX);
 

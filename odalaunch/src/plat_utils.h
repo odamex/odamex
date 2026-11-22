@@ -25,6 +25,8 @@
 
 #include "odalaunch.h"
 
+#include <algorithm>
+
 #include <wx/frame.h>
 #include <wx/icon.h>
 #include <wx/string.h>

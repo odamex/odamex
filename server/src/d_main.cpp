@@ -49,6 +49,8 @@
 #include "g_mapinfo.h"
 #include "gi.h"
 #include "gstrings.h"
+#include "z_zone.h"
+#include "v_video.h"
 #include "i_system.h"
 #include "i_time.h"
 #include "m_argv.h"
@@ -71,7 +73,8 @@ END_DISABLE_WARNING_GNU
 #include "g_level.h"
 #include "g_musinfo.h"
 
-#include "w_ident.h"
+#include "resources/res_filelib.h"
+#include "resources/res_texture.h"
 
 #include "g_spreedef.h"
 
@@ -137,10 +140,13 @@ EXTERN_CVAR(co_archvilefirefix)
 
 void G_ReadCOMPLVL()
 {
-	int lumpnum = W_CheckNumForName("COMPLVL");
-	if (lumpnum != -1)
+	const ResourceId res_id = Res_GetResourceId("COMPLVL", NS_GLOBAL);
+	if (Res_CheckResource(res_id))
 	{
-		char* complvl = W_CacheLumpNum<char>(lumpnum, PU_STATIC);
+		const uint32_t complvl_size = Res_GetResourceSize(res_id);
+		const std::string complvl(
+		    Res_LoadResource<char>(res_id, PU_CACHE), complvl_size);
+		Res_ReleaseResource(res_id);
 
 		co_zdoomphys.Set(0.0f);
 		co_zdoomammo.Set(0.0f);
@@ -181,8 +187,6 @@ void G_ReadCOMPLVL()
 		{
 			DPrintFmt("Unrecognized COMPLVL value: {}", complvl);
 		}
-
-		Z_Free(complvl);
 	}
 }
 
@@ -265,11 +269,10 @@ void D_Shutdown()
 
 	D_UndoDehPatch();
 
-	// close all open WAD files
-	W_Close();
-
 	R_ShutdownColormaps();
 	R_ClearSkyDefs();
+
+	D_UnloadResourceFiles();
 
 	// reset the Zone memory manager
 	Z_Close();
@@ -295,8 +298,6 @@ void D_DoomMain()
 	size_t p;
 
 	gamestate = GS_STARTUP;
-
-	W_SetupFileIdentifiers();
 
 	D_InitializeDoomObjectTables();
 

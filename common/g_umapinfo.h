@@ -19,6 +19,7 @@
 //-----------------------------------------------------------------------------
 
 #pragma once
+#include "resources/res_main.h"
 
-void ParseUMapInfoLump(int lump, const OLumpName& lumpname);
+void ParseUMapInfoLump(const ResourceId res_id, const OLumpName& lumpname);
 bool ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL);

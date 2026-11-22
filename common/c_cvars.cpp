@@ -22,6 +22,8 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include <cmath>
 #include <exception>
 

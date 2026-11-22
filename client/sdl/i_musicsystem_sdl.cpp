@@ -28,6 +28,7 @@
 
 #include "i_music.h"
 #include "mus2midi.h"
+#include "resources/res_identifier.h"
 
 EXTERN_CVAR(snd_musicvolume)
 
@@ -141,7 +142,7 @@ void SdlMixerMusicSystem::resumeSong()
 void SdlMixerMusicSystem::setVolume(float volume)
 {
 	MusicSystem::setVolume(volume);
-	Mix_VolumeMusic(int(getVolume() * MIX_MAX_VOLUME));
+	Mix_VolumeMusic(static_cast<int>(getVolume() * MIX_MAX_VOLUME));
 }
 
 //
@@ -176,7 +177,7 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 {
 	_UnregisterSong();
 
-	if (S_MusicIsMus(data, length))
+	if (Res_MusicIsMus(data, length))
 	{
 		MEMFILE* mus = mem_fopen_read(data, length);
 		m_registeredSong.Mem = mem_fopen_write();

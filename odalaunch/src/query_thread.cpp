@@ -23,6 +23,8 @@
 
 #include "query_thread.h"
 
+#include <algorithm>
+
 #include <wx/msgdlg.h>
 #include <wx/app.h>
 #include <wx/fileconf.h>
@@ -167,5 +169,5 @@ int QueryThread::GetIdealThreadCount()
 	if(ThreadCount != -1)
 		ThreadCount *= ThreadMul;
 
-	return clamp(ThreadCount, ThreadMul, ThreadMax);
+	return std::clamp(ThreadCount, ThreadMul, ThreadMax);
 }

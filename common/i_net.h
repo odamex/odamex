@@ -21,6 +21,9 @@
 
 #pragma once
 
+#include "doomtype.h"
+
+
 // Default buffer size for a UDP packet.
 // This constant seems to be used as a default buffer size and should
 // probably not be considered a reasonable MTU.
@@ -328,6 +331,14 @@ enum msg_t
 	clc_spy,
 	clc_privmsg,
 	clc_sendmobjupdate,
+
+	// Messages added since protobreak go at the end, in either direction, so
+	// every number above stays the same and older peers can still connect.
+	//
+	// Remove this when this is current protobreak, and put these messages back.
+
+	clc_resourcedigests,
+	svc_resourcedigestsack,
 
 	MSG_DEFINITION_COUNT    // For use as sizer.
 };

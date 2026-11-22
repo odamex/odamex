@@ -24,6 +24,7 @@
 #include "d_main.h"
 
 #include <fstream>
+#include <functional>
 #include "m_ostring.h"
 
 extern std::ofstream LOG;
@@ -34,6 +35,8 @@ std::string M_FindUserFileName(const std::string& file, const char* ext);
 void M_FixPathSep(std::string& path);
 std::string M_GetCWD();
 
+int32_t M_FileLength (FILE *f);
+int32_t M_FileLength(const std::string& filename);
 template <typename CharType, typename ElementType>
 bool M_ReadLE(std::basic_istream<CharType>& io_stream, ElementType& o_data)
 {
@@ -172,7 +175,8 @@ bool M_DirectoryExists(const std::string& filename);
 bool M_WriteFile(std::string filename, void *source, size_t length);
 size_t M_ReadFile(const std::string& filename, byte **buffer);
 
-bool M_AppendExtension (std::string &filename, std::string extension, bool if_needed = true);
+std::string M_AppendExtension(const std::string& filename, const std::string& ext, bool if_needed = true);
+
 void M_ExtractFilePath(const std::string& filename, std::string &dest);
 bool M_ExtractFileExtension(const std::string& filename, std::string &dest);
 void M_ExtractFileBase (std::string filename, std::string &dest);
@@ -282,11 +286,14 @@ std::string M_GetNetDemoFileName(const std::string& file, const std::string& alt
  * @param file File to search, without extension.
  * @param exts Extensions to search, including initial dot - must be capitalized.
  * @param hash Optional hash to match against - must be capitalized.
+ * @param accept Optional check of a candidate's full path -- a file it rejects
+ *               is passed over for the next best match.
  * @return Filename of the found file, or empty string if not found.
 */
 std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
                                 const std::vector<std::string>& exts,
-                                const OMD5Hash& hash);
+                                const OMD5Hash& hash,
+                                const std::function<bool(const std::string&)>& accept = nullptr);
 
 /**
  * @brief Attempt to find multiple files in a directory - case insensitive.
@@ -320,6 +327,9 @@ std::vector<std::string> M_PWADFilesScanDir(std::string dir);
  */
 bool M_GetAbsPath(const std::string& path, std::string& out);
 
+bool M_IsDirectory(const std::string& path);
+bool M_IsFile(const std::string& path);
+std::vector<std::string> M_ListDirectoryContents(const std::string& path, size_t max_depth = 1);
 struct FileDeleter
 {
     void operator()(FILE* f) const

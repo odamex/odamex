@@ -48,9 +48,9 @@ BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 END_DISABLE_WARNING_GNU
 #include "gstrings.h"
 #include "z_zone.h"
-#include "w_wad.h"
 #include "s_sound.h"
 #include "v_video.h"
+#include "v_font.h"
 #include "f_finale.h"
 #include "f_wipe.h"
 #include "m_argv.h"
@@ -86,6 +86,17 @@ END_DISABLE_WARNING_GNU
 #include "g_horde.h"
 #include "w_ident.h"
 #include "gui_boot.h"
+
+#include "resources/res_texture.h"
+#include "resources/res_filelib.h"
+
+#ifdef GEKKO
+#include "i_wii.h"
+#endif
+
+#ifdef _XBOX
+#include "i_xbox.h"
+#endif
 #include "g_musinfo.h"
 #include "g_episode.h"
 #include "g_multikill.h"
@@ -330,24 +341,23 @@ void D_Display()
 	// draw pause pic
 	if (paused && !menuactive)
 	{
-		const patch_t* pause = W_CachePatch(gameinfo.pauseSign);
+		const Texture* texture = Res_CacheTexture(OStringToUpper(gameinfo.pauseSign.c_str()), PATCH);
 
 		// todo: properly center "PAUSED" graphic for Heretic
 		const int y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
-		screen->DrawPatchCleanNoMove (pause, (I_GetSurfaceWidth()-(pause->width())*CleanXfac)/2, y);
+		screen->DrawTextureCleanNoMove(texture, (I_GetSurfaceWidth() - (texture->mWidth * CleanXfac)) / 2, y);
 	}
 
 	// [RH] Draw icon, if any
 	if (D_DrawIcon)
 	{
-		const int lump = W_CheckNumForName(D_DrawIcon);
+		const ResourceId icon_res_id = Res_GetTextureResourceId(D_DrawIcon, PATCH);
 
 		D_DrawIcon = NULL;
-		if (lump >= 0)
+		if (Res_CheckResource(icon_res_id))
 		{
-			const patch_t *p = W_CachePatch(lump);
-
-			screen->DrawPatchIndirect(p, 160-p->width()/2, 100-p->height()/2);
+			const Texture* texture = Res_CacheTexture(icon_res_id);
+			screen->DrawTextureIndirect(texture, 160 - (texture->mWidth / 2), 100 - (texture->mHeight / 2));
 		}
 		NoWipe = 10;
 	}
@@ -405,6 +415,7 @@ void D_PageTicker()
 		D_AdvanceDemo();
 }
 
+
 //
 // D_PageDrawer
 //
@@ -448,6 +459,7 @@ void D_PageDrawer()
 	}
 }
 
+
 //
 // D_AdvanceDemo
 // Called after each demo or intro demosequence finishes
@@ -475,7 +487,7 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Old demo sequence used in original games, zdoom's
     // dynamic one was too dynamic for its own good
     // [Nes] - Newer demo sequence with better flow.
-    if (W_CheckNumForName("DEMO4") >= 0 && gamemode != retail_chex)
+	if (gamemode != retail_chex and Res_CheckResource(Res_GetResourceId("DEMO4", NS_GLOBAL)))
         demosequence = (demosequence+1)%8;
     else
         demosequence = (demosequence+1)%6;
@@ -545,12 +557,13 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (!pagename.empty())
 	{
-		const patch_t* patch = W_CachePatch(W_CheckWidescreenPatch(pagename));
-
-		page_width = patch->width();
-		page_height = patch->height() + (patch->height() / 5);
-
 		I_FreeSurface(page_surface);
+
+		const Texture* texture =
+		    Res_CacheTexture(W_CheckWidescreenPatch(pagename), PATCH);
+
+		page_width = texture->mWidth;
+		page_height = texture->mHeight + (texture->mHeight / 5);
 
 		if (gameinfo.flags & GI_PAGESARERAW)
 		{
@@ -558,16 +571,16 @@ void D_DoAdvanceDemo (void)
 			DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
-			canvas->DrawBlock(0, 0, page_width, page_height, reinterpret_cast<const byte*>(patch));
+			canvas->DrawTexture(texture, 0, 0);
 			page_surface->unlock();
 		}
 		else
 		{
-			page_surface = I_AllocateSurface(patch->width(), patch->height(), 8);
+			page_surface = I_AllocateSurface(texture->mWidth, texture->mHeight, 8);
 			DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
-			canvas->DrawPatch(patch, 0, 0);
+			canvas->DrawTexture(texture, 0, 0);
 			page_surface->unlock();
 		}
 	}
@@ -622,12 +635,14 @@ EXTERN_CVAR(co_archvilefirefix)
 
 void G_ReadCOMPLVL()
 {
-	const int lumpnum = W_CheckNumForName("COMPLVL");
-	if (lumpnum == -1)
+	const ResourceId res_id = Res_GetResourceId("COMPLVL", NS_GLOBAL);
+	if (not Res_CheckResource(res_id))
 		return;
 
-	char* complvl = W_CacheLumpNum<char>(lumpnum, PU_STATIC);
-	auto guard = nonstd::make_scope_exit([&]{ Z_Free(complvl); });
+	const uint32_t complvl_size = Res_GetResourceSize(res_id);
+	std::string complvl(Res_LoadResource<char>(res_id, PU_CACHE),
+	                    complvl_size);
+	Res_ReleaseResource(res_id);
 
 	// don't use !serverside here, it doesn't get set early enough
 	if (multiplayer)
@@ -720,6 +735,10 @@ void D_Init()
 	if (first_time)
 		PrintFmt("Z_Init: Using native allocator with OZone bookkeeping.\n");
 
+	// Temporarily set the ARGB memory layout so that palette manipulations can
+	// be done before the video mode is initialized.
+	argb_t::setChannels(3, 2, 1, 0);
+
 	// Load palette and set up colormaps
 	V_Init();
 
@@ -728,11 +747,11 @@ void D_Init()
 		PrintFmt(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
 	R_Init();
 
-//	V_LoadFonts();
-
 	C_InitConsoleBackground();
 
 	C_InitConCharsFont();
+
+	V_FontInit();
 
 	HU_Init();
 
@@ -807,10 +826,7 @@ void D_Shutdown()
 
 	D_UndoDehPatch();
 
-	// close all open WAD files
-	W_Close();
-
-//	V_UnloadFonts();
+	V_FontShutdown();
 
 	HU_Shutdown();
 
@@ -825,6 +841,8 @@ void D_Shutdown()
 //	R_ShutdownColormaps();
 
 	V_Close();
+
+	D_UnloadResourceFiles();
 
 	// reset the Zone memory manager
 	Z_Close();
@@ -857,8 +875,6 @@ void D_DoomMain()
 	C_InitConsole();
 	atterm(C_ShutdownConsole);
 
-	W_SetupFileIdentifiers();
-
 	D_InitializeDoomObjectTables();
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
@@ -869,8 +885,7 @@ void D_DoomMain()
 	END_DISABLE_WARNING_GNU
 
 	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
-
-	// Always log by default
+	
 	if (!LOG.is_open())
 		C_DoCommand("logfile", 0);
 
@@ -942,7 +957,9 @@ void D_DoomMain()
 				OWantFile::make(file, pwad, OFILE_DEH);
 				newpatchfiles.push_back(file);
 			}
-			if (std::find(wad_exts.begin(), wad_exts.end(), extension) != wad_exts.end())
+			// The boot window also lists PK3 and ZIP archives, which load as resource files.
+			if (std::find(wad_exts.begin(), wad_exts.end(), extension) != wad_exts.end() or
+			    extension == ".PK3" or extension == ".ZIP")
 			{
 				OWantFile::make(file, pwad, OFILE_WAD);
 				newwadfiles.push_back(file);
@@ -1161,9 +1178,10 @@ void D_DoomMain()
 		C_HideConsole();
 		D_StartTitle();		// start up intro loop
 
+
 		if (gamemode == commercial_bfg) // DOOM 2 BFG Edtion
 			AddCommandString("menu_main");
-    }
+	}
 
 	D_DoomLoop();		// never returns
 }

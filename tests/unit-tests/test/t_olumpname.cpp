@@ -14,10 +14,10 @@ TEST(OLumpName, InitUppercase) {
 	EXPECT_EQ(lumpname.length(), 4);
 }
 
-TEST(OLumpName, InitTruncate) {
+TEST(OLumpName, InitLongName) {
 	OLumpName lumpname = "test123456";
-	EXPECT_STREQ(lumpname.c_str(), "TEST1234");
-	EXPECT_EQ(lumpname.length(), 8);
+	EXPECT_STREQ(lumpname.c_str(), "TEST123456");
+	EXPECT_EQ(lumpname.length(), 10);
 }
 
 TEST(OLumpName, Substring) {

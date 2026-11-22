@@ -22,6 +22,8 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+
 #include <stdlib.h>
 
 #include "d_dehacked.h"

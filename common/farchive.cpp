@@ -32,6 +32,7 @@ END_DISABLE_WARNING_GNU
 #include "i_system.h"
 #include "d_player.h"
 #include "dobject.h"
+#include "resources/res_main.h"
 
 #define SWAP_SHORT(x)       { x = BESHORT(x); }
 #define SWAP_INT(x)         { x = BELONG(x); }
@@ -600,6 +601,19 @@ FArchive& FArchive::operator<< (const char *str)
 		WriteCount (size);
 		Write (str, size - 1);
 	}
+	return *this;
+}
+
+FArchive& FArchive::operator<< (const ResourceId& res_id)
+{
+	return *this << Res_GetResourceKey(res_id);
+}
+
+FArchive& FArchive::operator>> (ResourceId& res_id)
+{
+	ResourceKey key;
+	*this >> key;
+	res_id = Res_GetResourceIdByKey(key);
 	return *this;
 }
 

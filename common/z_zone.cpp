@@ -22,6 +22,7 @@
 
 #include "odamex.h"
 
+#include <mutex>
 #include <unordered_map>
 #include <stdlib.h>
 #include <string.h>
@@ -314,10 +315,22 @@ class OZone
 
 
 //
+// ZoneMutex
+//
+// Needed for multi threaded access to zone resources.
+//
+static std::recursive_mutex& ZoneMutex()
+{
+	static std::recursive_mutex* mutex = new std::recursive_mutex;
+	return *mutex;
+}
+
+//
 // Z_Close
 //
 void Z_Close()
 {
+	std::lock_guard<std::recursive_mutex> lock(ZoneMutex());
 	g_zone.clear();
 }
 
@@ -326,6 +339,7 @@ void Z_Close()
 //
 void Z_Init()
 {
+	std::lock_guard<std::recursive_mutex> lock(ZoneMutex());
 	g_zone.clear();
 }
 
@@ -335,6 +349,7 @@ void Z_Init()
 //
 void Z_Free(void* ptr, const std::source_location location)
 {
+	std::lock_guard<std::recursive_mutex> lock(ZoneMutex());
 	g_zone.deallocPtr(ptr, OFileLine::create(location.file_name(), location.line()));
 }
 
@@ -345,16 +360,19 @@ void Z_Free(void* ptr, const std::source_location location)
 //
 void* z_detail::Z_Malloc2(size_t size, const zoneTag_e tag, void* user, const std::source_location location)
 {
+	std::lock_guard<std::recursive_mutex> lock(ZoneMutex());
 	return g_zone.alloc(size, tag, user, OFileLine::create(location.file_name(), location.line()));
 }
 
 void* z_detail::Z_Calloc2(size_t size, const zoneTag_e tag, void* user, const std::source_location location)
 {
+	std::lock_guard<std::recursive_mutex> lock(ZoneMutex());
 	return g_zone.calloc(size, tag, user, OFileLine::create(location.file_name(), location.line()));
 }
 
 void* z_detail::Z_Realloc2(void* ptr, size_t size, const zoneTag_e tag, void* user, const std::source_location location)
 {
+	std::lock_guard<std::recursive_mutex> lock(ZoneMutex());
 	return g_zone.realloc(ptr, size, tag, user, OFileLine::create(location.file_name(), location.line()));
 }
 
@@ -363,6 +381,7 @@ void* z_detail::Z_Realloc2(void* ptr, size_t size, const zoneTag_e tag, void* us
 //
 void Z_FreeTags(const zoneTag_e lowtag, const zoneTag_e hightag)
 {
+	std::lock_guard<std::recursive_mutex> lock(ZoneMutex());
 	return ::g_zone.deallocTags(lowtag, hightag);
 }
 
@@ -371,6 +390,7 @@ void Z_FreeTags(const zoneTag_e lowtag, const zoneTag_e hightag)
 //
 void Z_ChangeTag(void* ptr, const zoneTag_e tag, const std::source_location location)
 {
+	std::lock_guard<std::recursive_mutex> lock(ZoneMutex());
 	return ::g_zone.changeTag(ptr, tag, OFileLine::create(location.file_name(), location.line()));
 }
 
@@ -379,6 +399,7 @@ void Z_ChangeTag(void* ptr, const zoneTag_e tag, const std::source_location loca
 //
 void Z_ChangeOwner(void* ptr, void* user, const std::source_location location)
 {
+	std::lock_guard<std::recursive_mutex> lock(ZoneMutex());
 	return ::g_zone.changeOwner(ptr, user, OFileLine::create(location.file_name(), location.line()));
 }
 
@@ -400,6 +421,7 @@ char* Z_StrDup(const char* s, const zoneTag_e tag, const std::source_location lo
 //
 void Z_DumpHeap(const zoneTag_e lowtag, const zoneTag_e hightag)
 {
+	std::lock_guard<std::recursive_mutex> lock(ZoneMutex());
 	::g_zone.dump();
 }
 

@@ -611,6 +611,7 @@ void MSG_WriteLong (buf_t *b, int c)
 	b->WriteLong(c);
 }
 
+
 void MSG_WriteUnVarint(buf_t* b, unsigned int uv)
 {
 	if (simulated_connection)
@@ -984,6 +985,8 @@ static void InitNetMessageFormats()
 	MSG_INFO(clc_spy);
 	MSG_INFO(clc_privmsg);
 	MSG_INFO(clc_sendmobjupdate);
+	MSG_INFO(clc_resourcedigests);
+	MSG_INFO(svc_resourcedigestsack);
 }
 
 #undef MSG_INFO
@@ -1050,7 +1053,7 @@ bool NET_GetSockaddr(sockaddr_in& io_sockaddr)
 //
 bool NetWaitOrTimeout(size_t ms)
 {
-	struct timeval timeout = {0, int(1000*ms) + 1};
+	struct timeval timeout = {0, static_cast<int>(1000*ms) + 1};
 	fd_set fds;
 
 	FD_ZERO(&fds);

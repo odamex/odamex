@@ -17,7 +17,7 @@
 //  A handle that wraps a resolved file on disk.
 //
 //-----------------------------------------------------------------------------
-
+//
 #include "odamex.h"
 
 #include "m_resfile.h"
@@ -31,6 +31,8 @@
 #include "md5.h"
 #include "w_ident.h"
 #include "w_wad.h"
+#include "resources/res_filelib.h"
+#include "resources/res_main.h"
 
 EXTERN_CVAR(cl_waddownloaddir)
 EXTERN_CVAR(waddirs)
@@ -61,7 +63,7 @@ bool OResFile::make(OResFile& out, const std::string& file)
 		return false;
 	}
 
-	OMD5Hash hash = W_MD5(file);
+	OMD5Hash hash = Res_MD5(file);
 	if (hash.empty())
 	{
 		return false;
@@ -69,6 +71,49 @@ bool OResFile::make(OResFile& out, const std::string& file)
 
 	out.m_fullpath = fullpath;
 	out.m_md5 = hash;
+	out.m_contentDigest = Res_ContentDigest(fullpath);
+	out.m_basename = basename;
+	return true;
+}
+
+/**
+ * @brief Populate an OResFile from a directory used as a resource container.
+ *
+ * @detail Directories cannot be hashed the way flat files can, so a
+ *         deterministic marker hash derived from the directory name is used.
+ *         Clients that want this resource will resolve a ZIP/PK3 archive
+ *         with the same base name instead.
+ *
+ * @param out OResFile to populate.
+ * @param dir Complete and working path to a directory.
+ * @return True if the OResFile was populated successfully.
+ */
+bool OResFile::makeDirectory(OResFile& out, const std::string& dir)
+{
+	if (not M_IsDirectory(dir))
+	{
+		return false;
+	}
+
+	std::string fullpath;
+	if (not M_GetAbsPath(dir, fullpath))
+	{
+		return false;
+	}
+
+	// Trim any trailing path separator so the basename resolves properly.
+	while (not fullpath.empty() and M_IsPathSep(fullpath.back()))
+		fullpath.pop_back();
+
+	std::string basename = M_ExtractFileName(fullpath);
+	if (basename.empty())
+	{
+		return false;
+	}
+
+	out.m_fullpath = fullpath;
+	out.m_md5 = M_DirectoryMarkerHash(basename);
+	out.m_contentDigest = Res_ContentDigest(fullpath);
 	out.m_basename = basename;
 	return true;
 }
@@ -109,6 +154,7 @@ bool OResFile::makeWithHash(OResFile& out, const std::string& file, const OMD5Ha
 
 	out.m_fullpath = fullpath;
 	out.m_md5 = hash;
+	out.m_contentDigest = Res_ContentDigest(fullpath);
 	out.m_basename = basename;
 	return true;
 }
@@ -236,13 +282,13 @@ std::vector<std::string> M_FileSearchDirs()
 	std::vector<std::string> dirs;
 
 	// [cSc] Add cl_waddownloaddir as default path
-	D_AddSearchDir(dirs, ::cl_waddownloaddir.str(), missing_dir_policy_t::WARN);
-	D_AddSearchDirList(dirs, ::Args.CheckValue("-waddir"), missing_dir_policy_t::WARN);
-	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), missing_dir_policy_t::WARN);
-	D_AddSearchDirList(dirs, getenv("DOOMWADPATH"), missing_dir_policy_t::WARN);
-	D_AddSearchDirList(dirs, ::waddirs.str(), missing_dir_policy_t::WARN);
-	D_AddSearchDir(dirs, M_CleanPath(M_GetUserDir() + PATHSEP "downloads"));
-	D_AddSearchDir(dirs, M_CleanPath(M_GetBinaryDir() + PATHSEP "downloads"));
+	Res_AddSearchDir(dirs, ::cl_waddownloaddir.str(), missing_dir_policy_t::WARN);
+	Res_AddSearchDirList(dirs, ::Args.CheckValue("-waddir"), missing_dir_policy_t::WARN);
+	Res_AddSearchDir(dirs, getenv("DOOMWADDIR"), missing_dir_policy_t::WARN);
+	Res_AddSearchDirList(dirs, getenv("DOOMWADPATH"), missing_dir_policy_t::WARN);
+	Res_AddSearchDirList(dirs, ::waddirs.str(), missing_dir_policy_t::WARN);
+	Res_AddSearchDir(dirs, M_CleanPath(M_GetUserDir() + PATHSEP "downloads"));
+	Res_AddSearchDir(dirs, M_CleanPath(M_GetBinaryDir() + PATHSEP "downloads"));
 	dirs.push_back(M_GetUserDir());
 	dirs.push_back(M_GetCWD());
 	dirs.push_back(M_GetBinaryDir());
@@ -252,7 +298,7 @@ std::vector<std::string> M_FileSearchDirs()
 #endif
 
 	// [AM] Search additional paths based on platform
-	D_AddPlatformSearchDirs(dirs);
+	Res_AddPlatformSearchDirs(dirs);
 
 	// Get rid of any dupes.
 	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
@@ -267,23 +313,121 @@ std::vector<std::string> M_FileSearchDirs()
  * @param wanted Wanted file to resolve.
  * @return True if the file was resolved, otherwise false.
  */
-bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
+static bool IsArchiveExt(const std::string& ext)
 {
-	// If someone goes throught the effort of pointing directly to a file
-	// correctly, believe them.
-	if (M_FileExists(wanted.getWantedPath()))
+	return iequals(ext, ".ZIP") or iequals(ext, ".PK3");
+}
+
+/**
+ * @brief Check that a file named as a WAD or archive really is one.
+ *
+ * @detail Anything else would load as a single lump: an executable, or an
+ *         error page saved by a failed download. Either container form is
+ *         accepted, since the container is chosen by contents, not name.
+ *         Files with other extensions or none may be raw lumps, so they
+ *         always pass.
+ */
+bool HasContainerContents(const std::string& path)
+{
+	std::string ext;
+	if (not M_ExtractFileExtension(path, ext))
+		return true;
+
+	if (not iequals(ext, ".WAD") and not IsArchiveExt(ext))
+		return true;
+
+	const OString ospath(path);
+	if (Res_IsWadFile(ospath) or Res_IsZipFile(ospath))
+		return true;
+
+	PrintFmt(PRINT_WARNING, "{} is not a WAD or archive, skipping\n", path);
+	return false;
+}
+
+/**
+ * @brief Compute the deterministic marker hash used to identify a directory
+ *        resource of the given base name.
+ *
+ * @detail Directories cannot be content-hashed the way flat files can, so
+ *         they are identified by an MD5 of "DIR:" plus the uppercased
+ *         directory name. Both sides of a connection derive the same marker
+ *         for a directory of the same name.
+ */
+OMD5Hash M_DirectoryMarkerHash(const std::string& basename)
+{
+	const std::string marker = "DIR:" + StdStringToUpper(basename);
+	md5_state_t state;
+	md5_init(&state);
+	md5_append(&state, reinterpret_cast<const md5_byte_t*>(marker.data()), marker.size());
+	md5_byte_t digest[16];
+	md5_finish(&state, digest);
+
+	std::string hashStr;
+	for (int i = 0; i < 16; i++)
+		hashStr += fmt::sprintf("%02X", digest[i]);
+
+	OMD5Hash hash;
+	OMD5Hash::makeFromHexStr(hash, hashStr);
+	return hash;
+}
+
+/**
+ * @brief Check whether the given hash is the directory resource marker for
+ *        the given base name, meaning the want refers to a directory (or its
+ *        interchangeable archive form) rather than a concrete file.
+ */
+bool M_IsDirectoryMarkerHash(const OMD5Hash& hash, const std::string& basename)
+{
+	return not hash.empty() and hash == M_DirectoryMarkerHash(basename);
+}
+
+bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted, resolve_policy_t policy)
+{
+	const OMD5Hash& want_digest = wanted.getWantedContentDigest();
+
+	// Don't open the wanted path as given when searching first.
+	// When searching for "odamex" as the "odamex.wad", on Linux it has a tendency
+	// of selecting "odamex" the executable instead of "odamex.wad", so the
+	// engine resource only takes a same-named directory as a last ditch
+	// effort.
+	// A user's wanted wad, like "wad mydir", still opens what it names.
+	const std::string& wanted_path = wanted.getWantedPath();
+	const bool open_as_given = (policy == resolve_policy_t::OPEN_AS_GIVEN);
+
+	// A directory can be loaded as a resource container directly.  If the
+	// want carries a content digest, the directory's contents must match it.
+	if (open_as_given and M_IsDirectory(wanted_path))
 	{
-		if (wanted.getWantedMD5().empty())
+		if (want_digest.empty() or Res_ContentDigest(wanted.getWantedPath()) == want_digest)
+		{
+			return OResFile::makeDirectory(out, wanted.getWantedPath());
+		}
+
+		// Wrong contents, keep trying.
+	}
+
+	// If someone goes through the effort of pointing directly to a file
+	// correctly, believe them.
+	if (open_as_given and M_FileExists(wanted_path) and HasContainerContents(wanted_path))
+	{
+		if (wanted.getWantedMD5().empty() and want_digest.empty())
 		{
 			// No hash preference.
 			return OResFile::make(out, wanted.getWantedPath());
 		}
 
-		OMD5Hash hash = W_MD5(wanted.getWantedPath());
+		OMD5Hash hash = Res_MD5(wanted.getWantedPath());
 		if (wanted.getWantedMD5() == hash)
 		{
 			// File matches our hash.
 			return OResFile::makeWithHash(out, wanted.getWantedPath(), hash);
+		}
+
+		if (not want_digest.empty() and
+		    Res_ContentDigest(wanted.getWantedPath()) == want_digest)
+		{
+			// Not the same bytes, but the same logical contents.
+			return OResFile::make(out, wanted.getWantedPath());
 		}
 
 		// Not a match, keep trying.
@@ -296,14 +440,47 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	M_ExtractFileBase(path, basename);
 	if (M_ExtractFileExtension(path, strext))
 	{
-		exts.push_back(strext);
+		if (not strext.empty() and strext[0] != '.')
+			strext = "." + strext;
+		exts.push_back(StdStringToUpper(strext));
+
+		// Archive resources are interchangeable between the ZIP and
+		// PK3 extensions, so search for both spellings.
+		if (IsArchiveExt(strext))
+		{
+			exts.push_back(".ZIP");
+			exts.push_back(".PK3");
+		}
+	}
+	else if (M_IsDirectoryMarkerHash(wanted.getWantedMD5(), basename))
+	{
+		// The want refers to a directory resource on the server.
+		// Directories cannot be downloaded or hash-matched, so only look
+		// for the archive forms of the resource - never bare WAD files.
+		exts.push_back(".ZIP");
+		exts.push_back(".PK3");
 	}
 	else
 	{
 		const std::vector<std::string>& ftexts = M_FileTypeExts(wanted.getWantedType());
 		exts.insert(exts.end(), ftexts.begin(), ftexts.end());
+
+		// Extension-less WAD wants may also resolve to the archive
+		// forms of the resource.
+		if (wanted.getWantedType() == OFILE_WAD or wanted.getWantedType() == OFILE_UNKNOWN)
+		{
+			exts.push_back(".ZIP");
+			exts.push_back(".PK3");
+		}
 	}
 	exts.erase(std::unique(exts.begin(), exts.end()), exts.end());
+
+	// A want carrying the directory marker hash refers to a directory
+	// resource. No real file can match the marker, so archives are matched
+	// by name alone.
+	OMD5Hash search_md5 = wanted.getWantedMD5();
+	if (M_IsDirectoryMarkerHash(search_md5, basename))
+		search_md5 = OMD5Hash();
 
 	// And now...we resolve.
 	const std::vector<std::string> dirs = M_FileSearchDirs();
@@ -311,12 +488,61 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 	{
 		const std::string searchpath = M_JoinPath(dir, subdir);
 		const std::string result =
-		    M_BaseFileSearchDir(searchpath, basename, exts, wanted.getWantedMD5());
+		    M_BaseFileSearchDir(searchpath, basename, exts, search_md5, HasContainerContents);
 		if (!result.empty())
 		{
 			// Found a file.
 			const std::string fullpath = M_JoinPath(searchpath, result);
 			return OResFile::make(out, fullpath);
+		}
+	}
+
+	// The want carries a content digest: accept any same-named archive or
+	// directory whose logical contents match it, regardless of container
+	// form or how the archive was compressed.
+	if (not want_digest.empty())
+	{
+		static const std::vector<std::string> archive_exts = {".ZIP", ".PK3"};
+		for (const auto& dir : dirs)
+		{
+			const std::string searchpath = M_JoinPath(dir, subdir);
+			const std::string result =
+			    M_BaseFileSearchDir(searchpath, basename, archive_exts, OMD5Hash(),
+			                        HasContainerContents);
+			if (not result.empty())
+			{
+				const std::string fullpath = M_JoinPath(searchpath, result);
+				if (Res_ContentDigest(fullpath) == want_digest)
+				{
+					return OResFile::make(out, fullpath);
+				}
+			}
+
+			const std::string dirpath = M_JoinPath(searchpath, basename);
+			if (M_IsDirectory(dirpath) and Res_ContentDigest(dirpath) == want_digest)
+			{
+				return OResFile::makeDirectory(out, dirpath);
+			}
+		}
+	}
+
+	// Last resort for extension-less wants: a directory with the
+	// wanted name inside one of the search directories.
+	if (strext.empty())
+	{
+		for (const auto& dir : dirs)
+		{
+			const std::string dirpath = M_JoinPath(M_JoinPath(dir, subdir), basename);
+			if (M_IsDirectory(dirpath))
+			{
+				// A known content digest must match; a same-named directory
+				// with different contents is not the wanted resource.
+				if (not want_digest.empty() and Res_ContentDigest(dirpath) != want_digest)
+				{
+					continue;
+				}
+				return OResFile::makeDirectory(out, dirpath);
+			}
 		}
 	}
 
@@ -343,7 +569,7 @@ std::vector<scannedIWAD_t> M_ScanIWADs()
 			const std::string fullpath = dir + PATHSEP + file;
 
 			// Check to see if we got a real IWAD.
-			const OCRC32Sum crc32 = W_CRC32(fullpath);
+			const OCRC32Sum crc32 = Res_CRC32(fullpath);
 			if (crc32.empty())
 				continue;
 
@@ -352,7 +578,7 @@ std::vector<scannedIWAD_t> M_ScanIWADs()
 				continue;
 
 			// Does the gameinfo exist?
-			const fileIdentifier_t* id = W_GameInfo(crc32);
+			const FileIdentifier* id = W_GameInfo(crc32);
 			if (id == NULL)
 				continue;
 
@@ -388,13 +614,14 @@ std::vector<scannedPWAD_t> M_ScanPWADs()
 		for (const auto& filename : files)
 		{
 			// [AM] Don't include odamex.wad or IWADs.
-			if (iequals(filename, "odamex.wad"))
+			if (iequals(filename, "odamex.wad") or iequals(filename, "odamex.pk3") or
+			    iequals(filename, "odamex.zip"))
 				continue;
 
 			OWantFile file;
 			if (iequals(filename, "d.WAD"))
 			{
-				OMD5Hash hash = W_MD5(dir + PATHSEP + filename);
+				OMD5Hash hash = Res_MD5(dir + PATHSEP + filename);
 				OWantFile::makeWithHash(file, filename, OFILE_WAD, hash);
 			}
 			else
@@ -453,9 +680,10 @@ BEGIN_COMMAND(whereis)
 	OResFile res;
 	if (M_ResolveWantedFile(res, want))
 	{
-		PrintFmt("basename: {}\nfullpath: {}\nCRC32: {}\nMD5: {}\n",
+		PrintFmt("basename: {}\nfullpath: {}\nCRC32: {}\nMD5: {}\nDIGEST: {}\n",
 		         res.getBasename(), res.getFullpath(),
-		         W_CRC32(res.getFullpath()).getHexStr(), res.getMD5().getHexStr());
+		         Res_CRC32(res.getFullpath()).getHexStr(), res.getMD5().getHexStr(),
+		         res.getContentDigest().getHexStr());
 		return;
 	}
 
@@ -470,6 +698,8 @@ BEGIN_COMMAND(loaded)
 		PrintFmt("{}\n", file.getBasename());
 		PrintFmt("  PATH: {}\n", file.getFullpath());
 		PrintFmt("  MD5:  {}\n", file.getMD5().getHexStr());
+		if (not file.getContentDigest().empty())
+			PrintFmt("  DIGEST: {}\n", file.getContentDigest().getHexStr());
 	}
 
 	for (const auto& file : ::patchfiles)
