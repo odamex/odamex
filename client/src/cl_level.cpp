@@ -391,7 +391,7 @@ void G_DoCompleted (void)
 			wminfo.winner = consoleplayer().userinfo.team == win.id;
 			break;
 		case WinInfo::WIN_PLAYER:
-		    wminfo.winner = cmdstate.GetConsolePlayerId() == win.id;
+		    wminfo.winner = std::cmp_equal(cmdstate.GetConsolePlayerId(), win.id);
 			break;
 		default:
 			wminfo.winner = false;
