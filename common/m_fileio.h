@@ -24,6 +24,7 @@
 #include "d_main.h"
 
 #include <fstream>
+#include <functional>
 #include "m_ostring.h"
 
 extern std::ofstream LOG;
@@ -285,11 +286,14 @@ std::string M_GetNetDemoFileName(const std::string& file, const std::string& alt
  * @param file File to search, without extension.
  * @param exts Extensions to search, including initial dot - must be capitalized.
  * @param hash Optional hash to match against - must be capitalized.
+ * @param accept Optional check of a candidate's full path -- a file it rejects
+ *               is passed over for the next best match.
  * @return Filename of the found file, or empty string if not found.
 */
 std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
                                 const std::vector<std::string>& exts,
-                                const OMD5Hash& hash);
+                                const OMD5Hash& hash,
+                                const std::function<bool(const std::string&)>& accept = nullptr);
 
 /**
  * @brief Attempt to find multiple files in a directory - case insensitive.

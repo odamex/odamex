@@ -157,6 +157,7 @@ struct scannedPWAD_t
 std::string M_ResFilesToString(const OResFiles& files);
 const std::vector<std::string>& M_FileTypeExts(ofile_t type);
 std::vector<std::string> M_FileSearchDirs();
+bool HasContainerContents(const std::string& path);
 // How M_ResolveWantedFile treats a wanted path that already exists verbatim.
 enum class resolve_policy_t
 {

@@ -68,6 +68,7 @@ static const ResourcePath voxels_directory_name("/VOXELS/");
 static const ResourcePath udmf_maps_directory_name("/UDMFMAPS/");
 
 bool Res_IsWadFile(const OString& filename);
+bool Res_IsZipFile(const OString& filename);
 bool Res_IsDehackedFile(const OString& filename);
 
 

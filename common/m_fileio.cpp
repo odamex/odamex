@@ -571,7 +571,8 @@ std::string M_GetNetDemoFileName(const std::string& file, const std::string& alt
 
 std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
                                 const std::vector<std::string>& exts,
-                                const OMD5Hash& hash)
+                                const OMD5Hash& hash,
+                                const std::function<bool(const std::string&)>& accept)
 {
 	fs::path path(M_CleanPath(dir));
 	std::vector<OString> cmp_files;
@@ -606,6 +607,9 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
 			if (this_it < found_it)
 			{
 				const std::string local_file = (path / filename).string();
+				if (accept and not accept(local_file))
+					continue;
+
 				const OMD5Hash local_hash = Res_MD5(local_file);
 
 				if (hash.empty() || hash == local_hash)

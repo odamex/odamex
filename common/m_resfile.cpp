@@ -319,6 +319,32 @@ static bool IsArchiveExt(const std::string& ext)
 }
 
 /**
+ * @brief Check that a file named as a WAD or archive really is one.
+ *
+ * @detail Anything else would load as a single lump: an executable, or an
+ *         error page saved by a failed download. Either container form is
+ *         accepted, since the container is chosen by contents, not name.
+ *         Files with other extensions or none may be raw lumps, so they
+ *         always pass.
+ */
+bool HasContainerContents(const std::string& path)
+{
+	std::string ext;
+	if (not M_ExtractFileExtension(path, ext))
+		return true;
+
+	if (not iequals(ext, ".WAD") and not IsArchiveExt(ext))
+		return true;
+
+	const OString ospath(path);
+	if (Res_IsWadFile(ospath) or Res_IsZipFile(ospath))
+		return true;
+
+	PrintFmt(PRINT_WARNING, "{} is not a WAD or archive, skipping\n", path);
+	return false;
+}
+
+/**
  * @brief Compute the deterministic marker hash used to identify a directory
  *        resource of the given base name.
  *
@@ -380,9 +406,9 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted, resolve_policy_
 		// Wrong contents, keep trying.
 	}
 
-	// If someone goes throught the effort of pointing directly to a file
+	// If someone goes through the effort of pointing directly to a file
 	// correctly, believe them.
-	if (open_as_given and M_FileExists(wanted_path))
+	if (open_as_given and M_FileExists(wanted_path) and HasContainerContents(wanted_path))
 	{
 		if (wanted.getWantedMD5().empty() and want_digest.empty())
 		{
@@ -462,7 +488,7 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted, resolve_policy_
 	{
 		const std::string searchpath = M_JoinPath(dir, subdir);
 		const std::string result =
-		    M_BaseFileSearchDir(searchpath, basename, exts, search_md5);
+		    M_BaseFileSearchDir(searchpath, basename, exts, search_md5, HasContainerContents);
 		if (!result.empty())
 		{
 			// Found a file.
@@ -481,7 +507,8 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted, resolve_policy_
 		{
 			const std::string searchpath = M_JoinPath(dir, subdir);
 			const std::string result =
-			    M_BaseFileSearchDir(searchpath, basename, archive_exts, OMD5Hash());
+			    M_BaseFileSearchDir(searchpath, basename, archive_exts, OMD5Hash(),
+			                        HasContainerContents);
 			if (not result.empty())
 			{
 				const std::string fullpath = M_JoinPath(searchpath, result);
