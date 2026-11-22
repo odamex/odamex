@@ -125,7 +125,7 @@ static const OFont* C_MessageFont()
 	const int size = 8 * std::max(1, V_TextScaleXAmount());
 	if (ui_font_messages.asInt() == FONT_BITMAP)
 		return V_GetBitmapFont("FONT_SM", size);
-	return V_GetHudFontSized(size);
+	return V_GetShadowFont("FONT_SM", size);
 }
 
 static bool				cursoron = false;

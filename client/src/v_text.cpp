@@ -167,20 +167,34 @@ OFont* V_GetFont(const char* lumpname, int pixel_size)
 //
 OFont* V_GetHudFontSized(int pixel_size)
 {
+	if (ui_font_hud.asInt() == FONT_BITMAP)
+		return V_GetBitmapFont(TTF_LUMP_NAME, pixel_size);
 	return V_GetShadowFont(TTF_LUMP_NAME, pixel_size);
 }
 
 
 //
-// V_GetBitmapFont
+// V_GetBannerFont
 //
-OFont* V_GetBitmapFont(const char* lumpname, int pixel_size)
+OFont* V_GetBannerFont(const char* lumpname, int pixel_scale)
+{
+	pixel_scale = std::max(1, pixel_scale);
+	if (ui_font_hud.asInt() == FONT_BITMAP)
+		return V_GetBitmapFontScaled("FONT_BIG", pixel_scale);
+	return V_GetShadowFont(lumpname, 12 * pixel_scale);
+}
+
+
+//
+// V_GetBitmapFontScaled
+//
+OFont* V_GetBitmapFontScaled(const char* lumpname, int scale)
 {
 	typedef std::map<std::string, OFont*> FontCache;
 	static FontCache cache;
 
-	pixel_size = std::clamp(pixel_size, 4, 128);
-	const std::string key = fmt::format("{}:{}", lumpname, pixel_size);
+	scale = std::clamp(scale, 1, 16);
+	const std::string key = fmt::format("{}:{}", lumpname, scale);
 
 	FontCache::iterator it = cache.find(key);
 	if (it != cache.end())
@@ -190,24 +204,27 @@ OFont* V_GetBitmapFont(const char* lumpname, int pixel_size)
 
 	OFont* font;
 	if (not strnicmp(lumpname, "FONT_BIG", 8))
-	{
-		// The large red font's glyphs are roughly twice the small font's height.
-		const fixed_t scale = std::max(1, pixel_size / 16) * FRACUNIT;
-		font = new LargeDoomFont(scale);
-	}
+		font = new LargeDoomFont(scale * FRACUNIT);
 	else if (not strnicmp(lumpname, "FONT_CON", 8))
-	{
-		const fixed_t scale = std::max(1, pixel_size / 8) * FRACUNIT;
-		font = new ConCharsFont(scale);
-	}
+		font = new ConCharsFont(scale * FRACUNIT);
 	else
-	{
-		const fixed_t scale = std::max(1, pixel_size / 8) * FRACUNIT;
-		font = new SmallDoomFont(scale);
-	}
+		font = new SmallDoomFont(scale * FRACUNIT);
 
 	cache[key] = font;
 	return font;
+}
+
+
+//
+// V_GetBitmapFont
+//
+OFont* V_GetBitmapFont(const char* lumpname, int pixel_size)
+{
+	pixel_size = std::clamp(pixel_size, 4, 128);
+
+	// The menu asks for the large red font 16 pixels a step.
+	const int base = not strnicmp(lumpname, "FONT_BIG", 8) ? 16 : 8;
+	return V_GetBitmapFontScaled(lumpname, std::max(1, pixel_size / base));
 }
 
 
@@ -452,7 +469,7 @@ OFont* V_GetFaceFont(fontface_t face, int pixel_scale)
 	const hudfacedef_t& def = hud_faces[face];
 	const int size = def.base_size * pixel_scale;
 	if (ui_font_hud.asInt() == FONT_BITMAP)
-		return V_GetBitmapFont(def.lumpname, size);
+		return V_GetBitmapFontScaled(def.lumpname, pixel_scale);
 	if (face == FACE_SCOREBOARD)
 		return V_GetScoreboardFont(pixel_scale);
 	return V_GetShadowFont(def.lumpname, size);

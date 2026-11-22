@@ -122,6 +122,13 @@ OFont* V_GetHudFont(int pixel_scale);
 OFont* V_GetHudFontSized(int pixel_size);
 
 //
+// V_GetBannerFont
+//
+// A big HUD banner line, such as a spree or a wave title, at a scale factor.
+//
+OFont* V_GetBannerFont(const char* lumpname, int pixel_scale);
+
+//
 // V_GetShadowFont
 //
 // The same as V_GetFont, but with a drop shadow baked into the glyphs, for
@@ -187,6 +194,13 @@ OFont* V_GetVariableFont(const char* lumpname, int pixel_size, unsigned int styl
 // typeface even when a TrueType lump is present.
 //
 OFont* V_GetBitmapFont(const char* lumpname, int pixel_size);
+
+//
+// V_GetBitmapFontScaled
+//
+// V_GetBitmapFont, but at a scale factor of the bitmap font's own size.
+//
+OFont* V_GetBitmapFontScaled(const char* lumpname, int scale);
 
 //
 // V_FontApplyPreferences
