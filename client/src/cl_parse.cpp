@@ -933,6 +933,8 @@ void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 	if (players.empty() || !validplayer(player))
 		return;
 
+	const int playerid = player.id;
+
 	if (player.id == consoleplayer().id)
 	{
 		connected = false;
@@ -961,6 +963,11 @@ void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 			break;
 		}
 	}
+
+	// Player ids get recycled, so anything left behind here would be handed to
+	// whoever joins next under the same id.
+	DeathSpotManager::getInstance().eraseDeathSpot(playerid);
+	KeepWeaponsManager::getInstance().eraseLoadout(playerid);
 
 	// if this was our displayplayer, update camera
 	CL_CheckDisplayPlayer();
