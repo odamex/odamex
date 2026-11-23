@@ -25,6 +25,7 @@
 //-----------------------------------------------------------------------------
 
 #include <iostream>
+#include <cstdlib>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -102,44 +103,80 @@ uint64_t GetMillisNow()
 	return _UnwrapTime(_Millis());
 }
 
-int32_t OdaAddrToComponents(const std::string& HostPort, std::string &AddrOut,
-                            uint16_t &PortOut)
+int32_t OdaAddrToComponents(const std::string& HostPort, std::string& AddrOut,
+                            uint16_t& PortOut)
 {
-	size_t colon;
+	if(HostPort.empty())
+		return 1;
 
-	if (HostPort.empty())
-        return 1;
+	std::string host;
+	std::string portText;
+	bool hasPort = false;
 
-	colon = HostPort.find(':');
+	if(HostPort[0] == '[')
+	{
+		// Brackets make the port separator unambiguous for IPv6 literals.
+		const size_t closeBracket = HostPort.find(']');
+		if(closeBracket == std::string::npos || closeBracket == 1)
+			return 2;
 
-	if(colon != std::string::npos)
-    {
-        long tmp_port;
+		host = HostPort.substr(1, closeBracket - 1);
+		const std::string suffix = HostPort.substr(closeBracket + 1);
+		if(!suffix.empty())
+		{
+			if(suffix[0] != ':' || suffix.size() == 1)
+				return 2;
+			portText = suffix.substr(1);
+			hasPort = true;
+		}
+	}
+	else
+	{
+		const size_t firstColon = HostPort.find(':');
+		const size_t lastColon = HostPort.rfind(':');
 
-        if(colon + 1 >= HostPort.length())
-            return 2;
+		if(firstColon != std::string::npos && firstColon == lastColon)
+		{
+			// IPv4/hostname with an explicit port.
+			host = HostPort.substr(0, firstColon);
+			portText = HostPort.substr(firstColon + 1);
+			hasPort = true;
+		}
+		else
+		{
+			// Multiple colons are treated as an unbracketed IPv6 literal.
+			// To specify an IPv6 port, use [address]:port.
+			host = HostPort;
+		}
+	}
 
-        try
-        {
-            std::istringstream(HostPort.substr(colon + 1)) >> tmp_port;
-            PortOut = tmp_port;
-        }
-        catch (...)
-        {
-            return 3;
-        }
-    }
-    else
-    {
-        AddrOut = HostPort;
+	if(host.empty())
+		return 1;
 
-        return 0;
-    }
+	if(hasPort)
+	{
+		if(portText.empty())
+			return 2;
 
-	AddrOut = HostPort.substr(0, colon);
+		for(std::string::const_iterator it = portText.begin();
+		    it != portText.end(); ++it)
+		{
+			if(*it < '0' || *it > '9')
+				return 2;
+		}
 
+		char* end = NULL;
+		const unsigned long port = std::strtoul(portText.c_str(), &end, 10);
+		if(!end || *end != '\0' || port > 65535)
+			return 2;
+
+		PortOut = static_cast<uint16_t>(port);
+	}
+
+	AddrOut = host;
 	return 0;
 }
+
 } // namespace
 
 // ???

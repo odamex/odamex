@@ -4249,9 +4249,7 @@ BEGIN_COMMAND (playerinfo)
 		return;
 	}
 
-	const std::string ip = fmt::format("{:d}.{:d}.{:d}.{:d}",
-			player->client.address.ip[0], player->client.address.ip[1],
-			player->client.address.ip[2], player->client.address.ip[3]);
+	const std::string ip = NET_AdrToStringNoPort(player->client.address);
 
 	const std::string color = fmt::format("#{:02X}{:02X}{:02X}",
 			player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);

@@ -73,7 +73,7 @@ AG_Textbox *AGOL_Manual::CreateServerEntry(void *parent)
 	AG_Box     *entryBox;
 	AG_Textbox *sentry;
 
-	AG_LabelNewS(parent, AG_LABEL_HFILL, "Please enter IP Address and Port");
+	AG_LabelNewS(parent, AG_LABEL_HFILL, "Please enter IP/hostname and port (IPv6 with port: [address]:port)");
 
 	entryBox = AG_BoxNewHoriz(parent, AG_BOX_HFILL);
 	AG_BoxSetPadding(entryBox, 5);
@@ -81,7 +81,7 @@ AG_Textbox *AGOL_Manual::CreateServerEntry(void *parent)
 
 	sentry = AG_TextboxNew(entryBox, AG_TEXTBOX_HFILL, NULL);
 
-	AG_TextboxSetString(sentry, "0.0.0.0:0");
+	AG_TextboxSetString(sentry, "127.0.0.1:10666");
 
 	return sentry;
 }

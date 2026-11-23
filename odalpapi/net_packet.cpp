@@ -663,6 +663,9 @@ ok:
 	return 1;
 }
 
+// Send the legacy IPv4 broadcast discovery query. IPv6 has no broadcast;
+// IPv6 LAN discovery needs a matching multicast implementation on both the
+// launcher and game server.
 // Send network-wide broadcasts
 void MasterServer::QueryBC(const uint32_t& Timeout)
 {

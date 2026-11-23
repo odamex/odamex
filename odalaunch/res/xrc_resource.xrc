@@ -1478,8 +1478,8 @@
                             <object class="wxTextCtrl" name="ID_TXTSUBIPPORT">
                               <size>140,20</size>
                               <enabled>0</enabled>
-                              <tooltip>IP Address and port of server to replace</tooltip>
-                              <value>0.0.0.0:0</value>
+                              <tooltip>Server address and port. IPv4: 192.0.2.10:10666; IPv6: [2001:db8::10]:10666</tooltip>
+                              <value>127.0.0.1:10666</value>
                               <maxlength>0</maxlength>
                             </object>
                           </object>

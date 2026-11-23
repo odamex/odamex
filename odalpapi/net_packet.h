@@ -41,6 +41,7 @@
 #endif
 
 #include "net_io.h"
+#include "net_utils.h"
 #include "threads/mutex_factory.h"
 
 /**
@@ -253,7 +254,10 @@ public:
 	{
 		std::ostringstream Address;
 
-		Address << m_Address << ":" << m_Port;
+		if(m_Address.find(':') != std::string::npos)
+			Address << "[" << m_Address << "]:" << m_Port;
+		else
+			Address << m_Address << ":" << m_Port;
 
 		return Address.str();
 	}
@@ -303,19 +307,14 @@ private:
 	// Only modifies ip and port
 	bool StrAddrToAddrT(const std::string &In, addr_t &Out)
 	{
-		size_t colon = In.find(':');
-
-		if(colon == std::string::npos)
+		uint16_t port = 0;
+		if(OdaAddrToComponents(In, Out.ip, port) != 0 || !port)
 			return false;
 
-		if(colon + 1 >= In.length())
-			return false;
-
-		Out.port = atoi(In.substr(colon + 1).c_str());
-		Out.ip = In.substr(0, colon);
-
+		Out.port = port;
 		return true;
 	}
+
 public:
 	MasterServer()
 	{
