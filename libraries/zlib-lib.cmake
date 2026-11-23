@@ -9,7 +9,7 @@ if(BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS)
       "${CMAKE_CURRENT_BINARY_DIR}/local/include")
     if(WIN32)
       set(ZLIB_LIBRARY
-        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}zlibstatic${libsuffix}")
+        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}libzs${libsuffix}")
     else()
       set(ZLIB_LIBRARY
         "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}z${libsuffix}")
