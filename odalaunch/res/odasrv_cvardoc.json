@@ -1031,7 +1031,7 @@
       {
          "default" : false,
          "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
-         "helptext" : "Keep weapons and ammo when respawning after a death.\n// Does not apply when joining from spectator, revived via horde resurrections or otherwise\n// regaining a life when knocked out of the round.\n// Keeping weapons through level exits are still governed by g_resetinvonexit.",
+         "helptext" : "Keep weapons and ammo when respawning after a death.\n// All weapons and ammo are lost when you become a spectator, or run out of lives in a g_lives game.\n// Keeping weapons and ammo through level exits are still governed by g_resetinvonexit.",
          "name" : "sv_keepweapons",
          "type" : "boolean"
       },

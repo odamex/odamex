@@ -152,9 +152,8 @@ CVAR(				sv_keepkeys, "0", "Keep keys on death",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR(				sv_keepweapons, "0", "Keep weapons and ammo when respawning after a death.\n" \
-					"// Does not apply when joining from spectator, revived via horde resurrections or otherwise\n" \
-					"// regaining a life when knocked out of the round.\n" \
-					"// Keeping weapons through level exits are still governed by g_resetinvonexit.",
+					"// All weapons and ammo are lost when you become a spectator, or run out of lives in a g_lives game.\n" \
+					"// Keeping weapons and ammo through level exits are still governed by g_resetinvonexit.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR_FUNC_DECL(		sv_sharekeys, "0", "Share keys found to every player.",
