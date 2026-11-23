@@ -450,7 +450,6 @@ EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_maxplayers)
 
-void G_PlayerReborn (player_t &player);
 void SV_ServerSettingChange();
 
 void G_InitNew(const char *mapname)
