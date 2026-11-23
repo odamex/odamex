@@ -246,7 +246,7 @@ odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player)
 	// Send all available powers information to show the clients
 	msg.mutable_powers()->Resize(NUMPOWERS + 1, 0);
 	msg.set_powers(pw_invulnerability,  player.powers[pw_invulnerability]);
-	msg.set_powers(pw_strength,         player.powers[pw_strength] > 0 ? 1 : 0);
+	msg.set_powers(pw_strength,         player.powers[pw_strength]);
 	msg.set_powers(pw_invisibility,     player.powers[pw_invisibility]);
 	msg.set_powers(pw_ironfeet,         player.powers[pw_ironfeet]);
 	msg.set_powers(pw_allmap,           player.powers[pw_allmap]);
