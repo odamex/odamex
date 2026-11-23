@@ -151,7 +151,10 @@ CVAR(				sv_weaponstay,    "1", "Weapons stay after pickup",
 CVAR(				sv_keepkeys, "0", "Keep keys on death",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
-CVAR(				sv_keepweapons, "0", "Keep weapons and ammo when respawning after death.",
+CVAR(				sv_keepweapons, "0", "Keep weapons and ammo when respawning after a death.\n" \
+					"// Does not apply when joining from spectator, revived via horde resurrections or otherwise\n" \
+					"// regaining a life when knocked out of the round.\n" \
+					"// Keeping weapons through level exits are still governed by g_resetinvonexit.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR_FUNC_DECL(		sv_sharekeys, "0", "Share keys found to every player.",
