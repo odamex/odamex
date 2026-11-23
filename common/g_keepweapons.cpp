@@ -30,9 +30,7 @@ KeepWeaponsManager& KeepWeaponsManager::getInstance()
 	return instance;
 }
 
-KeepWeaponsManager::KeepWeaponsManager()
-{
-}
+KeepWeaponsManager::KeepWeaponsManager() = default;
 
 KeepWeaponsManager::~KeepWeaponsManager()
 {

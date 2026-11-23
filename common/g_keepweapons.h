@@ -31,25 +31,17 @@ class player_t;
  */
 struct KeptLoadout_s
 {
-	std::array<bool, NUMWEAPONS> weaponowned;
-	std::array<int, NUMAMMO> ammo;
-	std::array<int, NUMAMMO> maxammo;
-	bool backpack;
-	weapontype_t readyweapon;
+	std::array<bool, NUMWEAPONS> weaponowned{};
+	std::array<int, NUMAMMO> ammo{};
+	std::array<int, NUMAMMO> maxammo{};
+	bool backpack{false};
+	weapontype_t readyweapon{wp_none};
 
 	// Still waiting to be handed back to the player.
-	bool pending;
+	bool pending{false};
 
 	// What the player's last reborn did with it.
-	bool kept;
-
-	KeptLoadout_s()
-	    : backpack(false), readyweapon(wp_none), pending(false), kept(false)
-	{
-		weaponowned.fill(false);
-		ammo.fill(0);
-		maxammo.fill(0);
-	}
+	bool kept{false};
 };
 
 /**
@@ -111,7 +103,7 @@ public:
 	 * @param playerid Player ID to look up.
 	 * @return True if the last reborn kept the loadout.
 	 */
-	bool keptLoadout(const int playerid) const;
+	[[nodiscard]] bool keptLoadout(const int playerid) const;
 
 	/**
 	 * @brief Forgets a player's loadout, when they disconnect or spectate.
