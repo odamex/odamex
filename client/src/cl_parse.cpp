@@ -66,6 +66,7 @@
 #include "cl_netgraph.h"
 #include "g_spree.h"
 #include "g_deathspot.h"
+#include "g_keepweapons.h"
 #include "g_multikill.h"
 #include "cl_freecam.h"
 
@@ -1406,7 +1407,8 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	}
 
 	// The server decides whether this spawn keeps the loadout.
-	p.dokeepweapons = msg->keepweapons();
+	if (msg->keepweapons())
+		KeepWeaponsManager::getInstance().setLoadout(p.id, p);
 
 	G_PlayerReborn(p);
 
@@ -2751,6 +2753,7 @@ void CL_ResetMap( [[ maybe_unused ]] const odaproto::svc::ResetMap* msg)
 	G_ClearRoundKillStats();
 
 	DeathSpotManager::getInstance().clearDeathSpots();
+	KeepWeaponsManager::getInstance().clearLoadouts();
 
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.

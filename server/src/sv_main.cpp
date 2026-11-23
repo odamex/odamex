@@ -83,6 +83,7 @@
 
 #include "clc_message.h"
 #include "svc_message.h"
+#include "g_keepweapons.h"
 #include "msg_parse.h"
 
 extern void G_DeferedInitNew (const OLumpName& mapname);
@@ -956,6 +957,7 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 	free_player_ids.insert(player_id);
 
 	Unlag::getInstance().unregisterPlayer(player_id);
+	KeepWeaponsManager::getInstance().eraseLoadout(player_id);
 
 	// update tracking cvar
 	sv_clientcount.ForceSet(players.size());

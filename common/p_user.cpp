@@ -44,6 +44,7 @@
 #include "p_mapformat.h"
 #include "g_multikill.h"
 #include "g_deathspot.h"
+#include "g_keepweapons.h"
 
 #include <span>
 
@@ -767,11 +768,12 @@ void P_DeathThink (player_t& player)
 				return;
 			}
 
-			// G_Ticker reborns every PST_REBORN player before it runs any
-			// gameaction, so this is consumed before a map change or a round
-			// reset can inherit it.
 			player.playerstate = PST_REBORN;
-			player.dokeepweapons = ::sv_keepweapons;
+
+			// Granting the respawn is what earns the loadout back, so only a
+			// death stashes one.
+			if (::sv_keepweapons)
+				KeepWeaponsManager::getInstance().setLoadout(player.id, player);
 		}
 	}
 }
@@ -1414,8 +1416,6 @@ player_t::player_t() :
 	prefcolor(argb_t(0, 0, 0, 0)),
 	blend_color(argb_t(0, 0, 0, 0)),
 	doreborn(false),
-	dokeepweapons(false),
-	keptweapons(false),
 	QueuePosition(0),
 	requestedNetIdUpdate(0),
 	hazardcount(0),
