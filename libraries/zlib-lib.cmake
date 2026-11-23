@@ -9,7 +9,7 @@ if(BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS)
       "${CMAKE_CURRENT_BINARY_DIR}/local/include")
     if(WIN32)
       set(ZLIB_LIBRARY
-        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}zlibstatic${libsuffix}")
+        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}libzs${libsuffix}")
     else()
       set(ZLIB_LIBRARY
         "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}z${libsuffix}")
@@ -21,7 +21,6 @@ if(BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS)
       -B "${CMAKE_CURRENT_BINARY_DIR}/zlib-build"
       -G "${CMAKE_GENERATOR}"
       "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
-      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local")
     if(CMAKE_GENERATOR_PLATFORM)
       list(APPEND _ZLIB_GEN_ARGS -A "${CMAKE_GENERATOR_PLATFORM}")
