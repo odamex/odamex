@@ -148,8 +148,8 @@ public:
 	// Use __STDCPP_DEFAULT_NEW_ALIGNMENT__ because the heap implementation is free to use a broader/
 	// stricter alignment than the type being allocated, ala alignof(std::atomic<...>).
 	//
-	// e.g. on MSVC 2026 x64, *anything* allocated via `new` is aligned to 16 bytes, not 8.
-	//      likewise, on 32-bit x86, `new` pointers are aligned to 8 bytes, not 4.
+	// e.g. on MSVC 2026 x64, *anything* allocated via `new` is aligned to 16 bytes, not 8, which is what alignof(std::atomic<T*>) was returning.
+	//      likewise, on 32-bit x86, all `new` pointers are aligned to 8 bytes, not 4.
 
 	static constexpr auto POINTER_ALIGNMENT      = __STDCPP_DEFAULT_NEW_ALIGNMENT__;
 	static constexpr auto POINTER_ALIGNMENT_BITS = std::countr_zero(POINTER_ALIGNMENT);
