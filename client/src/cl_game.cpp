@@ -1357,7 +1357,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	for (i = 0; i < NUMWEAPONS; i++)
 		p.weaponowned[i] = false;
 
-	if (!sv_keepkeys && !sv_sharekeys)
+	if (not sv_keepkeys and not sv_sharekeys)
 		P_ClearPlayerCards(p);
 
 	P_ClearPlayerPowerups(p);
@@ -1375,7 +1375,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	p.playerstate = PST_LIVE;
 	p.weaponowned[wp_none] = true;
 
-	if (!p.spectator)
+	if (not p.spectator)
 		p.cheats = 0; // Reset cheat flags
 
 	p.death_time = 0;
