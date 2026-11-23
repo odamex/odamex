@@ -174,11 +174,10 @@ private:
 	// broadcast mode
 	bool m_Broadcast;
 
-	// local address
-	struct sockaddr_in m_LocalAddress;
-
-	// outgoing address (server)
-	struct sockaddr_in m_RemoteAddress;
+	// Local and remote socket addresses. The family is selected from the
+	// resolved remote address, allowing the launcher API to use IPv4 or IPv6.
+	struct sockaddr_storage m_RemoteAddress;
+	int m_RemoteAddressLength;
 
 	uint64_t m_SendPing, m_ReceivePing;
 };

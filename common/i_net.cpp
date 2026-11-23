@@ -72,6 +72,10 @@ typedef int SOCKET;
 #include <google/protobuf/message.h>
 
 
+#include <algorithm>
+#include <array>
+#include <cstring>
+
 #include "i_system.h"
 #include "i_net.h"
 #include "m_argv.h"
@@ -88,7 +92,12 @@ typedef int SOCKET;
 #endif
 
 unsigned int	inet_socket;
-static int	inet_family = AF_INET; // AF_INET6 if we got a dual-stack socket
+
+namespace
+{
+int inet_family = AF_INET; // AF_INET6 if we got a dual-stack socket
+} // namespace
+
 int         	localport;
 netadr_t    	net_from;   // address of who sent the packet
 
@@ -287,7 +296,7 @@ SOCKET UDPsocket (void)
 		{
 			int v6only = 0;
 			if (setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, SETSOCKOPTCAST(&v6only),
-			               (int)sizeof(v6only)) == SOCKET_ERROR)
+			               static_cast<int>(sizeof(v6only))) == SOCKET_ERROR)
 			{
 				// Can't do dual-stack on this system, use plain IPv4 instead.
 				closesocket(s);
@@ -318,14 +327,12 @@ SOCKET UDPsocket (void)
 void BindToLocalPort (SOCKET s, u_short wanted)
 {
 	int v;
-	struct sockaddr_in address;
-	struct sockaddr_in6 address6;
+	struct sockaddr_in address{};
+	struct sockaddr_in6 address6{};
 
-	memset (&address, 0, sizeof(address));
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
 
-	memset (&address6, 0, sizeof(address6));
 	address6.sin6_family = AF_INET6;
 	address6.sin6_addr = in6addr_any;
 	u_short next = wanted;
@@ -336,12 +343,12 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 		if (inet_family == AF_INET6)
 		{
 			address6.sin6_port = htons(next++);
-			v = bind (s, (sockaddr *)&address6, sizeof(address6));
+			v = bind (s, reinterpret_cast<sockaddr*>(&address6), sizeof(address6));
 		}
 		else
 		{
 			address.sin_port = htons(next++);
-			v = bind (s, (sockaddr *)&address, sizeof(address));
+			v = bind (s, reinterpret_cast<sockaddr*>(&address), sizeof(address));
 		}
 
 		if(next > wanted + 32)
@@ -394,24 +401,26 @@ void CloseNetwork (void)
 
 // this is from Quake source code :)
 
-static void SockadrToNetadr(const struct sockaddr_storage* s, netadr_t* a)
+namespace
 {
-	memset(a, 0, sizeof(*a));
+void SockadrToNetadr(const struct sockaddr_storage* s, netadr_t* a)
+{
+	*a = netadr_t{};
 
 	if (s->ss_family == AF_INET6)
 	{
-		const struct sockaddr_in6* s6 = (const struct sockaddr_in6*)s;
+		const auto* s6 = reinterpret_cast<const struct sockaddr_in6*>(s);
 
 		if (IN6_IS_ADDR_V4MAPPED(&s6->sin6_addr))
 		{
 			// Peer is IPv4, we only see it as ::ffff:a.b.c.d because our
 			// socket is dual-stack.  Hand back a normal IPv4 address.
-			memcpy(a->ip, &s6->sin6_addr.s6_addr[12], 4);
+			std::copy_n(&s6->sin6_addr.s6_addr[12], sizeof(a->ip), std::begin(a->ip));
 			a->family = NA_IPV4;
 		}
 		else
 		{
-			memcpy(a->ip6, &s6->sin6_addr, sizeof(a->ip6));
+			std::copy_n(s6->sin6_addr.s6_addr, a->ip6.size(), a->ip6.begin());
 			a->scope_id = s6->sin6_scope_id;
 			a->family = NA_IPV6;
 		}
@@ -419,9 +428,9 @@ static void SockadrToNetadr(const struct sockaddr_storage* s, netadr_t* a)
 	}
 	else
 	{
-		const struct sockaddr_in* s4 = (const struct sockaddr_in*)s;
+		const auto* s4 = reinterpret_cast<const struct sockaddr_in*>(s);
 
-		memcpy(a->ip, &s4->sin_addr, sizeof(a->ip));
+		std::memcpy(a->ip, &s4->sin_addr, sizeof(a->ip));
 		a->port = s4->sin_port;
 		a->family = NA_IPV4;
 	}
@@ -429,21 +438,21 @@ static void SockadrToNetadr(const struct sockaddr_storage* s, netadr_t* a)
 
 // Returns false if the address can't be reached with our socket (an IPv6
 // address while we only have an IPv4 socket).
-static bool NetadrToSockadr(const netadr_t* a, struct sockaddr_storage* s,
+bool NetadrToSockadr(const netadr_t* a, struct sockaddr_storage* s,
                             socklen_t* len)
 {
-	memset(s, 0, sizeof(*s));
+	*s = sockaddr_storage{};
 
 	if (inet_family == AF_INET6)
 	{
-		struct sockaddr_in6* s6 = (struct sockaddr_in6*)s;
+		auto* s6 = reinterpret_cast<struct sockaddr_in6*>(s);
 
 		s6->sin6_family = AF_INET6;
 		s6->sin6_port = a->port;
 
 		if (a->family == NA_IPV6)
 		{
-			memcpy(&s6->sin6_addr, a->ip6, sizeof(a->ip6));
+			std::copy(a->ip6.begin(), a->ip6.end(), std::begin(s6->sin6_addr.s6_addr));
 			s6->sin6_scope_id = a->scope_id;
 		}
 		else
@@ -451,7 +460,7 @@ static bool NetadrToSockadr(const netadr_t* a, struct sockaddr_storage* s,
 			// Send to IPv4 hosts as v4-mapped addresses.
 			s6->sin6_addr.s6_addr[10] = 0xFF;
 			s6->sin6_addr.s6_addr[11] = 0xFF;
-			memcpy(&s6->sin6_addr.s6_addr[12], a->ip, sizeof(a->ip));
+			std::copy(std::begin(a->ip), std::end(a->ip), &s6->sin6_addr.s6_addr[12]);
 		}
 
 		*len = sizeof(*s6);
@@ -461,24 +470,22 @@ static bool NetadrToSockadr(const netadr_t* a, struct sockaddr_storage* s,
 	if (a->family == NA_IPV6)
 		return false;
 
-	struct sockaddr_in* s4 = (struct sockaddr_in*)s;
+	auto* s4 = reinterpret_cast<struct sockaddr_in*>(s);
 
 	s4->sin_family = AF_INET;
-	memcpy(&s4->sin_addr, a->ip, sizeof(a->ip));
+	std::memcpy(&s4->sin_addr, a->ip, sizeof(a->ip));
 	s4->sin_port = a->port;
 
 	*len = sizeof(*s4);
 	return true;
 }
+} // namespace
 
 bool NET_IsNullAdr(const netadr_t& a)
 {
 	if (a.family == NA_IPV6)
 	{
-		for (size_t i = 0; i < sizeof(a.ip6); i++)
-			if (a.ip6[i])
-				return false;
-		return true;
+		return std::all_of(a.ip6.begin(), a.ip6.end(), [](byte b) { return b == 0; });
 	}
 
 	return !(a.ip[0] || a.ip[1] || a.ip[2] || a.ip[3]);
@@ -487,29 +494,26 @@ bool NET_IsNullAdr(const netadr_t& a)
 // Address without port, e.g. "1.2.3.4" or "2001:db8::1".
 std::string NET_AdrToStringNoPort(const netadr_t& a)
 {
-	char buf[INET6_ADDRSTRLEN + 1] = "";
+	std::array<char, INET6_ADDRSTRLEN + 1> buf{};
 
 	if (a.family == NA_IPV6)
-		inet_ntop(AF_INET6, a.ip6, buf, sizeof(buf));
+		inet_ntop(AF_INET6, a.ip6.data(), buf.data(), buf.size());
 	else
-		inet_ntop(AF_INET, a.ip, buf, sizeof(buf));
+		inet_ntop(AF_INET, a.ip, buf.data(), buf.size());
 
-	return buf;
+	return buf.data();
 }
 
 // "1.2.3.4:10666" or "[2001:db8::1]:10666"
-char *NET_AdrToString (netadr_t a)
+std::string NET_AdrToString (netadr_t a)
 {
-	static char s[64];
-
 	const std::string ip = NET_AdrToStringNoPort(a);
+	const unsigned int port = ntohs(a.port);
 
 	if (a.family == NA_IPV6)
-		snprintf(s, sizeof(s), "[%s]:%i", ip.c_str(), ntohs(a.port));
-	else
-		snprintf(s, sizeof(s), "%s:%i", ip.c_str(), ntohs(a.port));
+		return fmt::format("[{}]:{}", ip, port);
 
-	return s;
+	return fmt::format("{}:{}", ip, port);
 }
 
 //
@@ -523,7 +527,8 @@ char *NET_AdrToString (netadr_t a)
 //
 bool NET_StringToAdr (const char *s, netadr_t *a, bool ipv4Only)
 {
-	std::string host, portstr;
+	std::string host;
+	std::string portstr;
 	const char* colon = strchr(s, ':');
 
 	if (s[0] == '[')
@@ -539,7 +544,7 @@ bool NET_StringToAdr (const char *s, netadr_t *a, bool ipv4Only)
 		else if (end[1] != '\0')
 			return false;
 	}
-	else if (colon && strchr(colon + 1, ':') == NULL)
+	else if (colon && strchr(colon + 1, ':') == nullptr)
 	{
 		// exactly one colon, so host:port
 		host.assign(s, colon - s);
@@ -554,10 +559,9 @@ bool NET_StringToAdr (const char *s, netadr_t *a, bool ipv4Only)
 	if (host.empty() || host.size() >= 256)
 		return false;
 
-	struct addrinfo hints;
-	struct addrinfo* res = NULL;
+	struct addrinfo hints{};
+	struct addrinfo* res = nullptr;
 
-	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = (ipv4Only || inet_family != AF_INET6) ? AF_INET : AF_UNSPEC;
 	hints.ai_socktype = SOCK_DGRAM;
 
@@ -569,7 +573,7 @@ bool NET_StringToAdr (const char *s, netadr_t *a, bool ipv4Only)
 		// A host name.  Don't hand out AAAA records if this machine has no
 		// IPv6 connectivity (and vice versa for A records).
 		hints.ai_flags = AI_ADDRCONFIG;
-		res = NULL;
+		res = nullptr;
 		if (getaddrinfo(host.c_str(), NULL, &hints, &res) != 0)
 			return false;
 	}
@@ -583,9 +587,8 @@ bool NET_StringToAdr (const char *s, netadr_t *a, bool ipv4Only)
 		if (ai->ai_family != AF_INET && ai->ai_family != AF_INET6)
 			continue;
 
-		struct sockaddr_storage ss;
-		memset(&ss, 0, sizeof(ss));
-		memcpy(&ss, ai->ai_addr, ai->ai_addrlen < sizeof(ss) ? ai->ai_addrlen : sizeof(ss));
+		struct sockaddr_storage ss{};
+		std::memcpy(&ss, ai->ai_addr, std::min<size_t>(ai->ai_addrlen, sizeof(ss)));
 
 		SockadrToNetadr(&ss, a);
 		a->port = htons(atoi(portstr.c_str()));
@@ -603,7 +606,7 @@ bool NET_CompareAdr (netadr_t a, netadr_t b)
 		return false;
 
 	if (a.family == NA_IPV6)
-		return memcmp(a.ip6, b.ip6, sizeof(a.ip6)) == 0;
+		return a.ip6 == b.ip6;
 
 	return memcmp(a.ip, b.ip, sizeof(a.ip)) == 0;
 }
@@ -616,7 +619,7 @@ int NET_GetPacket (void)
 
 	fromlen = sizeof(from);
 	net_message.clear();
-	ret = recvfrom (inet_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
+	ret = recvfrom (inet_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, reinterpret_cast<struct sockaddr*>(&from), &fromlen);
 
 	if (ret == -1)
 	{
@@ -675,7 +678,7 @@ int NET_SendPacket (buf_t &buf, netadr_t &to)
 		return 0;
 	}
 
-	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, addrlen);
+	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, reinterpret_cast<struct sockaddr*>(&addr), addrlen);
 
 	buf.clear();
 

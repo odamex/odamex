@@ -159,11 +159,12 @@ void dlgServers::OnButtonAddServer(wxCommandEvent& event)
 	std::string IPHost;
 	uint16_t Port = 10666;
 
-	const wxString HelpText = "Please enter a Hostname or an IP address. \n\nAn "
-	                              "optional port number can exist for IPs or Hosts\n"
-	                              "by putting a : after the address.";
+	const wxString HelpText = "Please enter a hostname or an IP address.\n\n"
+	                              "An optional port can be added after a colon. "
+	                              "For IPv6 with a port, use [address]:port.\n"
+	                              "Examples: 192.0.2.10:10666, ::1, [2001:db8::10]:10666";
 
-	wxTextEntryDialog ted(this, HelpText, "Add custom server", "0.0.0.0:0");
+	wxTextEntryDialog ted(this, HelpText, "Add custom server", "127.0.0.1:10666");
 
 	// Keep asking for a valid ip/port number
 	while(1)
@@ -197,7 +198,7 @@ void dlgServers::OnButtonAddServer(wxCommandEvent& event)
 		// Colon syntax bad
 		case 2:
 		{
-			wxMessageBox("A number > 0 must exist after the :");
+			wxMessageBox("Enter a valid port number (1-65535) after the colon");
 			continue;
 		}
 		}
@@ -207,8 +208,10 @@ void dlgServers::OnButtonAddServer(wxCommandEvent& event)
 			break;
 	}
 	
-	// Make a 0.0.0.0:0 address string
-	wxString addr_portfmt = wxString::Format("%s:%d", IPHost.c_str(), Port);
+	// Bracket IPv6 literals when displaying an address with a port.
+	wxString addr_portfmt = wxString::Format(
+	    IPHost.find(':') != std::string::npos ? "[%s]:%d" : "%s:%d",
+	    IPHost.c_str(), Port);
 
 	if (Port > 0 && SERVER_LIST->FindString(addr_portfmt) == wxNOT_FOUND)
 	{
@@ -239,8 +242,8 @@ void dlgServers::OnButtonReplaceServer(wxCommandEvent& event)
 	CustomServer_t* cs = (CustomServer_t*)SERVER_LIST->GetClientData(i);
 
 	wxTextEntryDialog tedAddress(this,
-	                             "Please enter an IP Address",
-	                             "Please enter an IP Address",
+	                             "Please enter an IP address or hostname (IPv6 literals are supported)",
+	                             "Please enter an IP address or hostname",
 	                             cs->Address);
 
 	wxTextEntryDialog tedPort(this,
@@ -255,10 +258,11 @@ void dlgServers::OnButtonReplaceServer(wxCommandEvent& event)
 	tedPort.ShowModal();
 	tedport_res = wxAtoi(tedPort.GetValue().c_str());
 
-	// Make a 0.0.0.0:0 address string
-	wxString addr_portfmt = wxString::Format("%s:%d",
-	                        tedaddr_res.c_str(),
-	                        tedport_res);
+	// Bracket IPv6 literals when displaying an address with a port.
+	wxString addr_portfmt = wxString::Format(
+	    wxstr_tostdstr(tedaddr_res).find(':') != std::string::npos
+	        ? "[%s]:%d" : "%s:%d",
+	    tedaddr_res.c_str(), tedport_res);
 
 	if(!tedaddr_res.IsEmpty() && tedport_res != 0)
 	{
@@ -385,9 +389,9 @@ void dlgServers::LoadSettings()
 		cs->Subst.Address = fc.Read("Address", "");
 		cs->Subst.Port = fc.Read("Port", 0L);
 
-		SERVER_LIST->Append(wxString::Format("%s:%d",
-		                                     cs->Address.c_str(),
-		                                     cs->Port), (void*)(cs));
+		SERVER_LIST->Append(wxString::Format(
+		    cs->Address.Find(':') != wxNOT_FOUND ? "[%s]:%d" : "%s:%d",
+		    cs->Address.c_str(), cs->Port), (void*)(cs));
 
 		fc.SetPath("../");
 

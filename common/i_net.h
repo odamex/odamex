@@ -325,8 +325,9 @@ class Message;
 /**
  * @brief Address family of a netadr_t.
  *
- * Zero-initialized addresses are IPv4 0.0.0.0, which is what the rest of the
- * code treats as "no address".
+ * Zero-initialized addresses default to IPv4 0.0.0.0, which is what the rest
+ * of the code treats as "no address". The IPv6 unspecified address is :: and
+ * requires the family to be set to NA_IPV6.
  */
 enum netadrfamily_t : byte
 {
@@ -339,7 +340,7 @@ typedef struct
 	byte ip[4];            // IPv4 address, valid if family == NA_IPV4
 	unsigned short port;   // Network byte order
 	unsigned short pad;
-	byte ip6[16];          // IPv6 address, valid if family == NA_IPV6
+	std::array<byte, 16> ip6; // IPv6 address, valid if family == NA_IPV6
 	unsigned int scope_id; // IPv6 scope (e.g. link-local interface index)
 	byte family;           // netadrfamily_t
 } netadr_t;
@@ -760,7 +761,7 @@ void InitNetCommon(void);
 void I_SetPort(netadr_t &addr, int port);
 bool NetWaitOrTimeout(size_t ms);
 
-char *NET_AdrToString (netadr_t a);
+std::string NET_AdrToString (netadr_t a);
 std::string NET_AdrToStringNoPort(const netadr_t& a);
 bool NET_StringToAdr (const char *s, netadr_t *a, bool ipv4Only = false);
 bool NET_CompareAdr (netadr_t a, netadr_t b);

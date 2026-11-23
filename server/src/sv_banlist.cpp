@@ -24,6 +24,8 @@
 
 #include "odamex.h"
 
+#include <algorithm>
+#include <array>
 #include <ctime>
 #include <sstream>
 
@@ -56,21 +58,27 @@ EXTERN_CVAR(sv_banfile_reload)
 
 Banlist banlist;
 
-// Do the first "bits" bits of two IPv6 addresses match?
-static bool prefix_match(const byte* a, const byte* b, byte bits)
+namespace
 {
-	const byte full = bits / 8;
-	const byte rem = bits % 8;
 
-	if (memcmp(a, b, full) != 0)
+// Do the first "bits" bits of two IPv6 addresses match?
+bool PrefixMatch(const std::array<byte, 16>& lhs, const std::array<byte, 16>& rhs,
+                 const byte bits)
+{
+	const byte fullBytes = bits / 8;
+	const byte remainingBits = bits % 8;
+
+	if (!std::equal(lhs.begin(), lhs.begin() + fullBytes, rhs.begin()))
 	{
 		return false;
 	}
 
-	if (rem)
+	if (remainingBits)
 	{
-		const byte m = (byte)(0xFF << (8 - rem));
-		if ((a[full] & m) != (b[full] & m))
+		const byte mostSignificantRemainingBitsMask =
+		    static_cast<byte>(0xFF << (8 - remainingBits));
+		if ((lhs[fullBytes] & mostSignificantRemainingBitsMask) !=
+		    (rhs[fullBytes] & mostSignificantRemainingBitsMask))
 		{
 			return false;
 		}
@@ -80,30 +88,29 @@ static bool prefix_match(const byte* a, const byte* b, byte bits)
 }
 
 // Zero everything after the first "bits" bits of an IPv6 address.
-static void mask_prefix(byte* a, byte bits)
+void MaskPrefix(std::array<byte, 16>& address, const byte bits)
 {
-	const byte full = bits / 8;
-	const byte rem = bits % 8;
-	byte i = full;
+	const byte fullBytes = bits / 8;
+	const byte remainingBits = bits % 8;
+	byte firstZeroedByte = fullBytes;
 
-	if (rem)
+	if (remainingBits)
 	{
-		a[i] &= (byte)(0xFF << (8 - rem));
-		i++;
+		address[fullBytes] &= static_cast<byte>(0xFF << (8 - remainingBits));
+		firstZeroedByte++;
 	}
 
-	for (; i < 16; i++)
-	{
-		a[i] = 0;
-	}
+	std::fill(address.begin() + firstZeroedByte, address.end(), static_cast<byte>(0));
 }
+
+} // namespace
 
 //// IPRange ////
 
 // Constructor
 IPRange::IPRange() : v6(false), prefixlen(128)
 {
-	memset(this->ip6, 0, sizeof(this->ip6));
+	this->ip6.fill(0);
 	for (byte i = 0; i < 4; i++)
 	{
 		this->ip[i] = (byte)0;
@@ -121,7 +128,7 @@ bool IPRange::check(const netadr_t &address) const
 
 	if (this->v6)
 	{
-		return prefix_match(this->ip6, address.ip6, this->prefixlen);
+		return PrefixMatch(this->ip6, address.ip6, this->prefixlen);
 	}
 
 	for (byte i = 0; i < 4; i++)
@@ -147,7 +154,7 @@ bool IPRange::check(const std::string &address) const
 			return false;
 		}
 
-		return prefix_match(this->ip6, other.ip6, this->prefixlen);
+		return PrefixMatch(this->ip6, other.ip6, this->prefixlen);
 	}
 
 	if (this->v6)
@@ -199,8 +206,8 @@ void IPRange::set(const netadr_t &address, byte v6prefix)
 		// client covers its whole /64.
 		this->v6 = true;
 		this->prefixlen = v6prefix;
-		memcpy(this->ip6, address.ip6, sizeof(this->ip6));
-		mask_prefix(this->ip6, this->prefixlen);
+		this->ip6 = address.ip6;
+		MaskPrefix(this->ip6, this->prefixlen);
 		return;
 	}
 
@@ -241,16 +248,16 @@ bool IPRange::set(const std::string &input)
 			}
 		}
 
-		byte buf[16];
-		if (inet_pton(AF_INET6, addr.c_str(), buf) != 1)
+		std::array<byte, 16> buf{};
+		if (inet_pton(AF_INET6, addr.c_str(), buf.data()) != 1)
 		{
 			return false;
 		}
 
 		this->v6 = true;
-		this->prefixlen = (byte)prefix;
-		memcpy(this->ip6, buf, sizeof(this->ip6));
-		mask_prefix(this->ip6, this->prefixlen);
+		this->prefixlen = static_cast<byte>(prefix);
+		this->ip6 = buf;
+		MaskPrefix(this->ip6, this->prefixlen);
 		return true;
 	}
 
@@ -293,10 +300,10 @@ std::string IPRange::string() const
 {
 	if (this->v6)
 	{
-		char buf[INET6_ADDRSTRLEN] = "";
-		inet_ntop(AF_INET6, this->ip6, buf, sizeof(buf));
+		std::array<char, INET6_ADDRSTRLEN> buf{};
+		inet_ntop(AF_INET6, this->ip6.data(), buf.data(), buf.size());
 
-		std::string out = buf;
+		std::string out = buf.data();
 		if (this->prefixlen < 128)
 		{
 			out += '/' + std::to_string(this->prefixlen);

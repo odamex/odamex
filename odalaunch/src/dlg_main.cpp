@@ -611,14 +611,15 @@ void dlgMain::OnManualConnect(wxCommandEvent& event)
 	wxString ped_result;
 	wxString ted_result;
 	std::string IPHost;
-	uint16_t Port;
+	uint16_t Port = 0;
 
-	const wxString HelpText = "Please enter a Hostname or an IP address. \n\nAn "
-	                              "optional port number can exist for IPs or Hosts\n"
-	                              "by putting a : after the address.";
+	const wxString HelpText = "Please enter a hostname or an IP address.\n\n"
+	                              "An optional port can be added after a colon. "
+	                              "For IPv6 with a port, use [address]:port.\n"
+	                              "Examples: 192.0.2.10:10666, ::1, [2001:db8::10]:10666";
 
 	wxTextEntryDialog ted(this, HelpText, "Manual Connect",
-	                      "0.0.0.0:0");
+	                      "127.0.0.1:10666");
 
 	wxPasswordEntryDialog ped(this, "Server is password-protected. \n\n"
 	                                    "Please enter the password", "Manual Connect", "");
@@ -643,7 +644,6 @@ void dlgMain::OnManualConnect(wxCommandEvent& event)
 		{
 		// Correct address
 		case 0:
-		case 3:
 		{
 			good = true;
 
@@ -662,7 +662,7 @@ void dlgMain::OnManualConnect(wxCommandEvent& event)
 		// Colon syntax bad
 		case 2:
 		{
-			wxMessageBox("A number > 0 must exist after the :");
+			wxMessageBox("Enter a valid port number (1-65535) after the colon");
 			continue;
 		}
 		}

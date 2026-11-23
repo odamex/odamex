@@ -54,10 +54,10 @@ namespace odalpapi
 {
 
 BufferedSocket::BufferedSocket() :  m_BadRead(false), m_BadWrite(false),
-	m_Socket(0), m_SendPing(0), m_ReceivePing(0)
+	m_Socket(INVALID_SOCKET), m_RemoteAddressLength(0), m_SendPing(0), m_ReceivePing(0)
 {
 	m_Broadcast = false;
-	memset(&m_RemoteAddress, 0, sizeof(struct sockaddr_in));
+	memset(&m_RemoteAddress, 0, sizeof(m_RemoteAddress));
 
 	m_SocketBuffer = new byte[MAX_PAYLOAD];
 
@@ -79,7 +79,7 @@ bool BufferedSocket::InitializeSocketAPI()
 #ifdef _WIN32
 	WSADATA wsaData;
 
-	if(WSAStartup(MAKEWORD(1, 1), &wsaData) != 0)
+	if(WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
 		return false;
 
 #endif
@@ -98,44 +98,50 @@ bool BufferedSocket::CreateSocket()
 {
 	DestroySocket();
 
-	m_Socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	const int family = m_Broadcast ? AF_INET :
+		reinterpret_cast<const sockaddr*>(&m_RemoteAddress)->sa_family;
+
+	if(family != AF_INET && family != AF_INET6)
+	{
+		NET_ReportError("No valid remote address has been configured");
+		return false;
+	}
+
+	m_Socket = socket(family, SOCK_DGRAM, IPPROTO_UDP);
 
 	if(m_Socket == INVALID_SOCKET)
 	{
 		NET_ReportError(REPERR_NO_ARGS);
-
 		return false;
 	}
 
 	if(m_Broadcast)
 	{
-		int optval = m_Broadcast ? 1 : 0;
-		int optvallen = sizeof(optval);
-		int result;
-
-		// Set broadcast mode on the socket
-		result = setsockopt(m_Socket, SOL_SOCKET, SO_BROADCAST, (char*)&optval,
-		                    optvallen);
+		int optval = 1;
+		int result = setsockopt(m_Socket, SOL_SOCKET, SO_BROADCAST,
+		                        (char*)&optval, sizeof(optval));
 
 		if(result != 0)
 		{
 			NET_ReportError(REPERR_NO_ARGS);
+			DestroySocket();
 			return false;
 		}
 
-		// Need to bind to the local address otherwise it will not receive
-		// anything
-		m_LocalAddress.sin_family = PF_INET;
-		m_LocalAddress.sin_port = htons(11510);
-		m_LocalAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-		memset(m_LocalAddress.sin_zero, '\0', sizeof m_LocalAddress.sin_zero);
+		// IPv4 broadcast discovery listens on the legacy discovery port.
+		sockaddr_in localAddress;
+		memset(&localAddress, 0, sizeof(localAddress));
+		localAddress.sin_family = AF_INET;
+		localAddress.sin_port = htons(11510);
+		localAddress.sin_addr.s_addr = htonl(INADDR_ANY);
 
-		result = ::bind(m_Socket, (sockaddr*)&m_LocalAddress,
-		              sizeof(m_LocalAddress));
+		result = ::bind(m_Socket, (sockaddr*)&localAddress,
+		                sizeof(localAddress));
 
 		if(result != 0)
 		{
 			NET_ReportError(REPERR_NO_ARGS);
+			DestroySocket();
 			return false;
 		}
 	}
@@ -150,69 +156,113 @@ void BufferedSocket::SetBroadcast(bool enabled)
 
 void BufferedSocket::DestroySocket()
 {
-	if(m_Socket != 0)
+	if(m_Socket != INVALID_SOCKET)
 	{
 		if(closesocket(m_Socket) != 0)
 			NET_ReportError("Could not close socket: %d", m_Socket);
 
-		m_Socket = 0;
+		m_Socket = INVALID_SOCKET;
 	}
 }
 
 void BufferedSocket::SetRemoteAddress(const string& Address, const uint16_t& Port)
 {
-	addrinfo  hints;
+	addrinfo hints;
 	addrinfo* result = NULL;
 
-	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_flags = AI_ALL;
-	hints.ai_family = PF_INET;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_DGRAM;
+	hints.ai_protocol = IPPROTO_UDP;
 
-	if((getaddrinfo(Address.c_str(), NULL, &hints, &result)) != 0)
+	memset(&m_RemoteAddress, 0, sizeof(m_RemoteAddress));
+	m_RemoteAddressLength = 0;
+
+	const string service = std::to_string(Port);
+	if(getaddrinfo(Address.c_str(), service.c_str(), &hints, &result) != 0)
 	{
-		NET_ReportError(REPERR_NO_ARGS);
+		NET_ReportError("Could not resolve remote address: %s", Address.c_str());
 		return;
 	}
 
-	m_RemoteAddress.sin_family = PF_INET;
-	m_RemoteAddress.sin_port = htons(Port);
-	m_RemoteAddress.sin_addr = ((sockaddr_in*)result->ai_addr)->sin_addr;
-	memset(m_RemoteAddress.sin_zero, '\0', sizeof m_RemoteAddress.sin_zero);
+	for(addrinfo* current = result; current; current = current->ai_next)
+	{
+		if((current->ai_family == AF_INET || current->ai_family == AF_INET6) &&
+		   current->ai_addrlen <= sizeof(m_RemoteAddress))
+		{
+			memcpy(&m_RemoteAddress, current->ai_addr, current->ai_addrlen);
+			m_RemoteAddressLength = static_cast<int>(current->ai_addrlen);
+			break;
+		}
+	}
 
 	freeaddrinfo(result);
+
+	if(m_RemoteAddressLength == 0)
+		NET_ReportError("No usable IPv4 or IPv6 address found for %s", Address.c_str());
 }
 
 bool BufferedSocket::SetRemoteAddress(const string& Address)
 {
-	size_t colon = Address.find(':');
+	string Host;
+	uint16_t Port = 0;
 
-	if(colon == string::npos)
+	if(OdaAddrToComponents(Address, Host, Port) != 0 || Host.empty() || !Port)
 		return false;
 
-	if(colon + 1 >= Address.length())
-		return false;
-
-	uint16_t Port = atoi(Address.substr(colon + 1).c_str());
-	string HostIP = Address.substr(0, colon);
-
-	SetRemoteAddress(HostIP, Port);
-
-	return true;
+	SetRemoteAddress(Host, Port);
+	return m_RemoteAddressLength != 0;
 }
 
 void BufferedSocket::GetRemoteAddress(string& Address, uint16_t& Port) const
 {
-	Address = inet_ntoa(m_RemoteAddress.sin_addr);
-	Port = ntohs(m_RemoteAddress.sin_port);
+	char addressBuffer[INET6_ADDRSTRLEN] = {};
+	const sockaddr* remote =
+		reinterpret_cast<const sockaddr*>(&m_RemoteAddress);
+
+	if(remote->sa_family == AF_INET)
+	{
+		const sockaddr_in* address =
+			reinterpret_cast<const sockaddr_in*>(&m_RemoteAddress);
+		if(inet_ntop(AF_INET, &address->sin_addr, addressBuffer,
+		             sizeof(addressBuffer)) == NULL)
+			Address.clear();
+		else
+			Address = addressBuffer;
+		Port = ntohs(address->sin_port);
+	}
+	else if(remote->sa_family == AF_INET6)
+	{
+		const sockaddr_in6* address =
+			reinterpret_cast<const sockaddr_in6*>(&m_RemoteAddress);
+		if(inet_ntop(AF_INET6, &address->sin6_addr, addressBuffer,
+		             sizeof(addressBuffer)) == NULL)
+			Address.clear();
+		else
+		{
+			Address = addressBuffer;
+			if(address->sin6_scope_id != 0)
+				Address += "%" + std::to_string(address->sin6_scope_id);
+		}
+		Port = ntohs(address->sin6_port);
+	}
+	else
+	{
+		Address.clear();
+		Port = 0;
+	}
 }
 
 string BufferedSocket::GetRemoteAddress() const
 {
-	ostringstream rmtAddr;
+	string address;
+	uint16_t port = 0;
+	GetRemoteAddress(address, port);
 
-	rmtAddr << inet_ntoa(m_RemoteAddress.sin_addr) << ":" << ntohs(m_RemoteAddress.sin_port);
+	if(address.find(':') != string::npos)
+		return "[" + address + "]:" + std::to_string(port);
 
-	return rmtAddr.str();
+	return address + ":" + std::to_string(port);
 }
 
 int32_t BufferedSocket::SendData(const int32_t& Timeout)
@@ -227,8 +277,16 @@ int32_t BufferedSocket::SendData(const int32_t& Timeout)
 	if(CreateSocket() == false)
 		return 0;
 
-	BytesSent = sendto(m_Socket, (const char*)m_SocketBuffer, m_BufferSize, 0,
-	                   (struct sockaddr*)&m_RemoteAddress, sizeof(m_RemoteAddress));
+	if(m_RemoteAddressLength == 0)
+	{
+		NET_ReportError("Cannot send without a valid remote address");
+		return 0;
+	}
+
+	BytesSent = sendto(m_Socket, (const char*)m_SocketBuffer,
+	                   static_cast<int>(m_BufferSize), 0,
+	                   reinterpret_cast<const sockaddr*>(&m_RemoteAddress),
+	                   m_RemoteAddressLength);
 
 	// set the start ping
 	m_SendPing = GetMillisNow();
@@ -249,7 +307,11 @@ int32_t BufferedSocket::GetData(const int32_t& Timeout)
 	fd_set           readfds;
 	struct timeval   tv;
 	bool             DestroyMe = false;
+#ifdef _WIN32
+	int              fromlen;
+#else
 	socklen_t        fromlen;
+#endif
 
 	// Wait for read with timeout
 	if(Timeout > 0)
@@ -275,10 +337,15 @@ int32_t BufferedSocket::GetData(const int32_t& Timeout)
 		return -1;
 	}
 
+	memset(&m_RemoteAddress, 0, sizeof(m_RemoteAddress));
 	fromlen = sizeof(m_RemoteAddress);
 
-	BytesReceived = recvfrom(m_Socket, (char*)m_SocketBuffer, MAX_PAYLOAD, 0,
-	                         (struct sockaddr*)&m_RemoteAddress, &fromlen);
+	BytesReceived = recvfrom(m_Socket, (char*)m_SocketBuffer,
+	                         static_cast<int>(MAX_PAYLOAD), 0,
+	                         reinterpret_cast<sockaddr*>(&m_RemoteAddress),
+	                         &fromlen);
+	if(BytesReceived >= 0)
+		m_RemoteAddressLength = fromlen;
 
 	// -1 = Error; 0 = Closed Connection
 	if(BytesReceived <= 0)

@@ -28,6 +28,8 @@
 
 #include "json/json.h"
 
+#include <array>
+
 #include "d_player.h"
 #include "i_net.h"
 
@@ -39,7 +41,7 @@ private:
 	bool v6;
 	byte ip[4];
 	bool mask[4];
-	byte ip6[16];
+	std::array<byte, 16> ip6;
 	byte prefixlen; // IPv6 only, 0-128
 public:
 	IPRange(void);
