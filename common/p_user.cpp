@@ -1273,7 +1273,7 @@ BEGIN_COMMAND(mute)
 			}
 
 			player_t& player = idplayer(playerId);
-			if (not validplayer(player) or playerId == consoleplayer_id)
+			if (not validplayer(player) or playerId == consoleplayer_id or player.isFreecam)
 			{
 				PrintFmt("Invalid player ID: {}\n", argv[i]);
 				continue;
