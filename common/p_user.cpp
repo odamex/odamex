@@ -1234,15 +1234,15 @@ namespace
 	{
 		for (size_t i = 1; i < argc; ++i)
 		{
-			const unsigned long playerId = std::strtoul(argv[i], nullptr, 0);
-			if (playerId == 0 or (playerId == ULONG_MAX and errno == ERANGE))
+			const auto playerId = ParseNum<uint32_t>(argv[i]);
+			if (not playerId or *playerId == consoleplayer_id)
 			{
 				PrintFmt("Invalid player ID: {}\n", argv[i]);
 				continue;
 			}
 
-			player_t& player = idplayer(playerId);
-			if (not validplayer(player) or playerId == consoleplayer_id or player.isFreecam)
+			player_t& player = idplayer(*playerId);
+			if (not validplayer(player) or player.isFreecam)
 			{
 				PrintFmt("Invalid player ID: {}\n", argv[i]);
 				continue;
@@ -1250,7 +1250,7 @@ namespace
 
 			player.isExplicitlyMuted = isMuting;
 
-			PrintFmt("{} player {}: {}\n", actionVerb, playerId, player.userinfo.netname);
+			PrintFmt("{} player {}: {}\n", actionVerb, *playerId, player.userinfo.netname);
 		}
 	}
 }
