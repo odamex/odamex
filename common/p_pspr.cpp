@@ -254,10 +254,10 @@ void P_SetPsprite(player_t& player, int position, int32_t stnum)
 //
 void A_FireSound (const player_t& player, const char *sound)
 {
-	if (!serverside && player.id != consoleplayer_id)
+	if (not serverside and player.id != cmdstate.GetConsolePlayerId())
 		return;
 
- 	UV_SoundAvoidPlayer (player.mo, CHAN_WEAPON, sound, ATTN_NORM);
+	UV_SoundAvoidPlayer(player.mo, CHAN_WEAPON, sound, ATTN_NORM);
 }
 
 //
@@ -468,7 +468,7 @@ bool P_CheckSwitchWeapon(const player_t& player, weapontype_t weapon)
 //
 bool P_PlayerInputIsUnknown(const player_t& player)
 {
-	return !serverside && player.id != consoleplayer_id;
+	return not serverside and player.id != cmdstate.GetConsolePlayerId();
 }
 
 // We never see another player's ticcmd, so their weapon fire frames has to
@@ -588,7 +588,7 @@ static void DecreaseAmmo(player_t& player, int amount = 1)
 {
 	// [SL] 2012-06-17 - Don't decrease ammo for players we are viewing
 	// The server will send the correct ammo
-	if (!serverside && player.id != consoleplayer_id)
+	if (not serverside and player.id != cmdstate.GetConsolePlayerId())
 		return;
 
 	if (!sv_infiniteammo)
@@ -1456,8 +1456,8 @@ void P_FireHitscan (player_t& player, size_t quantity, spreadtype_t spread)
 		return;
 
 	const bool predict_puffs =
-		clientside && !serverside &&
-		player.id == consoleplayer_id &&
+		clientside and not serverside and
+		player.id == cmdstate.GetConsolePlayerId() and
 		consoleplayer().userinfo.predict_weapons;
 
 	if (!serverside && !predict_puffs)

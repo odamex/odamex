@@ -67,7 +67,7 @@
 #include "g_spree.h"
 #include "g_deathspot.h"
 #include "g_multikill.h"
-#include "cl_freecam.h"
+#include "freecam.h"
 
 #include "PlayerItemDataType.h"
 
@@ -317,7 +317,7 @@ void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	if ((player.lives == 0 && playerInfo.lives() > 0) && !netdemo.isPlaying())
 	{
 		// stop spying so you know you're back from the dead.
-		::displayplayer_id = ::consoleplayer_id;
+		cmdstate.ResetDisplayPlayer();
 		CL_CheckDisplayPlayer();
 	}
 
@@ -1120,7 +1120,8 @@ void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 
 void CL_ConsolePlayer(const odaproto::svc::ConsolePlayer* msg)
 {
-	::displayplayer_id = ::consoleplayer_id = msg->pid();
+	cmdstate.SetConsolePlayerId(msg->pid());
+	cmdstate.SetDisplayPlayerId(msg->pid());
 	::digest = msg->digest();
 }
 
@@ -1145,8 +1146,9 @@ void CL_RemoveMobj(const odaproto::svc::RemoveMobj* msg)
 	uint32_t netid = msg->netid();
 
 	AActor* mo = P_FindThingById(netid);
-	if (mo && mo->player && mo->player->id == ::displayplayer_id && not consoleplayer().spectator)
-		::displayplayer_id = ::consoleplayer_id;
+
+	if (mo and mo->player and mo->player->id == cmdstate.GetDisplayPlayerId() and not consoleplayer().spectator)
+		cmdstate.ResetDisplayPlayer();
 
 	if (mo && mo->flags & MF_COUNTITEM)
 		level.found_items++;
@@ -1160,12 +1162,6 @@ void CL_RemoveMobj(const odaproto::svc::RemoveMobj* msg)
 void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 {
 	player_t* p = &CL_FindPlayer(msg->pid());
-
-	// 255th player just connected and is replacing the freecam, need to retire freecam
-	if (p->id == freecamplayer_id && p->isFreecam)
-	{
-		Freecam::retireFor255thPlayer(p);
-	}
 
 	p->userinfo.netname = msg->netname();
 
@@ -1459,7 +1455,7 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		UnpackBoolArray(p.cards, cards);
 	}
 
-	if (p.id == consoleplayer_id)
+	if (p.id == cmdstate.GetConsolePlayerId())
 	{
 		// denis - if this concerns the local player, restart the status bar
 		ST_Start();
@@ -1485,8 +1481,8 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 
 		if (not netdemo.isPlaying() && not consoleplayer().spectator)
 		{
-				::displayplayer_id = ::consoleplayer_id;
-				CL_CheckDisplayPlayer();
+			cmdstate.ResetDisplayPlayer();
+			CL_CheckDisplayPlayer();
 		}
 	}
 
@@ -1538,7 +1534,7 @@ void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	if (attacker != NULL)
 		player.attacker = attacker->ptr();
 
-	if (player.id == consoleplayer_id)
+	if (player.id == cmdstate.GetConsolePlayerId())
 	{
 		rollerState.ResolveHealth      (oldTic, health,      player);
 		rollerState.ResolveArmorpoints (oldTic, armorpoints, player);
@@ -1652,12 +1648,15 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 
 	P_KillMobj(source, target, inflictor, joinkill, MOD_NONE);
 
-	if (not netdemo.isInPlayback() and Freecam::isActive() and
+	freecam_t* freecam = freecam_t::getfreecam(firstcam_id);
+
+	if (freecam and
+		not netdemo.isInPlayback() and
 	    target->player == &consoleplayer() and
-	    DeathSpotManager::getInstance().hasDeathSpot(consoleplayer_id))
+	    DeathSpotManager::getInstance().hasDeathSpot(cmdstate.GetConsolePlayerId()))
 	{
-		const DeathSpot_s spot = DeathSpotManager::getInstance().getDeathSpot(consoleplayer_id);
-		Freecam::moveToPosition(spot.x, spot.y, spot.z, spot.angle);
+		const DeathSpot_s spot = DeathSpotManager::getInstance().getDeathSpot(cmdstate.GetConsolePlayerId());
+		freecam->moveToPosition(spot.x, spot.y, spot.z, spot.angle);
 	}
 }
 
@@ -1838,7 +1837,7 @@ void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 
 	// Our own weapon is driven by prediction and the rollback state, so this is only
 	// here to tell us what everyone else is holding.
-	if ((flags & SVC_PM_WEAPON) && p.id != consoleplayer_id)
+	if ((flags & SVC_PM_WEAPON) and p.id != cmdstate.GetConsolePlayerId())
 	{
 		const int32_t ready = msg->readyweapon();
 		const int32_t pending = msg->pendingweapon();
@@ -2815,7 +2814,7 @@ void CL_PlayerQueuePos(const odaproto::svc::PlayerQueuePos* msg)
 	player_t& player = idplayer(msg->pid());
 	byte queuePos = msg->queuepos();
 
-	if (player.id == consoleplayer_id)
+	if (player.id == cmdstate.GetConsolePlayerId())
 	{
 		if (queuePos > 0 && player.QueuePosition == 0)
 		{
@@ -3402,7 +3401,7 @@ void CL_Spree(const odaproto::svc::Spree* msg)
 		return;
 
 	// No need to check cl_showofflinesprees here since this will only fire online or during a netdemo.
-	if (cl_showsprees && sv_showsprees && displayplayer_id == playerId && update)
+	if (cl_showsprees and sv_showsprees and std::cmp_equal(cmdstate.GetDisplayPlayerId(), playerId) and update)
 	{
 		// Play the sound for the new multi kill
 		// S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);

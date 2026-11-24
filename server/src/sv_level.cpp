@@ -944,7 +944,7 @@ void G_DoLoadLevel (int position)
 		}
 	}
 
-	displayplayer_id = consoleplayer_id;				// view the guy you are playing
+	cmdstate.ResetDisplayPlayer();   // view the guy you are playing
 
 	gameaction = ga_nothing;
 

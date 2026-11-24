@@ -613,6 +613,9 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 		z = iz;
 	}
 
+  viewz =     iz == ONCEILINGZ ? z : z + height;
+  prevviewz = iz == ONCEILINGZ ? z : z + height;
+
 	spawnpoint.type = 0;
 	args.fill(0);
 }
@@ -1150,9 +1153,11 @@ void AActor::RunThink ()
 	// MUSINFO
 	if (type == MT_MUSICSOURCE && clientside)
 	{
-		if (musinfo.mapthing != this
-		    && displayplayer().mo->subsector
-		    && subsector->sector == displayplayer().mo->subsector->sector)
+		if (cmdstate.IsPlayer()
+			and musinfo.mapthing != this
+			and displayplayer().mo
+			and displayplayer().mo->subsector
+			and subsector->sector == displayplayer().mo->subsector->sector)
 		{
 			musinfo.lastmapthing = musinfo.mapthing;
 			musinfo.mapthing = this->ptr();
@@ -1161,15 +1166,16 @@ void AActor::RunThink ()
 		return;
 	}
 
-	if (not player or not player->isFreecam)
+	if (not (this->type == MT_FREECAM))
 	{
 		prevx = x;
 		prevy = y;
 		prevz = z;
 	}
-
-	if (!player || P_IsVoodooDoll(this))    // True voodoo dolls have non-null player pointers, but we still want
-	{                                       // to update the dolls' previous angles, so check for that.
+  // True voodoo dolls have non-null player pointers, but we still want
+  // to update the dolls' previous angles, so check for that.
+	if ((not player or P_IsVoodooDoll(this)) and not (this->type == MT_FREECAM))
+	{
 		prevangle = angle;
 		prevpitch = pitch;
 	}
@@ -1216,7 +1222,7 @@ void AActor::RunThink ()
 	}
 
 #ifdef CLIENT_APP
-	if (player && ::consoleplayer_id == player->id)
+	if (player and cmdstate.GetConsolePlayerId() == player->id)
 	{
 		v3double_t start, end;
 		M_ActorPositionToVec3(&start, this);
@@ -2473,6 +2479,10 @@ void P_ZMovement(AActor *mo)
 	if (mo->player)
 		P_PlayerFlyBob(mo);
 
+	// momz friction for freecam, x/y friction happens in P_ApplyXYFriction
+	if (mo->type == MT_FREECAM and mo->z > mo->floorz)
+		mo->momz = FixedMul(mo->momz, FRICTION_FLY);
+
 	// apply friction in the z-direction in water
 	if (mo->waterlevel && !(mo->flags & MF_NOGRAVITY))
 		mo->momz = FixedMul(mo->momz, mo->subsector->sector->friction);
@@ -2505,7 +2515,7 @@ void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 	mo->player->deltaviewheight = mo->momz>>3;
 
 	// The server sends the sound to us for other players
-	if (mo->player->id != consoleplayer_id && !serverside)
+	if (mo->player->id != cmdstate.GetConsolePlayerId() and not serverside)
 		return;
 
 	if (co_zdoomphys)
@@ -3607,7 +3617,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 {
 	int32_t type = -1;
 
-	if (mthing.type == 0 || mthing.type == -1)
+	if (mthing.type == MT_PLAYER or mthing.type == MT_NULL)
 		return;
 
 	const bool inSpawnMap = spawn_map.contains(mthing.type);

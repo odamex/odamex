@@ -1535,6 +1535,8 @@ enum mobjtype_t: int32_t {
 	MT_EXTRALIFE,
 	MT_RESTEAMMATE,
 
+	MT_FREECAM,
+
     // --------------------------------------------------------------------- //
 
 	MT_NULL = -1, // ferk: null/invalid mobj (zero is reserved for MT_PLAYER)

@@ -135,3 +135,5 @@ public:
 };
 
 bool P_ThinkerIsPlayerType(DThinker* thinker);
+bool P_ThinkerIsFreecamType(DThinker* thinker);
+

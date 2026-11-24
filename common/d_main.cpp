@@ -66,9 +66,7 @@
 #include "odainfo.h"
 #include "infomap.h"
 
-#ifdef CLIENT_APP
-#include "cl_freecam.h"
-#endif
+#include "freecam.h"
 
 OResFiles wadfiles;
 OResFiles patchfiles;
@@ -1066,9 +1064,10 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 	OResFiles oldpatchfiles = ::patchfiles;
 	std::string failmsg;
 
-	#ifdef CLIENT_APP
-	Freecam::reset();
-	#endif
+	for (auto& freecam : freecams)
+	{
+		freecam.reset();
+	}
 
 	try
 	{
