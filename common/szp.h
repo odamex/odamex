@@ -155,7 +155,7 @@ public:
 	// That said, we still check alignof the atomized pointer, because, in pure theory, it is still
 	// allowed to exceed __STDCPP_DEFAULT_NEW_ALIGNMENT__.  We just know that it won't be less than that.
 
-	static constexpr size_t POINTER_ALIGNMENT      = std::max(__STDCPP_DEFAULT_NEW_ALIGNMENT__, alignof(std::atomic<T*>));
+	static constexpr size_t POINTER_ALIGNMENT      = std::max(static_cast<size_t>(__STDCPP_DEFAULT_NEW_ALIGNMENT__), alignof(std::atomic<T*>));
 	static constexpr auto   POINTER_ALIGNMENT_BITS = std::countr_zero(POINTER_ALIGNMENT);
 };
 
