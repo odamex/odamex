@@ -1242,24 +1242,38 @@ BEGIN_COMMAND(mute)
 		// accept player numbers.
 		//
 		PrintFmt("Usage: mute <player number>\n"
-		         "  players:\n");
+		         "  players:");
 
 		std::string playerInfo;
 
+		int alreadyMutedCount = 0;
+
 		for (auto& player : players)
 		{
-			if (not (player.isFreecam or player.id == consoleplayer_id))
+			if (not (player.isFreecam or player.id == consoleplayer_id or player.isExplicitlyMuted))
 			{
-				playerInfo += "    " + std::to_string(player.id) + ". " + player.userinfo.netname + '\n';
+				playerInfo += "\n    " + std::to_string(player.id) + ". " + player.userinfo.netname;
+			}
+
+			if (player.isExplicitlyMuted)
+			{
+				++alreadyMutedCount;
 			}
 		}
 
 		if (playerInfo.empty())
 		{
-			playerInfo = "    none\n";
+			playerInfo = "\n    -";
 		}
 
-		PrintFmt("{}", playerInfo);
+		PrintFmt("{}\n", playerInfo);
+		if (alreadyMutedCount)
+		{
+			PrintFmt("    hid {} muted player{}.  See 'unmute' command to unmute.",
+			         alreadyMutedCount,
+			         alreadyMutedCount > 1 ? "s" : "");
+		}
+
 	}
 	else
 	{
