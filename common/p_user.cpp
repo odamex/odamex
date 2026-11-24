@@ -1234,10 +1234,8 @@ BEGIN_COMMAND(mute)
 	if (not clientside)
 	{
 		PrintFmt("Server-side mute is not yet supported.\n");
-		return;
 	}
-
-	if (argc <= 1)
+	else if (argc <= 1)
 	{
 		// Initially the intent was to take either number or name, but then I realized that
 		// allowing name opens up opportunities for scoundrels to be sneaky.  So we only
@@ -1262,6 +1260,29 @@ BEGIN_COMMAND(mute)
 		}
 
 		PrintFmt("{}", playerInfo);
+	}
+	else
+	{
+		for (int i = 1; i < argc; ++i)
+		{
+			const unsigned long playerId = std::strtoul(argv[i], nullptr, 0);
+			if (playerId == 0 or (playerId == ULONG_MAX and errno == ERANGE))
+			{
+				PrintFmt("Invalid player ID: {}\n", argv[i]);
+				continue;
+			}
+
+			player_t& player = idplayer(playerId);
+			if (not validplayer(player) or playerId == consoleplayer_id)
+			{
+				PrintFmt("Invalid player ID: {}\n", argv[i]);
+				continue;
+			}
+
+			player.isExplicitlyMuted = true;
+
+			PrintFmt("Muted player {}: {}\n", playerId, player.userinfo.netname);
+		}
 	}
 }
 END_COMMAND(mute)
