@@ -1250,7 +1250,7 @@ BEGIN_COMMAND(mute)
 
 		for (auto& player : players)
 		{
-			if (not player.isFreecam)
+			if (not (player.isFreecam or player.id == consoleplayer_id))
 			{
 				playerInfo += "    " + std::to_string(player.id) + ". " + player.userinfo.netname + '\n';
 			}
@@ -1258,7 +1258,7 @@ BEGIN_COMMAND(mute)
 
 		if (playerInfo.empty())
 		{
-			playerInfo = "none\n";
+			playerInfo = "    none\n";
 		}
 
 		PrintFmt("{}", playerInfo);
