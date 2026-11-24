@@ -1270,7 +1270,8 @@ void player_t::Serialize (FArchive &arc)
 			<< xviewshift
 			<< jumpTics
 			<< death_time
-			<< air_finished;
+			<< air_finished
+			<< isExplicitlyMuted;
 		for (i = 0; i < NUMPOWERS; i++)
 			arc << powers[i];
 		for (i = 0; i < NUMCARDS; i++)
@@ -1324,7 +1325,8 @@ void player_t::Serialize (FArchive &arc)
 			>> xviewshift
 			>> jumpTics
 			>> death_time
-			>> air_finished;
+			>> air_finished
+			>> isExplicitlyMuted;
 		for (i = 0; i < NUMPOWERS; i++)
 			arc >> powers[i];
 		for (i = 0; i < NUMCARDS; i++)
@@ -1413,6 +1415,7 @@ player_t::player_t() :
 	hazardcount(0),
 	hazardinterval(0),
 	LastMessage(LastMessage_s()),
+	isExplicitlyMuted(false),
 	playerInfoIsRequested(false),
 	serverRefreshRequestsAreEnabled(false),
 	client{}
