@@ -1228,6 +1228,44 @@ BEGIN_COMMAND(cheat_players)
 }
 END_COMMAND(cheat_players)
 
+BEGIN_COMMAND(mute)
+{
+	// TODO:  server-side muting
+	if (not clientside)
+	{
+		PrintFmt("Server-side mute is not yet supported.\n");
+		return;
+	}
+
+	if (argc <= 1)
+	{
+		// Initially the intent was to take either number or name, but then I realized that
+		// allowing name opens up opportunities for scoundrels to be sneaky.  So we only
+		// accept player numbers.
+		//
+		PrintFmt("Usage: mute <player number>\n"
+		         "  players:\n");
+
+		std::string playerInfo;
+
+		for (auto& player : players)
+		{
+			if (not player.isFreecam)
+			{
+				playerInfo += "    " + std::to_string(player.id) + ". " + player.userinfo.netname + '\n';
+			}
+		}
+
+		if (playerInfo.empty())
+		{
+			playerInfo = "none\n";
+		}
+
+		PrintFmt("{}", playerInfo);
+	}
+}
+END_COMMAND(mute)
+
 void player_t::Serialize (FArchive &arc)
 {
 	size_t i;
