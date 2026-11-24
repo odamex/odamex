@@ -1228,6 +1228,33 @@ BEGIN_COMMAND(cheat_players)
 }
 END_COMMAND(cheat_players)
 
+namespace
+{
+	void UpdateMuteState(size_t argc, char** argv, const char* actionVerb, bool isMuting)
+	{
+		for (size_t i = 1; i < argc; ++i)
+		{
+			const unsigned long playerId = std::strtoul(argv[i], nullptr, 0);
+			if (playerId == 0 or (playerId == ULONG_MAX and errno == ERANGE))
+			{
+				PrintFmt("Invalid player ID: {}\n", argv[i]);
+				continue;
+			}
+
+			player_t& player = idplayer(playerId);
+			if (not validplayer(player) or playerId == consoleplayer_id or player.isFreecam)
+			{
+				PrintFmt("Invalid player ID: {}\n", argv[i]);
+				continue;
+			}
+
+			player.isExplicitlyMuted = isMuting;
+
+			PrintFmt("{} player {}: {}\n", actionVerb, playerId, player.userinfo.netname);
+		}
+	}
+}
+
 BEGIN_COMMAND(mute)
 {
 	// TODO:  server-side muting
@@ -1241,7 +1268,7 @@ BEGIN_COMMAND(mute)
 		// allowing name opens up opportunities for scoundrels to be sneaky.  So we only
 		// accept player numbers.
 		//
-		PrintFmt("Usage: mute <player number>\n"
+		PrintFmt("Usage: mute <player number>...\n"
 		         "  players:");
 
 		std::string playerInfo;
@@ -1277,29 +1304,47 @@ BEGIN_COMMAND(mute)
 	}
 	else
 	{
-		for (int i = 1; i < argc; ++i)
-		{
-			const unsigned long playerId = std::strtoul(argv[i], nullptr, 0);
-			if (playerId == 0 or (playerId == ULONG_MAX and errno == ERANGE))
-			{
-				PrintFmt("Invalid player ID: {}\n", argv[i]);
-				continue;
-			}
-
-			player_t& player = idplayer(playerId);
-			if (not validplayer(player) or playerId == consoleplayer_id or player.isFreecam)
-			{
-				PrintFmt("Invalid player ID: {}\n", argv[i]);
-				continue;
-			}
-
-			player.isExplicitlyMuted = true;
-
-			PrintFmt("Muted player {}: {}\n", playerId, player.userinfo.netname);
-		}
+		UpdateMuteState(argc, argv, "Muted", true);
 	}
 }
 END_COMMAND(mute)
+
+BEGIN_COMMAND(unmute)
+{
+	// TODO:  server-side muting
+	if (not clientside)
+	{
+		PrintFmt("Server-side unmute is not yet supported.\n");
+	}
+	else if (argc <= 1)
+	{
+		// We only take id numbers.
+		PrintFmt("Usage: unmute <player number>...\n"
+		         "  muted players:");
+
+		std::string playerInfo;
+
+		for (auto& player : players)
+		{
+			if (player.isExplicitlyMuted and not (player.isFreecam or player.id == consoleplayer_id))
+			{
+				playerInfo += "\n    " + std::to_string(player.id) + ". " + player.userinfo.netname;
+			}
+		}
+
+		if (playerInfo.empty())
+		{
+			playerInfo = "\n    no muted players.";
+		}
+
+		PrintFmt("{}\n", playerInfo);
+	}
+	else
+	{
+		UpdateMuteState(argc, argv, "Unmuted", false);
+	}
+}
+END_COMMAND(unmute)
 
 void player_t::Serialize (FArchive &arc)
 {
