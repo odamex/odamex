@@ -44,7 +44,7 @@ Compilation instructions
 
 Clone the repositories, with all submodules:
 
-    git clone https://github.com/odamex/odamex.git --recurse-submodules
+    git clone https://github.com/Thunderbolt1003USA/odamex-v6.git --recurse-submodules
 
 If you downloaded the zip, use these commands on the git directory:
 
