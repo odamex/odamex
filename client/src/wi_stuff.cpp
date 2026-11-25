@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1597,7 +1595,7 @@ void WI_loadData()
 
 		// A UMAPINFO map that brings its own title graphic has drawn that graphic
 		// to suit itself, so an author line under it is not wanted.
-		const bool umapinfoshowsauthor = (linfo.flags2 & LEVEL2_FROMUMAPINFO) &&
+		const bool umapinfoshowsauthor = (linfo.metadataflags & metadataflags_t::AUTHORFROMUMAPINFO) &&
 		                                    !linfo.pname.empty() &&
 		                                    W_IsLumpFromPWAD(linfo.pname);
 
@@ -1786,5 +1784,3 @@ void WI_Shutdown()
 {
 	WI_ClearInterlevels();
 }
-
-VERSION_CONTROL (wi_stuff_cpp, "$Id$")

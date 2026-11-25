@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -78,18 +76,46 @@ static bool R_IsStackPoint(const AActor* mo)
 	return mo && (mo->type == MT_UPPERSTACK || mo->type == MT_LOWERSTACK);
 }
 
-// Alpha of the boundary flat drawn over a stack portal's content, from the
-// remote stack thing's arg0: 0 = invisible flat, 255 = fully opaque.
+// Alpha of the boundary flat drawn over a stack portal's content: 0 = invisible
+// flat, 255 = fully opaque.
 static int R_StackFlatAlpha(const AActor* mo)
 {
-	return std::clamp(static_cast<int>(mo->args[0]), 0, 255);
+	const AActor* local = mo->tracer;
+
+	// Unpaired boundary: nothing to see through, so draw the flat as it is.
+	if (local == nullptr)
+		return 255;
+
+	return std::clamp(static_cast<int>(local->args[0]), 0, 255);
 }
 
-// Does this plane render as a portal? A boundary flat at full opacity would
-// completely hide the portal view, so skip the pass and draw it normally.
-static bool R_IsStackPortal(const AActor* mo)
+// Can the view see through this boundary? A flat at full opacity hides
+// whatever is behind it, so the plane just draws normally.
+bool R_IsStackBoundary(const AActor* mo)
 {
 	return R_IsStackPoint(mo) && R_StackFlatAlpha(mo) < 255;
+}
+
+// Stack points of the portal passes being rendered, innermost last.
+std::vector<AActor*> r_ActiveStackPortals;
+
+// Is either end of this boundary's pair already being rendered?
+// If so, prevent it from being entered again.
+bool R_IsStackPairActive(const AActor* mo)
+{
+	const auto samepair = [mo](const AActor* active)
+	{
+		const AActor* mate = active->tracer;
+		return active == mo || (mate != nullptr && mate == mo);
+	};
+
+	return std::ranges::any_of(r_ActiveStackPortals, samepair);
+}
+
+// Does this plane render a portal pass, or only its own boundary flat?
+bool R_IsStackPortal(const AActor* mo)
+{
+	return R_IsStackBoundary(mo) && !R_IsStackPairActive(mo);
 }
 
 visplane_t 				*floorplane;
@@ -361,6 +387,7 @@ visplane_t *R_FindPlane (const plane_t &secplane, int picnum, int lightlevel,
 		else if (P_IdenticalPlanes(&secplane, &check->secplane) &&
 				picnum == check->picnum &&
 				lightlevel == check->lightlevel &&
+				skybox == check->skybox &&	// boundary flats draw at their own alpha
 				xoffs == check->xoffs && // killough 2/28/98: Add offset checks
 				yoffs == check->yoffs &&
 				basecolormap == check->colormap && // [RH] Add colormap check
@@ -670,22 +697,22 @@ static void R_DrawSingleFlatPlane(visplane_t* pl)
 	// regular flat
 	int useflatnum = flattranslation[pl->picnum < numflats ? pl->picnum : 0];
 
-				dspan.color += 4;	// [RH] color if r_drawflat is 1
-				dspan.source = W_CacheLumpNum<byte>(firstflat + useflatnum, PU_STATIC);
+	dspan.color += 4;	// [RH] color if r_drawflat is 1
+	dspan.source = W_CacheLumpNum<byte>(firstflat + useflatnum, PU_STATIC);
 
-				// [RH] warp a flat if desired
-				if (flatwarp[useflatnum])
-				{
-					if (warpedflats[useflatnum] && flatwarpedwhen[useflatnum] == level.time)
-					{
-						Z_ChangeTag(dspan.source, PU_CACHE);
-						dspan.source = warpedflats[useflatnum];
-						Z_ChangeTag(dspan.source, PU_STATIC);
-					}
-					else
-					{
-						if (!warpedflats[useflatnum])
-							warpedflats[useflatnum] = Z_Malloc<byte>(64*64, PU_STATIC, &warpedflats[useflatnum]);
+	// [RH] warp a flat if desired
+	if (flatwarp[useflatnum])
+	{
+		if (warpedflats[useflatnum] and flatwarpedwhen[useflatnum] == level.time)
+		{
+			Z_ChangeTag(dspan.source, PU_CACHE);
+			dspan.source = warpedflats[useflatnum];
+			Z_ChangeTag(dspan.source, PU_STATIC);
+		}
+		else
+		{
+			if (not warpedflats[useflatnum])
+				warpedflats[useflatnum] = Z_Malloc<byte>(64_uz * 64_uz, PU_STATIC, static_cast<void*>(&warpedflats[useflatnum]));
 
 			static byte buffer[64];
 			int timebase = level.time*23;
@@ -783,6 +810,10 @@ void R_DrawPlanes (void)
 			if (R_IsSkyFlat(pl->picnum) || pl->picnum & PL_SKYFLAT)
 			{
 				R_RenderSkyRange(pl);
+			}
+			else if (R_IsStackBoundary(pl->skybox) && R_StackFlatAlpha(pl->skybox) > 0)
+			{
+				R_DrawStackFlatBlend(pl);
 			}
 			else
 			{
@@ -889,6 +920,7 @@ static void R_RenderPortalView(visplane_t* pl)
 	ptrdiff_t savedds_p = ds_p - drawsegs;
 	ptrdiff_t savedfirstdrawseg = firstdrawseg - drawsegs;
 	AActor* savedcamera = camera;
+	bool pushedstackportal = false;
 
 	int i;
 
@@ -903,8 +935,10 @@ static void R_RenderPortalView(visplane_t* pl)
 
 		viewx = savedx + sky->x - mate->x;
 		viewy = savedy + sky->y - mate->y;
-		viewz = savedz + sky->z - mate->z;
+		viewz = savedz;
 		camera = sky;
+		r_ActiveStackPortals.push_back(sky);
+		pushedstackportal = true;
 	}
 	else
 	{
@@ -919,20 +953,20 @@ static void R_RenderPortalView(visplane_t* pl)
 	R_ClearPlanes(false);
 	R_ClearClipSegs();
 
-		// Set up ceiling/floor clip arrays for this visplane.
-		for (i = pl->minx; i <= pl->maxx; i++)
+	// Set up ceiling/floor clip arrays for this visplane.
+	for (i = pl->minx; i <= pl->maxx; i++)
+	{
+		if (std::cmp_equal(pl->top[i], viewheight))
 		{
-			if (pl->top[i] == static_cast<unsigned int>(viewheight))
-			{
-				ceilingclip[i] = viewheight;
-				floorclip[i] = -1;
-			}
-			else
-			{
-				ceilingclip[i] = pl->top[i];
-				floorclip[i] = pl->bottom[i] + 1;
-			}
+			ceilingclip[i] = viewheight;
+			floorclip[i] = -1;
 		}
+		else
+		{
+			ceilingclip[i] = pl->top[i];
+			floorclip[i] = pl->bottom[i] + 1;
+		}
+	}
 
 	// Create a drawseg to clip sprites to the sky plane.
 	R_ReallocDrawSegs();
@@ -965,6 +999,9 @@ static void R_RenderPortalView(visplane_t* pl)
 	ds_p = drawsegs + savedds_p;
 
 	camera = savedcamera;
+
+	if (pushedstackportal)
+		r_ActiveStackPortals.pop_back();
 	viewx = savedx;
 	viewy = savedy;
 	viewz = savedz;
@@ -975,6 +1012,9 @@ void R_DrawPortals()
 {
 	if (visplanes[MAXVISPLANES] == NULL)
 		return;
+
+	// A render aborted mid-pass can leave entries behind.
+	r_ActiveStackPortals.clear();
 
 	// Don't let gun flashes brighten portal views
 	int savedextralight = extralight;
@@ -1033,5 +1073,3 @@ bool R_PlaneInitData(IWindowSurface* surface)
 
 	return true;
 }
-
-VERSION_CONTROL (r_plane_cpp, "$Id$")

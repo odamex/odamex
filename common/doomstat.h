@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -167,7 +165,7 @@ struct VoodooStartInfoType
 
 inline constexpr int MAXPLAYERSTARTS = 64;
 inline constexpr OUtil::inclusive_range<int16_t> VANILLA_COOP_PLAYER_STARTS{1, 4};
-inline constexpr OUtil::inclusive_range<int16_t> EXTRA_COOP_PLAYER_STARTS{4001, 4001 + MAXPLAYERSTARTS - 4};
+inline constexpr OUtil::exclusive_range<int16_t> EXTRA_COOP_PLAYER_STARTS{4001, 4001 + MAXPLAYERSTARTS - 4};
 extern std::vector<mapthing2_t>         playerstarts;
 extern std::vector<VoodooStartInfoType> voodoostarts;
 

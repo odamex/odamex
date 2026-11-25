@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -256,5 +254,3 @@ CVAR(			sv_dmfarspawn, "0", "EXPERIMENTAL: When enabled in DM, players will spaw
 // =================================================================
 
 // None currently
-
-VERSION_CONTROL (sv_cvarlist_cpp, "$Id$")

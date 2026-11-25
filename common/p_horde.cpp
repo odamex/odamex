@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -349,7 +347,7 @@ class HordeState
 				if (player->lives < g_lives)
 				{
 					player->lives += 1;
-					MSG_WriteSVC(player->client.messenger->ReliableBuf(), SVC_PlayerInfo(*player));
+					player->client.messenger->Reliable().Write(SVC_PlayerInfo(*player));
 					MSG_BroadcastSVC(CLBUF_RELIABLE,
 					                 SVC_PlayerMembers(*player, SVC_PM_LIVES),
 					                 player->id);
@@ -364,7 +362,7 @@ class HordeState
 			for (const auto& player : queued)
 			{
 				player->lives = 1;
-				MSG_WriteSVC(player->client.messenger->ReliableBuf(), SVC_PlayerInfo(*player));
+				player->client.messenger->Reliable().Write(SVC_PlayerInfo(*player));
 				MSG_BroadcastSVC(CLBUF_RELIABLE,
 				                 SVC_PlayerMembers(*player, SVC_PM_LIVES), player->id);
 			}

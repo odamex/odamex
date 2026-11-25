@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -374,5 +372,3 @@ bool P_DeactivateMobj (AActor *mobj)
 	}
 	return false;
 }
-
-VERSION_CONTROL (p_things_cpp, "$Id$")

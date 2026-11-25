@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -74,6 +72,19 @@ extern const fixed_t		finetangent[FINEANGLES/2];
 #define DBITS			(FRACBITS-SLOPEBITS)
 
 typedef uint32_t			angle_t;
+
+//
+// MapThingToAngle
+//
+// A mapthing stores whole degrees, which vanilla snaps to the 45-degree grid
+// as it spawns.
+//
+inline angle_t MapThingToAngle(const int degrees)
+{
+	constexpr int DEGREES_PER_OCTANT = 45;
+
+	return ANG45 * (degrees / DEGREES_PER_OCTANT);
+}
 
 
 // Effective size is 2049;

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -112,17 +110,13 @@ DThinker::~DThinker() = default;
 void DThinker::Orphan()
 {
 	m_optionalVectorIndex.reset();
-	m_Next = NULL;
-	m_Prev = NULL;
+	m_Next = nullptr;
+	m_Prev = nullptr;
 	refCount = 0;
 }
 
-void DThinker::Destroy ()
+void DThinker::Unlink()
 {
-	// denis - allow this function to be safely called multiple times
-	if(destroyed)
-		return;
-
 	if (FirstThinker == this)
 		FirstThinker = m_Next;
 	if (LastThinker == this)
@@ -131,6 +125,69 @@ void DThinker::Destroy ()
 		m_Next->m_Prev = m_Prev;
 	if (m_Prev)
 		m_Prev->m_Next = m_Next;
+
+	// Please note that we do NOT set m_Next or m_Prev to nullptr because in the event that
+	// during a single RunThink(), multiple nodes could be Destroyed / Unlinked, we want to
+	// be able to advance through those harmlessly in RunThinkers by just following m_Next.
+}
+
+bool DThinker::SpliceBefore(DThinker* io_node)
+{
+	if (io_node and io_node != this and not (this->WasDestroyed() or io_node->WasDestroyed()))
+	{
+		if (not (this->m_Next == io_node and io_node->m_Prev == this))  // Are we not already linked in where we want to be?
+		{
+			Unlink();
+
+			if (FirstThinker == io_node)
+			{
+				FirstThinker = this;
+			}
+			m_Next = io_node;
+			m_Prev = io_node->m_Prev;
+			if (m_Prev)
+			{
+				m_Prev->m_Next = this;
+			}
+			io_node->m_Prev = this;
+		}
+		return true;
+	}
+	return false;
+}
+
+bool DThinker::SpliceAfter(DThinker* io_node)
+{
+	if (io_node and io_node != this and not (this->WasDestroyed() or io_node->WasDestroyed()))
+	{
+		if (not (this->m_Prev == io_node and io_node->m_Next == this))  // Are we not already linked in where we want to be?
+		{
+			Unlink();
+
+			if (LastThinker == io_node)
+			{
+				LastThinker = this;
+			}
+			m_Next = io_node->m_Next;
+			if (m_Next)
+			{
+				m_Next->m_Prev = this;
+			}
+			m_Prev = io_node;
+			io_node->m_Next = this;
+		}
+		return true;
+	}
+	return false;
+}
+
+void DThinker::Destroy ()
+{
+	// denis - allow this function to be safely called multiple times
+	if(destroyed)
+		return;
+
+	Unlink();
 
 	if (m_optionalVectorIndex.has_value())
 	{
@@ -164,11 +221,6 @@ void DThinker::Destroy ()
 			delete obj;
 		}
 	}
-}
-
-bool DThinker::WasDestroyed ()
-{
-	return destroyed;
 }
 
 // Destroy every thinker
@@ -258,7 +310,7 @@ bool IndependentThinker(DThinker *thinker)
 
 void DThinker::RunThinkers ()
 {
-	DThinker *currentthinker;
+	DThinker* currentthinker;
 
 	BEGIN_STAT (ThinkCycles);
 	currentthinker = FirstThinker;
@@ -295,6 +347,4 @@ bool P_ThinkerIsPlayerType(DThinker* thinker)
 	return thinker->IsKindOf(RUNTIME_CLASS(AActor)) &&
 	       static_cast<AActor*>(thinker)->type == MT_PLAYER;
 }
-
-VERSION_CONTROL (dthinker_cpp, "$Id$")
 

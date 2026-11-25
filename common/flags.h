@@ -355,15 +355,6 @@ public:
 		return lhs.m_value == rhs.m_value;
 	}
 
-	// TODO: this is just temporary and should be deleted as soon as its unused
-	// this is here for limiting the impact on the mapinfo parser until merging with the
-	// type safe mapinfo pr
-	[[nodiscard, deprecated]]
-	constexpr underlying& data() noexcept
-	{
-		return m_value;
-	}
-
 };
 
 template <FlagEnum E>
@@ -394,8 +385,10 @@ private:
 	using base::base;
 public:
 	constexpr flag_set() noexcept = default;
+	// NOLINTBEGIN(misc-explicit-constructor)
 	constexpr flag_set(noflag_t) noexcept : flag_set() {};
 	constexpr flag_set(const FlagOrCombo<E> auto c) noexcept : base(c) {};
+	// NOLINTEND(misc-explicit-constructor)
 
 	constexpr flag_set& operator|=(const FlagOrCombo<E> auto c) noexcept
 	{

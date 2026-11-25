@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -373,11 +371,13 @@ void GiveTo(player_t& player, const char* name)
 	else
 		giveall = false;
 
-	if (giveall || strnicmp(name, "health", 6) == 0)
-	{
-		int h;
+	const int health_len = 6;
 
-		if (0 < (h = ParseNum<int>(name + 6).value_or(0)))
+	if (giveall or strnicmp(name, "health", health_len) == 0)
+	{
+		const int h = giveall ? 0 : ParseNum<int>(name + health_len).value_or(0);
+
+		if (h > 0)
 		{
 			if (player.mo)
 			{
@@ -510,5 +510,3 @@ void Suicide(player_t& plyr)
 #endif
 
 } // namespace cheat
-
-VERSION_CONTROL(m_cheat_cpp, "$Id$")

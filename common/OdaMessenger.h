@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2026 by Jim Thoenen.
 //
 // This program is free software; you can redistribute it and/or
@@ -25,6 +23,7 @@
 #include <memory_resource>
 #include <utility>
 
+#include "LargeMessageQueue.h"
 #include "MessageQueue.h"
 #include "MovingAverage.h"
 #include "Packet.h"
@@ -44,10 +43,14 @@ class OdaMessenger
 
 	public:
 
-		// With theoretical defaults:
-		//      800 KBps * 5 sec = 4000 KB backed-up retransmits max
-		//      4000 KB * 256 players = 1024000 KB total ~= 1.05 GB in memory at absolute worst
-		constexpr static int DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS =  5 * TICRATE;
+		// With theoretical defaults for standard real-time gameplay:
+		//      800 KBps * 10 sec = 8000 KB backed-up retransmits max
+		//      8000 KB * 256 players = 2048000 KB total = ~2 GB in memory at absolute worst
+		constexpr static int DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS = 10 * TICRATE;
+
+		// Extended timeout for messenger flushing.  Ideal for lengthy operations that call for
+		// flushing the messenger, such as map loading.
+		constexpr static int FLUSH_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS =  65 * TICRATE;   // about a minute.
 
 		explicit OdaMessenger(std::unique_ptr<std::pmr::unsynchronized_pool_resource>& i_poolPtr)
 			: m_sender   { DEFAULT_RELIABILITY_QUEUE_SIZE, std::pmr::polymorphic_allocator<SequenceQueueEntryType> {i_poolPtr.get()}}
@@ -174,7 +177,7 @@ class OdaMessenger
 				Sender(Sender&&)            = delete;
 				Sender& operator=(Sender&&) = delete;
 
-				/// Assembles the messages queued up via HighBuf() into packets and sends them.  If the tic budget is
+				/// Assembles the messages queued up via HighPriority() into packets and sends them.  If the tic budget is
 				/// exhausted, then the remaining HighPriority content remains enqueued for subsequent Send calls.
 				///
 				/// Returns the number of bytes sent.
@@ -191,9 +194,9 @@ class OdaMessenger
 				/// Returns the number of bytes sent as part of this retransmission cycle.
 				size_t SendRetransmissions() { return m_messengerRef.SendRetransmissions (m_currentTic, m_dest); }
 
-				/// Assembles the messages queued up via ReliableBuf and NetBuf into packets and sends them.  If the
+				/// Assembles the messages queued up via Reliable() and BestEffort() into packets and sends them.  If the
 				/// tic budget is exhausted, then the remaining Reliable content remains enqueued for subsequent Send
-				/// calls, but the NetBuf / best-effort messages are discarded.
+				/// calls, but the best-effort messages are discarded.
 				///
 				/// Return values:
 				///  ACCEPT - Normal result: Packet(s) were sent as needed without hitting a cap.
@@ -215,11 +218,15 @@ class OdaMessenger
 		/// Returns true if this is the first acknowledgement of the given sequence.  False otherwise.
 		bool Acknowledge(int sequence);
 
+		void SetCriticalSequenceTimeout (int i_timeoutInTics){ m_criticalSequenceTimeoutInTics = i_timeoutInTics; }
+		bool CheckForCriticalTimeout(int i_currentTic);
+
 		/// Return the requested message queue.  Use these queues to Obtain new messages into which to pack
 		/// new outgoing data.
-		MessageQueue& ReliableBuf() { return m_outgoingReliableQueue; }
-		MessageQueue& NetBuf() { return m_outgoingNonReliableQueue; }
-		MessageQueue& HighBuf() { return m_outgoingHighNonReliableQueue; }
+		MessageQueue&      Reliable() { return m_outgoingReliableQueue; }
+		MessageQueue&      BestEffort() { return m_outgoingNonReliableQueue; }
+		MessageQueue&      HighPriority() { return m_outgoingHighNonReliableQueue; }
+		LargeMessageQueue& LargeMessage() { return m_outgoingLargeMessageQueue; }
 
 		/// Discard all outgoing data that has yet to be sent.
 		void Clear()
@@ -227,6 +234,7 @@ class OdaMessenger
 			m_outgoingReliableQueue.Clear();
 			m_outgoingNonReliableQueue.Clear();
 			m_outgoingHighNonReliableQueue.Clear();
+			m_outgoingLargeMessageQueue.Clear();
 		}
 
 		bool RecordingIsEnabled() const { return m_recordingIsEnabled; }
@@ -249,7 +257,6 @@ class OdaMessenger
 		}
 		void SetPacketsPerRetransmit    (int i_maxPackets)   { m_maxPacketsPerRetransmission = i_maxPackets; }
 		void SetRetransmitDelay         (int i_delayInTics)  { m_retransmitDelayInTics = i_delayInTics; }
-		void SetCriticalSequenceTimeout (int i_timeoutInTics){ m_criticalSequenceTimeoutInTics = i_timeoutInTics; }
 
 		int GetLastReliableSendSize() const           { return static_cast<int>(m_bytesSentWithReliability); }
 		int GetLastSendSize() const                   { return m_lastSendSize; }
@@ -257,7 +264,8 @@ class OdaMessenger
 		int GetNonContiguousRetransmitPackets() const { return m_noncontiguousRetransmitCount; }
 		size_t GetOutgoingSizeInBytes() const         { return m_outgoingReliableQueue.SizeInBytes()
 		                                                     + m_outgoingNonReliableQueue.SizeInBytes()
-		                                                     + m_outgoingHighNonReliableQueue.SizeInBytes(); }
+		                                                     + m_outgoingHighNonReliableQueue.SizeInBytes()
+		                                                     + m_outgoingLargeMessageQueue.SizeInBytes(); }
 		int GetPendingAckCount() const       { return m_sender.GetPendingAckCount(); }
 		int GetReliableOverloadCount() const { return m_reliableOverloadCount; }
 		int GetTicBudget() const             { return m_perTicBudget; }
@@ -275,6 +283,7 @@ class OdaMessenger
 		void ManageBudget(int i_currentTic);
 
 		int SendOldPacket(const SequenceQueueEntryType& queueEntry, const netadr_t& i_dest);
+		size_t SendFragments();
 
 		SequenceSender   m_sender;
 		SequenceReceiver m_receiver;
@@ -286,12 +295,16 @@ class OdaMessenger
 		MovingAverage<int, 5>   m_averageHeaderRoundTripTics;   // 32 samples.. approx 1 sec assuming 35 TICRATE.
 
 		// Send buffers
-		MessageQueue m_outgoingReliableQueue;
-		MessageQueue m_outgoingNonReliableQueue;
-		MessageQueue m_outgoingHighNonReliableQueue;
+		MessageQueue        m_outgoingReliableQueue;
+		MessageQueue        m_outgoingNonReliableQueue;
+		MessageQueue        m_outgoingHighNonReliableQueue;
+		LargeMessageQueue   m_outgoingLargeMessageQueue;
+		buf_t               m_outgoingLargeMessageFragment { MAX_UDP_PACKET };
 
 		buf_t            m_immediateReceiveBuffer{ MAX_UDP_PACKET };
 		PacketHeaderType m_immediateReceiveHeader;
+
+		buf_t m_scratchpadBuffer { MAX_UDP_PACKET };
 
 		int m_maxPacketsPerRetransmission   { DEFAULT_RETRANSMISSIONS_PER_TIC };
 		int m_retransmitDelayInTics         { 0 };

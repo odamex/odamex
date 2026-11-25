@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -85,6 +83,9 @@ CVAR(				sv_freelook, "0", "Allow Looking up and down",
 CVAR(				sv_allowtargetnames, "0", "When set, names of players appear in the FOV",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+CVAR(				sv_allowvoxels, "1", "Allow clients to load custom voxel models from external directory. Does not affect voxels contained within server loaded wads.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 CVAR_RANGE(			sv_fraglimit,     "0", "Sets the amount of frags a player can accumulate before the game ends",
 					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 65536.0f)
 
@@ -156,6 +157,9 @@ CVAR_FUNC_DECL(		sv_sharekeys, "0", "Share keys found to every player.",
 CVAR_RANGE(			sv_maxunlagtime, "1.0", "Cap the maximum time allowed for player reconciliation (in seconds)",
 					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
+CVAR(				sv_allowcrosshair, "1", "Allow clients to use crosshair",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 CVAR(				sv_allowmovebob, "1", "Allow weapon & view bob changing",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
@@ -220,6 +224,10 @@ CVAR_FUNC_DECL(g_spawninv, "default",
                "console command.",
                CVARTYPE_STRING,
                CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
+
+CVAR(g_spawnatdeathspot, "0",
+     "Players respawn on the spot where they died instead of at a player start.",
+     CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR(g_ctf_notouchreturn, "0",
      "Prevents touch-return of the flag, forcing the player to wait for it to timeout",
@@ -545,5 +553,3 @@ CVAR(				waddirs, "", "Allow custom WAD directories to be specified",
 
 CVAR(				sv_weapondrop, "0", "Enable/disable weapon drop.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
-
-VERSION_CONTROL (c_cvarlist_cpp, "$Id$")

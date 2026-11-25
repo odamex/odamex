@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -71,6 +69,9 @@ void ST_Init();
 void ST_Shutdown();
 
 namespace hud {
+
+// Clear the centred message column's claims for a new frame.
+void ResetMessageColumn();
 
 void drawNetdemo();
 

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -36,6 +34,7 @@
 #include "d_dehacked.h"
 #include "m_doomobjcontainer.h"
 #include "d_items.h"
+#include "g_game.h"
 #include "gstrings.h"
 #include "i_system.h"
 #include "info.h"
@@ -809,6 +808,9 @@ static void BackupData(void)
 		return;
 	}
 
+	// Make sure we undo any nightmare speed changes
+	G_SetFast(false);
+
 	// backup sprites
 	for (int i = 0; i < ::NUMSPRITES; i++)
 	{
@@ -848,9 +850,6 @@ void D_UndoDehPatch()
 	SoundMap = std::move(doomBackup.backupSoundMap);
 
 	D_BuildSpawnMap();
-
-	extern bool isFast;
-	isFast = false;
 
 	weaponinfo = doomBackup.backupWeaponInfo;
 	clipammo   = doomBackup.backupClipAmmo;
@@ -2862,5 +2861,3 @@ BEGIN_COMMAND(playstate)
 	}
 }
 END_COMMAND(playstate)
-
-VERSION_CONTROL(d_dehacked_cpp, "$Id$")

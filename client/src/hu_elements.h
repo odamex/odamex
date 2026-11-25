@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2012 by Alex Mayfield.
 //
 // This program is free software; you can redistribute it and/or
@@ -22,13 +20,20 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
 
 namespace hud {
 
 std::string HelpText();
+std::string Countdown();
+std::vector<std::string> RespawnText();
+int DrawRespawnText(int y);
 std::string SpyPlayerName();
 std::string IntermissionTimer();
 std::string Timer();
+bool TimerIsShotClock();
+void DrawTimerText(int y, int color);
 std::string PersonalSpread();
 std::string PersonalScore();
 std::string PersonalMatchDuelPlacement();

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -54,7 +52,7 @@
 #endif
 #include <p_boomfspec.h>
 
-void SV_UpdateMobj(AActor* mo);
+void SV_ArmMobj(AActor* mo);
 void SV_UpdateMobjState(const AActor* mo);
 
 #define WATER_SINK_FACTOR		3
@@ -340,64 +338,70 @@ void MapThing::Serialize (FArchive &arc)
 
 inline void CredibilityState::Update(const AActor& mobj)
 {
-    // On the server, just leave the FULLY_CREDIBLE default in place forever and make this
-    // an empty function so that the compiler has the opportunity to no-op any calls to it.
-    //
+	// On the server, just leave the FULLY_CREDIBLE default in place forever and make this
+	// an empty function so that the compiler has the opportunity to no-op any calls to it.
+	//
 #ifdef CLIENT_APP
-    if (not serverside)     // But we still need to check in case we're in single-player.
-    {
-        if (mobj.updatedDuringLocalTic >= 0 and m_credibility != CredibilityEnum::ALWAYS_CREDIBLE)
-        {
-            const int ticsSinceAuthoritativeUpdate = gametic - mobj.updatedDuringLocalTic;
+	if (not serverside)     // But we still need to check in case we're in single-player.
+	{
+		if (mobj.updatedDuringLocalTic >= 0 and m_credibility != CredibilityEnum::ALWAYS_CREDIBLE)
+		{
+			// Wild-ass guess.  10 seconds...?
+			constexpr int NON_CREDIBILITY_THRESHOLD_SEC  = 10;
+			constexpr int NON_CREDIBILITY_THRESHOLD_TICS = NON_CREDIBILITY_THRESHOLD_SEC * TICRATE;
 
-            if (ticsSinceAuthoritativeUpdate == 0)
-            {
-                m_crediblePosition.x = mobj.x;
-                m_crediblePosition.y = mobj.y;
-                m_crediblePosition.z = mobj.z;
+			// In sv_main, we nominally update mobjs every 7 tics.
+			// Allow up to 10 before we stop fully believing it, to allow for jitter plus
+			// some "real world slop" margin.
+			constexpr int OVERDUE_UPDATE_THRESHOLD_TICS = 10;
 
-                m_credibility             = CredibilityEnum::FULLY_CREDIBLE;
-                m_predictedMotionTicCount = 0;
-            }
-            // In sv_main, we nominally update mobjs every 7 tics.
-            // Allow up to 10 before we stop fully believing it, to allow for jitter plus
-            // some "real world slop" margin.
-            else if (ticsSinceAuthoritativeUpdate < 10)
-            {
-                m_credibility = CredibilityEnum::FULLY_CREDIBLE;
-            }
-            else
-            {
-                if (m_predictedMotionTicCount > 0 or
-                       m_crediblePosition.x != mobj.x ||
-                            m_crediblePosition.y != mobj.y ||
-                            m_crediblePosition.z != mobj.z)
-                {
-                    ++m_predictedMotionTicCount;
-                }
+			const int  ticsSinceAuthoritativeUpdate = gametic - mobj.updatedDuringLocalTic;
+			const bool updateIsOverdue              = ticsSinceAuthoritativeUpdate >= OVERDUE_UPDATE_THRESHOLD_TICS;
 
-                // Possible weakness to this algorithm:  Suppose the client predicts that
-                // the mobj is dead-still but the server says it's in motion yet it's SEMI_AWARE
-                // or just a lower-priority SEMI_AWARE?  We just have to hope that the server
-                // decides to naturally send an UpdateMobj for it at some point.
+			if (ticsSinceAuthoritativeUpdate == 0)
+			{
+				m_crediblePosition.x = mobj.x;
+				m_crediblePosition.y = mobj.y;
+				m_crediblePosition.z = mobj.z;
+				m_credibility        = m_hasKnownMisprediction ? CredibilityEnum::SEMI_CREDIBLE
+				                                               : CredibilityEnum::FULLY_CREDIBLE;
 
-                if (m_predictedMotionTicCount < 10 * TICRATE)       // wild-ass guess.  10 seconds okay?
-                {
-                    // In this mode, the client is letting the mobj wander about via dead reckoning.
-                    // We guess that the mobj hasn't wandered TOO far from where the server says it
-                    // should be.
-                    m_credibility = CredibilityEnum::SEMI_CREDIBLE;
-                }
-                else
-                {
-                    if (m_credibility != CredibilityEnum::CHALLENGED_CREDIBILITY)
-                    {
-                        m_credibility = CredibilityEnum::NOT_CREDIBLE;
-                    }
-                }
-            }
-        }
-    }
+				m_predictedMotionTicCount = m_hasKnownMisprediction ? 1 : 0;
+				m_challengeInterval       = 0;
+				m_hasKnownMisprediction   = false;
+			}
+			// Note that we still check m_hasKnownMisprediction because it could still have been
+			// set on a mobj after its authoritative update but before it naturally goes semi-credible.
+			else if (updateIsOverdue or m_hasKnownMisprediction)
+			{
+				if (   m_predictedMotionTicCount > 0
+				    or m_crediblePosition.x != mobj.x
+				    or m_crediblePosition.y != mobj.y
+				    or m_crediblePosition.z != mobj.z
+				    or m_hasKnownMisprediction)
+				{
+					m_hasKnownMisprediction = not updateIsOverdue;  // Keep the short-circuit active until we naturally go overdue.
+					++m_predictedMotionTicCount;
+				}
+
+				if (m_credibility == CredibilityEnum::CHALLENGED_CREDIBILITY)
+				{
+					m_challengeInterval = std::max(0, m_challengeInterval - 1);
+				}
+				else if (m_predictedMotionTicCount < NON_CREDIBILITY_THRESHOLD_TICS)
+				{
+					// In this mode, the client is letting the mobj wander about via dead reckoning.
+					// We guess that the mobj hasn't wandered TOO far from where the server says it
+					// should be.
+					m_credibility = CredibilityEnum::SEMI_CREDIBLE;
+				}
+				else
+				{
+					m_credibility = CredibilityEnum::NOT_CREDIBLE;
+				}
+			}
+		}
+	}
 #endif
 }
 
@@ -744,6 +748,34 @@ AActor* P_FindThingById(uint32_t id)
 	return nullptr;
 }
 
+namespace
+{
+	void EnsureCorrectThinkerOrder(netid_map_t::iterator iter)
+	{
+		AActor* mobj = iter->second;
+		if (iter == actor_by_netid.begin())
+		{
+			for (++iter; iter != actor_by_netid.end(); ++iter)
+			{
+				if (mobj->SpliceAsThinkerBefore(iter->second))
+				{
+					break;
+				}
+			}
+		}
+		else
+		{
+			for (--iter; iter != actor_by_netid.begin(); --iter)
+			{
+				if (mobj->SpliceAsThinkerAfter(iter->second))
+				{
+					break;
+				}
+			}
+		}
+	}
+}
+
 //
 // P_SetThingId
 //
@@ -752,7 +784,11 @@ void P_SetThingId(AActor *mo, uint32_t newnetid)
 	mo->netid = newnetid;
 	if (newnetid)
 	{
-		actor_by_netid[newnetid] = mo->ptr();
+		auto result = actor_by_netid.insert_or_assign(newnetid, mo->ptr());
+		if (actor_by_netid.size() > 1)
+		{
+			EnsureCorrectThinkerOrder(result.first);
+		}
 	}
 }
 
@@ -1039,7 +1075,7 @@ void P_MoveActor(AActor *mo)
 		sector_t *hsec = mo->subsector->sector->heightsec;
 		if (hsec && hsec->waterzone && !mo->subsector->sector->waterzone)
 		{
-			if (mo->z < hsec->floorheight)
+			if (mo->z < P_FloorHeight(hsec))
 			{
 				fixed_t floorheight = P_FloorHeight(mo->x, mo->y, hsec);
 				if (mo->z < floorheight)
@@ -1057,7 +1093,7 @@ void P_MoveActor(AActor *mo)
 					mo->waterlevel = 3;
 				}
 			}
-			else if (mo->z + mo->height > hsec->ceilingheight)
+			else if (mo->z + mo->height > P_CeilingHeight(hsec))
 			{
 				mo->waterlevel = 3;
 			}
@@ -1125,9 +1161,12 @@ void AActor::RunThink ()
 		return;
 	}
 
-	prevx = x;
-	prevy = y;
-	prevz = z;
+	if (not player or not player->isFreecam)
+	{
+		prevx = x;
+		prevy = y;
+		prevz = z;
+	}
 
 	if (!player || P_IsVoodooDoll(this))    // True voodoo dolls have non-null player pointers, but we still want
 	{                                       // to update the dolls' previous angles, so check for that.
@@ -1186,14 +1225,29 @@ void AActor::RunThink ()
 		HU_AddPlayerSpeed(start, end);
 	}
 	else
-#endif
 	{
-		credibility.Update(*this);
 		P_MoveActor(this);
 	}
+#else
+	P_MoveActor(this);
+#endif
 
-	if(predicting)
+	if (predicting)
 		return;
+
+	// Do we think this mobj is at risk of being a ghost?
+	if (not serverside)
+	{
+		credibility.Update(*this);
+
+		if ((    (    IsMonster() and not (flags & MF_CORPSE))
+		     or  (not IsMonster() and credibility.Get() == CredibilityEnum::NOT_CREDIBLE))
+		    and credibility.IsEligibleForChallenge()
+		    and credibility.GetMotionAge() > 0)
+		{
+			consoleplayer().sortedMobjs.emplace_back(this, 0);
+		}
+	}
 
 	if (flags2 & MF2_DORMANT)
 		return;
@@ -1614,7 +1668,7 @@ SetMobStateResultEnum P_SetMobjState(AActor *mobj, int32_t state, bool cl_update
 	//      have run.
 	if (cl_update)
 	{
-		SV_UpdateMobj(mobj);
+		SV_ArmMobj(mobj);
 		return SetMobStateResultEnum::SUCCESSFUL_AND_CLIENTS_UPDATED;
 	}
 #endif
@@ -1844,7 +1898,7 @@ static void P_ApplyXYFriction(AActor* mo)
 	     mo->oflags & MFO_FALLING) &&
 	    (mo->momx > FRACUNIT / 4 || mo->momx < -FRACUNIT / 4 || mo->momy > FRACUNIT / 4 ||
 	     mo->momy < -FRACUNIT / 4) &&
-	    mo->floorz != mo->subsector->sector->floorheight)
+	    mo->floorz != P_FloorHeight(mo->subsector->sector))
 		return; // do not stop sliding if halfway off a step with some momentum
 
 	// keep corpses sliding if halfway off a step with some momentum
@@ -2364,7 +2418,7 @@ static void P_ApplyBouncyPhysics(AActor *mo)
 		{
 			if (ceilingline && ceilingline->backsector &&
 			    R_IsSkyFlat(ceilingline->backsector->ceilingpic) &&
-			    mo->z > ceilingline->backsector->ceilingheight)
+			    mo->z > P_CeilingHeight(ceilingline->backsector))
 				mo->Destroy();
 			else
 				P_ExplodeMissile(mo);
@@ -2529,7 +2583,7 @@ void P_NightmareRespawn (AActor *mobj)
 	{
 		mo = new AActor (x, y, z, mobj->type);
 		mo->spawnpoint = mobj->spawnpoint;
-		mo->angle = ANG45 * (mthing->angle/45);
+		mo->angle = MapThingToAngle(mthing->angle);
 
 		if (mthing->flags & MTF_AMBUSH)
 			mo->flags |= MF_AMBUSH;
@@ -3207,7 +3261,7 @@ void P_RespawnSpecials (void)
 	// spawn it
 	auto* mo = new AActor(x, y, z, it->second->type);
 	mo->spawnpoint = mthing;
-	mo->angle = ANG45 * (mthing.angle / 45);
+	mo->angle = MapThingToAngle(mthing.angle);
 
 	if (z == ONFLOORZ)
 		mo->z += mthing.z << FRACBITS;
@@ -3331,6 +3385,27 @@ size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing)
 	return mthing.type <= 4 ?
 			mthing.type - 1 :
 			(mthing.type - 4001 + 4) % MAXPLAYERSTARTS;
+}
+
+//
+// P_GetPlayerStart
+//
+// Returns the start belonging to a player number, or a shared one when the map
+// has no start of its own for them.
+//
+const mapthing2_t& P_GetPlayerStart(const size_t playernum)
+{
+	for (const mapthing2_t& start : ::playerstarts)
+	{
+		if (P_GetMapThingPlayerNumber(start) == playernum)
+			return start;
+	}
+
+	if (::playerstarts.empty())
+		I_Error("No player starts");
+
+	// Nothing here for this player number, so give one out.
+	return ::playerstarts[playernum % ::playerstarts.size()];
 }
 
 bool P_IsPickupableThing(int16_t type)
@@ -3549,17 +3624,8 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	const bool isMusicChanger = (mthing.type >= 14100 && mthing.type <= 14165);
 	const bool isSpringPad = inSpawnMap && spawn_map[mthing.type]->type == MT_SPRINGPAD;
 
-	// only servers control spawning of items
-	// EXCEPT the client must spawn Type 14 (teleport exit) and player spawn points for avatars.
-	// otherwise teleporters or avatars won't work well.
-	// Also spawn sector special things, fixes some other teleport issues.
-	if (!serverside && !(isPlayerCoopSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger || isSpringPad))
-	{
-		return;
-	}
-
 	//
-	// Clients also exclusively handle spawning of ambient sounds and music changers
+	// Clients exclusively handle spawning of ambient sounds and music changers
 	//
 	if (!clientside && (isSoundSource || isMusicChanger))
 	{
@@ -3593,6 +3659,22 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		}
 	}
 
+	// only servers control spawning of items
+	// EXCEPT the client must spawn Type 14 (teleport exit) and player spawn points for avatars.
+	// otherwise teleporters or avatars won't work well.
+	// Also spawn sector special things, fixes some other teleport issues.
+	if (not serverside and
+		not (isPlayerCoopSpawnPoint or
+			 isTeleportDest or
+			 isSecAct or
+			 isSoundSource or
+			 isMusicChanger or
+			 isSpringPad)
+		)
+	{
+		return;
+	}
+
 	// [RH] Record polyobject-related things
 	if (HexenHack)
 	{
@@ -3616,7 +3698,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		mthing.type == PO_SPAWN_TYPE ||
 		mthing.type == PO_SPAWNCRUSH_TYPE))
 	{
-		polyspawns_t *polyspawn = new polyspawns_t;
+		auto* polyspawn = new polyspawns_t;
 		polyspawn->next = polyspawns;
 		polyspawn->x = mthing.x << FRACBITS;
 		polyspawn->y = mthing.y << FRACBITS;
@@ -3689,8 +3771,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 
 	// check for appropriate skill level
-	// TODO: change type of spawn_filter to MapThingFlags after merging with type-safe mapinfo PR
-	if (!(mthing.flags & combo(MapThingFlags::unsafe_from_int(static_cast<int16_t>(G_GetCurrentSkill().spawn_filter)))))
+	if (not (mthing.flags & combo(G_GetCurrentSkill().spawn_filter)))
 		return;
 
 	if (isSpringPad)
@@ -3859,7 +3940,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		return;
 	}
 
-	AActor* mobj = new AActor(x, y, z, info->type);
+	auto* mobj = new AActor(x, y, z, info->type);
 
 	if (type == MT_HORDESPAWN)
 	{
@@ -3885,7 +3966,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 
 	// [RH] Set the thing's special
 	mobj->special = mthing.special;
-	std::copy(std::begin(mthing.args), std::end(mthing.args), mobj->args.begin());
+	std::ranges::copy(mthing.args, mobj->args.begin());
 
 	// [RH] If it's an ambient sound, activate it
 	if (type == MT_AMBIENT)
@@ -3910,7 +3991,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		mobj->tics = 1 + (P_Random(mobj) % mobj->tics);
 
 	if (type != MT_SPARK)
-		mobj->angle = ANG45 * (mthing.angle/45);
+		mobj->angle = MapThingToAngle(mthing.angle);
 
 	if (mthing.flags & MTF_AMBUSH)
 		mobj->flags |= MF_AMBUSH;
@@ -4030,9 +4111,48 @@ void P_SpawnAvatars()
 
 		// Assign spawnpoint so that it gets archived and can be matched back up with voodoostarts after deserialization.
 		voodoo.mobj->spawnpoint = voodoo.mapThing;
-		voodoo.mobj->angle      = ANG45 * (voodoo.mapThing.angle/45);
+		voodoo.mobj->angle      = MapThingToAngle(voodoo.mapThing.angle);
 		voodoo.mobj->credibility.Lionize();
 	}
+}
+
+
+//
+// P_AvatarBlocksSpot
+//
+// Check if an avatar is blocking a spawn.
+// This tries to work around map errors where a player start
+// is misplaced and the player wants to spawn in a voodoo closet.
+// Instead, it will report this spawn is blocked and to try another.
+//
+bool P_AvatarBlocksSpot(const fixed_t x, const fixed_t y, const fixed_t z)
+{
+	for (const auto& voodoo : ::voodoostarts)
+	{
+		const AActor* avatar = voodoo.mobj;
+
+		// Check for dead avatars.
+		if (not avatar or avatar->type != MT_AVATAR or not (avatar->flags & MF_SHOOTABLE))
+			continue;
+
+		// Same overlap PIT_StompThing will measure when the spawn stomps.
+		const fixed_t blockdist = avatar->radius + mobjinfo[MT_PLAYER].radius;
+
+		if (abs(avatar->x - x) >= blockdist or abs(avatar->y - y) >= blockdist)
+			continue;
+
+		if (P_AllowPassover())
+		{
+			if (z > avatar->z + avatar->height)
+				continue;
+			if (z + mobjinfo[MT_PLAYER].height < avatar->z)
+				continue;
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 
@@ -4195,5 +4315,3 @@ BEGIN_COMMAND(cheat_mobjs)
 	}
 }
 END_COMMAND(cheat_mobjs)
-
-VERSION_CONTROL (p_mobj_cpp, "$Id$")

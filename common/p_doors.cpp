@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -195,7 +193,7 @@ void DDoor::RunThink ()
 			default:
 				break;
 			}
-			if (m_LightTag && m_TopHeight - m_Sector->floorheight)
+			if (m_LightTag and m_TopHeight - P_FloorHeight(m_Sector))
             {
 				EV_LightTurnOnPartway(m_LightTag, 0);
             }
@@ -479,26 +477,26 @@ DDoor::DDoor(sector_t* sec, line_t* ln, int delay, int kind, int trigger, int sp
 	{
 	case OdCDoor:
 		m_Status = opening;
-		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - (4 * FRACUNIT);
-		if (m_TopHeight != sec->ceilingheight)
+		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4_fx;
+		if (m_TopHeight != P_CeilingHeight(sec))
 			PlayDoorSound();
 		m_Type = speed >= SpeedFast ? genBlazeRaise : genRaise;
 		break;
 	case ODoor:
 		m_Status = opening;
-		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4 * FRACUNIT;
-		if (m_TopHeight != sec->ceilingheight)
+		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4_fx;
+		if (m_TopHeight != P_CeilingHeight(sec))
 			PlayDoorSound();
 		m_Type = speed >= SpeedFast ? genBlazeOpen : genOpen;
 		break;
 	case CdODoor:
-		m_TopHeight = sec->ceilingheight;
+		m_TopHeight = P_CeilingHeight(sec);
 		m_Status = closing;
 		PlayDoorSound();
 		m_Type = speed >= SpeedFast ? genBlazeCdO : genCdO;
 		break;
 	case CDoor:
-		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4 * FRACUNIT;
+		m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4_fx;
 		m_Status = closing;
 		PlayDoorSound();
 		m_Type = speed >= SpeedFast ? genBlazeClose : genClose;
@@ -938,5 +936,3 @@ bool EV_DoGenLockedDoor(line_t& line)
 	return rtn;
 }
 
-
-VERSION_CONTROL (p_doors_cpp, "$Id$")

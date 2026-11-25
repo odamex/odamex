@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2026 by Jim Thoenen.
 //
 // This program is free software; you can redistribute it and/or
@@ -48,4 +46,4 @@ namespace google
  * @param cmd Command to parse out.
  * @return Error condition, or OK (0) if successful.
  */
-parseError_e MSG_ParseMessage(google::protobuf::Message*& out, const msg_t cmd);
+parseError_e MSG_ParseMessage(google::protobuf::Message*& out, const msg_t cmd, buf_t& buffer);

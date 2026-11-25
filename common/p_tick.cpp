@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -48,7 +46,7 @@ void P_AnimationTick(AActor *mo);
 //
 // P_Ticker
 //
-void P_Ticker (void)
+void P_Ticker (bool runAllThinkers)
 {
 #ifdef CLIENT_APP
 	if (paused && displayplayer().isFreecam)
@@ -90,7 +88,10 @@ void P_Ticker (void)
 		P_AnimationTick(player.mo);
 	}
 
-	DThinker::RunThinkers ();
+	if (runAllThinkers)
+	{
+		DThinker::RunThinkers ();
+	}
 
 	P_UpdateSpecials ();
 	P_RespawnSpecials ();
@@ -103,5 +104,3 @@ void P_Ticker (void)
 	// for par times
 	level.time++;
 }
-
-VERSION_CONTROL (p_tick_cpp, "$Id$")

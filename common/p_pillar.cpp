@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -237,13 +235,13 @@ bool EV_DoZDoomPillar(DPillar::EPillar type, line_t* line, int tag, fixed_t spee
 	{
 		sector_t* sec = &sectors[secnum];
 
-		if (P_FloorActive(sec) || P_CeilingActive(sec))
+		if (P_FloorActive(sec) or P_CeilingActive(sec))
 			continue;
 
-		if (type == DPillar::pillarBuild && sec->floorheight == sec->ceilingheight)
+		if (type == DPillar::pillarBuild and P_FloorHeight(sec) == P_CeilingHeight(sec))
 			continue;
 
-		if (type == DPillar::pillarOpen && sec->floorheight != sec->ceilingheight)
+		if (type == DPillar::pillarOpen and P_FloorHeight(sec) != P_CeilingHeight(sec))
 			continue;
 
 		rtn = true;
@@ -252,5 +250,3 @@ bool EV_DoZDoomPillar(DPillar::EPillar type, line_t* line, int tag, fixed_t spee
 	}
 	return rtn;
 }
-
-VERSION_CONTROL (p_pillar_cpp, "$Id$")

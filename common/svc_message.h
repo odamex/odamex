@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2021 by Alex Mayfield.
 //
 // This program is free software; you can redistribute it and/or
@@ -101,7 +99,7 @@ odaproto::svc::UpdateMobjWithMode SVC_UpdateMobjWithMode(const AActor& mobj);
 odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player);
 odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActor *inflictor, int health, int armor);
 odaproto::svc::KillMobj SVC_KillMobj(const AActor* source, const AActor* target, const AActor* inflictor,
-                                     int mod, bool joinkill);
+                                     bool joinkill);
 odaproto::svc::RaiseMobj SVC_RaiseMobj(const AActor* source, const AActor* corpse);
 odaproto::svc::UpdateSector SVC_UpdateSector(const sector_t& sector);
 odaproto::svc::Print SVC_Print(printlevel_t level, const std::string& str);
@@ -132,7 +130,7 @@ odaproto::svc::SecretEvent SVC_SecretEvent(const player_t& player, const sector_
 odaproto::svc::ServerSettings SVC_ServerSettings(const cvar_t& var);
 odaproto::svc::ConnectClient SVC_ConnectClient(const player_t& player);
 odaproto::svc::MidPrint SVC_MidPrint(const std::string& message, const int time);
-odaproto::svc::ServerGametic SVC_ServerGametic(const int tic, const int unackedCount, const int throttle);
+odaproto::svc::ServerGametic SVC_ServerGametic(const int clientTic, const int unackedCount, const int throttle);
 odaproto::svc::IntTimeLeft SVC_IntTimeLeft(const unsigned int timeleft);
 odaproto::svc::RailTrail SVC_RailTrail(const v3double_t& start, const v3double_t& end);
 odaproto::svc::LineUpdate SVC_LineUpdate(const line_t& line);

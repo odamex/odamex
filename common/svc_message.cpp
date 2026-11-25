@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2021 by Alex Mayfield.
 //
 // This program is free software; you can redistribute it and/or
@@ -248,7 +246,7 @@ odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player)
 	// Send all available powers information to show the clients
 	msg.mutable_powers()->Resize(NUMPOWERS + 1, 0);
 	msg.set_powers(pw_invulnerability,  player.powers[pw_invulnerability]);
-	msg.set_powers(pw_strength,         player.powers[pw_strength] > 0 ? 1 : 0);
+	msg.set_powers(pw_strength,         player.powers[pw_strength]);
 	msg.set_powers(pw_invisibility,     player.powers[pw_invisibility]);
 	msg.set_powers(pw_ironfeet,         player.powers[pw_ironfeet]);
 	msg.set_powers(pw_allmap,           player.powers[pw_allmap]);
@@ -441,13 +439,6 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	cur->set_type    (mo->type);
 	cur->set_netid   (mo->netid);
 	cur->set_statenum(mo->state->statenum);
-
-	// Please note that we send the current gametic as the client's initial timebase for mobj-
-	// internal timing.  This ensures that any timed events for this mobj from this point
-	// forward are using the same timebase as the server.  Example:  whether or not A_Tracer
-	// does any actual tracing logic.
-	//
-	msg.set_timebase_tic(gametic);
 
 	// Animation state rics can never be left at 0, because 0 means to proceed to the next state
 	// immediately before returning control back out of the state-advance code.  Therefore we
@@ -776,7 +767,7 @@ odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActo
  * @brief Kill a mobj.
  */
 odaproto::svc::KillMobj SVC_KillMobj(const AActor* source, const AActor* target, const AActor* inflictor,
-                                     int /* methodOfDeath */, bool joinkill)
+                                     bool joinkill)
 {
 	odaproto::svc::KillMobj msg;
 
@@ -933,6 +924,12 @@ odaproto::svc::PlayerMembers SVC_PlayerMembers(const player_t& player, byte flag
 	{
 		if (!player.spectator)
 			msg.set_cheats(player.cheats);
+	}
+
+	if (flags & SVC_PM_WEAPON)
+	{
+		msg.set_readyweapon(player.readyweapon);
+		msg.set_pendingweapon(player.pendingweapon);
 	}
 
 	return msg;
@@ -1309,11 +1306,11 @@ odaproto::svc::MidPrint SVC_MidPrint(const std::string& message, const int time)
 	return msg;
 }
 
-odaproto::svc::ServerGametic SVC_ServerGametic(const int tic, const int unackedCount, const int throttle)
+odaproto::svc::ServerGametic SVC_ServerGametic(const int clientTic, const int unackedCount, const int throttle)
 {
 	odaproto::svc::ServerGametic msg;
 
-	msg.set_tic(tic);
+	msg.set_client_tic(clientTic);
 	msg.set_reliable_messages_in_flight(unackedCount);
 	msg.set_throttle(throttle);
 
@@ -1828,4 +1825,3 @@ odaproto::svc::ConfigureAvatar SVC_ConfigureAvatar(const MapThing& mapthing, uin
 
 	return msg;
 }
-VERSION_CONTROL(svc_message, "$Id$")

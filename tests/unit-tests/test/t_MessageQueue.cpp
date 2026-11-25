@@ -42,19 +42,6 @@ TEST_F(MessageQueueFixture, BasicByteSize)
     REQUIRE(2 == m_queue.SizeInBytes());
     REQUIRE(1 == m_queue.SizeInMessages());
 
-    buf_t outsideBuffer { 100 };
-
-    outsideBuffer.WriteLong(4);
-
-    REQUIRE(2 == m_queue.SizeInBytes());
-    REQUIRE(1 == m_queue.SizeInMessages());
-
-    m_queue.Emplace(outsideBuffer);
-
-    REQUIRE(6 == m_queue.SizeInBytes());
-    REQUIRE(2 == m_queue.SizeInMessages());
-
-    m_queue.Pop();
     m_queue.Pop();
 
     REQUIRE(0 == m_queue.SizeInBytes());

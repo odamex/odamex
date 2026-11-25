@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -52,7 +50,6 @@ void SV_SendDamageMobj(AActor *target, int pain) {}
 void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage) {}
 void SV_SendDestroyActor(const AActor *mo) {}
 void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* activator, int arg0, int arg1, int arg2, int arg3, int arg4) {}
-void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill) {}
 void SV_SendRaiseMobj(const AActor* source, const AActor* corpse) { }
 void SV_SocketTouch (player_t &player, team_t f) {}
 void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation) {}
@@ -60,9 +57,8 @@ void SV_SpawnHighPriorityMobj(AActor*) {}
 void SV_SpawnMobj(AActor *mobj) {}
 void SV_TouchSpecial(AActor& special, player_t& player) {}
 void SV_UpdateFrags(player_t &player) {}
+void SV_ArmMobj(AActor* mo) {}
 void SV_UpdateMobj(AActor* mo) {}
-void SV_UpdateMobjBestEffort(AActor* mo) {}
-void SV_UpdateMobjReliable(AActor* mo) {}
 void SV_UpdateMobjState(const AActor* mo) {}
 void SV_UpdateMonsterRespawnCount() {}
 void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound) {};
@@ -72,5 +68,3 @@ void CTF_SpawnFlag(team_t f) {}
 
 
 CVAR_FUNC_IMPL(sv_sharekeys) {}
-
-VERSION_CONTROL (cl_stubs_cpp, "$Id$")

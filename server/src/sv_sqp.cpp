@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -50,7 +48,7 @@ struct CvarField_t
 #define TAG_ID 0xAD0
 
 // When a change to the protocol is made, this value must be incremented
-#define PROTOCOL_VERSION 1
+constexpr int PROTOCOL_VERSION = 9;
 
 /*
     Inclusion/Removal macros of certain fields, it is MANDATORY to remove these
@@ -409,5 +407,3 @@ uint32_t SV_QryParseEnquiry(const uint32_t& Tag)
 
 	return IntQrySendResponse(TagId, TagApplication, TagQRId, TagPacketType);
 }
-
-VERSION_CONTROL(sv_sqp_cpp, "$Id$")

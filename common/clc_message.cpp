@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2026 by Jim Thoenen.
 //
 // This program is free software; you can redistribute it and/or
@@ -85,6 +83,11 @@ void CLC_PackPlayerInputMessageFromPlayer(odaproto::clc::PlayerInput& msg, playe
 			msg.set_impulse(player.cmd.impulse);
 		}
 
+		if (player.cmd.modifiers)
+		{
+			msg.set_modifiers(player.cmd.modifiers);
+		}
+
 		if (player.playerstate != PST_DEAD)
 		{
 			msg.set_angle(player.mo->angle);
@@ -148,6 +151,7 @@ void CLC_UnpackPlayerInputMessageToPlayer(const odaproto::clc::PlayerInput& msg,
 		}
 
 		player.cmd.impulse = msg.impulse();
+		player.cmd.modifiers = msg.modifiers();
 
 		if (player.playerstate != PST_DEAD)
 		{
@@ -406,12 +410,5 @@ odaproto::clc::PrivMsg CLC_PrivMsg(uint32_t playerId, const std::string_view& te
 	msg.set_player_id   (playerId);
 	msg.set_text        (text.data(), text.size());
 
-	return msg;
-}
-
-odaproto::clc::SendMobjUpdate CLC_SendMobjUpdate(uint32_t netId)
-{
-	odaproto::clc::SendMobjUpdate msg;
-	msg.set_netid(netId);
 	return msg;
 }

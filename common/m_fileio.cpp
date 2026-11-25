@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -528,6 +526,13 @@ std::string M_GetNetDemoFileName(const std::string& file, const std::string& alt
 	return M_CleanPath(path.string());
 }
 
+std::string M_FindNetDemoFileName(const std::string& file, const std::string& altpath)
+{
+    const std::string netdemoFileName = M_GetNetDemoFileName(file, altpath);
+
+    return not netdemoFileName.empty() and M_FileExists(netdemoFileName) ? netdemoFileName : std::string{};
+}
+
 std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
                                 const std::vector<std::string>& exts,
                                 const OMD5Hash& hash)
@@ -686,5 +691,3 @@ bool M_GetAbsPath(const std::string& path, std::string& out)
 	}
 #endif
 }
-
-VERSION_CONTROL(m_fileio_cpp, "$Id$")

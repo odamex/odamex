@@ -4,6 +4,7 @@ on:
   push:
     branches-ignore:
     - 'release/[0-9]+.[0-9]+.[0-9]+'
+    - 'gh-readonly-queue/**'
     paths-ignore:
     - "**/*.md"
     - README
@@ -15,7 +16,7 @@ on:
     - documentation/**
     - tools/**
   pull_request:
-
+  merge_group:
 
 jobs:
   pre_job:
@@ -60,6 +61,7 @@ jobs:
     - name: Stage artifacts for testing
       run: .\ci\win-prepare-demotest.ps1
     - name: Download OdaTests and Testing Resources
+      if: github.actor != 'dependabot[bot]'
       id: get-odatests
       run: .\ci\win-get-demotester.ps1
       env:
@@ -106,6 +108,7 @@ jobs:
       env:
         DISCORD_URL: ${{ secrets.ODATESTS_WEBHOOK_URL }}
     - name: Upload artifact to B2
+      if: github.actor != 'dependabot[bot]'
       run: python .\ci\upload-b2.py .\build\archive Win-x64
       env:
         B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
@@ -140,6 +143,7 @@ jobs:
     - name: Prepare artifact
       run: .\ci\win-x32-artifact.ps1
     - name: Upload artifact to B2
+      if: github.actor != 'dependabot[bot]'
       run: python .\ci\upload-b2.py .\build-x32\archive Win-x32
       env:
         B2_APP_KEY: ${{ secrets.B2_APP_KEY }}

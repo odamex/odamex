@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -2769,7 +2767,7 @@ std::array<lnSpecFunc, 283> LineSpecials =
 	LS_Light_Flicker,
 	LS_Light_Strobe,
 	LS_Light_Stop,
-	LS_NOP,		// 118 Plane_Copy (handled elsewhere/not supported)
+	LS_NOP,		// 118 Plane_Copy (handled elsewhere)
     LS_Thing_Damage,
 	LS_Radius_Quake,
 	LS_NOP,		// 123 Set_LineIdentification (handled elsewhere)
@@ -2985,5 +2983,3 @@ bool CheckIfExitIsGood (AActor *self)
 	M_CommitWDLLog();
 	return true;
 }
-
-VERSION_CONTROL (p_lnspec_cpp, "$Id$")

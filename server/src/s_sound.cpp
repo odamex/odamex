@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -215,6 +213,9 @@ void S_StopMusic()
 {
 }
 
+void P_SerializeMusic(FArchive& arc)
+{
+}
 
 // [RH] ===============================
 //
@@ -229,5 +230,3 @@ void A_Ambient(AActor *actor)
 void S_ActivateAmbient(AActor *origin, int ambient)
 {
 }
-
-VERSION_CONTROL (s_sound_cpp, "$Id$")

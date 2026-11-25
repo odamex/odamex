@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -27,3 +25,6 @@
 struct PacketHeaderType;
 
 odaproto::Header MSG_Header(const PacketHeaderType& i_header);
+
+odaproto::LargeMessageStart     MSG_LargeMessageStart(size_t i_size);
+odaproto::LargeMessageFragment  MSG_LargeMessageFragment(const void* i_data, size_t i_size);

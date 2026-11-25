@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -76,11 +74,18 @@ public:
 	static void DestroyMostThinkers ();
 	static void SerializeAll (FArchive &arc, bool keepPlayers);
 
-	bool WasDestroyed();
+	[[ nodiscard ]]
+	bool WasDestroyed() const { return destroyed; }
 
 	size_t refCount;
 
 	static const std::vector<DThinker*>& GetThinkerVectorRef() { return s_thinkers; }
+
+protected:
+	void Unlink();
+	bool SpliceBefore(DThinker* io_node);
+	bool SpliceAfter(DThinker* io_node);
+
 private:
 
 	static std::vector<DThinker*> s_thinkers;

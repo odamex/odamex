@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -1056,7 +1054,7 @@ static void SV_VoteUpdate(player_t &player)
 
 	client_t* cl = &player.client;
 
-	MSG_WriteSVC(cl->messenger->NetBuf(), SVC_VoteUpdate(::vote->serialize()));
+	cl->messenger->Reliable().Write( SVC_VoteUpdate(::vote->serialize()));
 }
 
 // Send a full vote update to everybody

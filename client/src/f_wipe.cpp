@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -452,6 +450,16 @@ void Wipe_Stop()
 }
 
 //
+// Wipe_Suppress
+//
+// Skip any wipe that would otherwise begin during the next few screen updates.
+//
+void Wipe_Suppress(int frames)
+{
+	NoWipe = std::max(frames, 0);
+}
+
+//
 // Wipe_Start
 //
 // Initializes the function pointers for the wiping animation system.
@@ -544,5 +552,3 @@ void Wipe_Drawer()
 		ST_ForceRefresh();		// wipe draws over the status bar so it needs to be redrawn
 	}
 }
-
-VERSION_CONTROL (f_wipe_cpp, "$Id$")

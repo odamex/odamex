@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -62,6 +60,7 @@ END_DISABLE_WARNING_GNU
 #include "g_episode.h"
 #include "g_skill.h"
 #include "g_spree.h"
+#include "g_deathspot.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
@@ -89,8 +88,6 @@ bool firstmapinit = true; // Nes - Avoid drawing same init text during every reb
 
 extern bool sendpause;
 
-
-bool isFast = false;
 
 //
 // G_InitNew
@@ -394,8 +391,22 @@ void G_DoNewGame()
 		if(!(player.ingame()))
 			continue;
 
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(),
+		player.client.messenger->Reliable().Write (
 		             SVC_LoadMap(::wadfiles, ::patchfiles, d_mapname.c_str(), 0));
+
+		// We're going to disable the write-and-send of any new messages to the clients
+		// until after they acknowledge everything.  We do this because we don't want to
+		// clog up the send queues while the client goes silent as it loads the map.
+		//
+		// So, commit the LoadMap as the last message before we flush.
+		const MessageResultEnum sendResult = player.client.messenger->SendAll(gametic, player.client.address);
+		player.client.isFlushing = true;
+
+		if (sendResult == MessageResultEnum::ABORT)
+		{
+			PrintFmt(PRINT_WARNING, "Client at {} critically errored just prior to map change - dropping...\n", NET_AdrToString(player.client.address));
+			SV_DropClientUngracefully(player, "timed out");
+		}
 	}
 
 	sv_curmap.ForceSet(d_mapname.c_str());
@@ -430,8 +441,6 @@ void G_DoNewGame()
 			SV_CheckTeam(player);
 		else
 			player.userinfo.color = player.prefcolor;
-
-		SV_ClientFullUpdate(player);
 	}
 }
 
@@ -484,47 +493,7 @@ void G_InitNew(const char *mapname)
 	}
 
 	const bool wantFast = sv_fastmonsters || G_GetCurrentSkill().fast_monsters;
-	if (wantFast != isFast)
-	{
-		if (wantFast)
-		{
-			for (auto&& [_, state] : states)
-			{
-				if (state.flags & STATEF_SKILL5FAST &&
-				    (state.tics != 1 || demoplayback))
-					state.tics >>= 1; // don't change 1->0 since it causes cycles
-			}
-
-			for (auto&& [_, minfo] : mobjinfo)
-			{
-				if (minfo.altspeed != NO_ALTSPEED)
-				{
-					int swap = minfo.speed;
-					minfo.speed = minfo.altspeed;
-					minfo.altspeed = swap;
-				}
-			}
-		}
-		else
-		{
-			for (auto&& [_, state] : states)
-			{
-				if (state.flags & STATEF_SKILL5FAST)
-					state.tics <<= 1; // don't change 1->0 since it causes cycles
-			}
-
-			for (auto&& [_, minfo] : mobjinfo)
-			{
-				if (minfo.altspeed != NO_ALTSPEED)
-				{
-					int swap = minfo.altspeed;
-					minfo.altspeed = minfo.speed;
-					minfo.speed = swap;
-				}
-			}
-		}
-		isFast = wantFast;
-	}
+	G_SetFast(wantFast);
 
 	// [SL] 2011-05-11 - Reset all reconciliation system data for unlagging
 	Unlag::getInstance().reset();
@@ -717,14 +686,16 @@ void G_DoResetLevel(bool full_reset)
 		}
 	}
 
-	// Tell clients that a map reset is incoming.
+	// Tell clients that a map reset is incoming, and drop their requested mobj updates.
 	for (auto& player : players)
 	{
-		if (!(player.ingame()))
-			continue;
+		player.requestedNetIdUpdates.clear();
 
-		client_t* cl = &(player.client);
-		MSG_WriteSVC(cl->messenger->ReliableBuf(), odaproto::svc::ResetMap());
+		if (player.ingame())
+		{
+			client_t* cl = &(player.client);
+			cl->messenger->Reliable().Write (odaproto::svc::ResetMap());
+		}
 	}
 
 	// Unserialize saved snapshot
@@ -760,6 +731,9 @@ void G_DoResetLevel(bool full_reset)
 	// Clear the item respawn queue, otherwise all those actors we just
 	// destroyed and replaced with the serialized items will start respawning.
 	itemrespawnque = {};
+
+	// A reset puts everyone back on a player start.
+	DeathSpotManager::getInstance().clearDeathSpots();
 
 	// Clear player information.
 	for (auto& player : players)
@@ -881,6 +855,9 @@ void G_DoLoadLevel (int position)
 	else
 		sky2texture = 0;
 
+	// Clear death spots as we're on a new map.
+	DeathSpotManager::getInstance().clearDeathSpots();
+
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		if (it->ingame() && (::g_resetinvonexit || it->playerstate == PST_DEAD))
@@ -891,6 +868,10 @@ void G_DoLoadLevel (int position)
 		P_ClearPlayerPowerups(*it);
 		P_ClearPlayerScores(*it, SCORES_CLEAR_ALL);
 
+		// Mobjs and their netids are ultimately wiped out later in this function.
+		// Ensure that players' pending requested netid updates don't become stale.
+		it->requestedNetIdUpdates.clear();
+
 		// [AM] Only touch ready state if warmup mode is enabled.
 		if (sv_warmup)
 		{
@@ -900,7 +881,7 @@ void G_DoLoadLevel (int position)
 			// [AM] Make sure the clients are updated on the new ready state
 			for (Players::iterator pit = players.begin();pit != players.end();++pit)
 			{
-				MSG_WriteSVC(pit->client.messenger->ReliableBuf(),
+				pit->client.messenger->Reliable().Write (
 				             SVC_PlayerMembers(*it, SVC_PM_READY));
 			}
 		}
@@ -1042,5 +1023,3 @@ void G_WorldDone (void)
 		mapchange += finaletext->length()*2;
 }
 
-
-VERSION_CONTROL (g_level_cpp, "$Id$")

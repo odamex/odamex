@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -117,6 +115,15 @@ typedef enum
 	BTS_SAVESHIFT		= 2
 
 } buttoncode_t;
+
+
+//
+// Modifier codes.
+//
+enum modifiercode_t
+{
+	MOD_RUN				= 1, // Holding down the run/slow key, cl_run doesn't count.
+};
 
 
 

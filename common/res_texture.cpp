@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1399,8 +1397,7 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 	unsigned int lumpnum = (handle & ~PNG_HANDLE_MASK);
 	unsigned int lumplen = W_LumpLength(lumpnum);
 
-	char lumpname[9];
-	W_GetLumpName(lumpname, lumpnum);
+	const auto lumpname = W_GetOLumpName(lumpnum);
 
 	lumpdata = new byte[lumplen];
 	W_ReadLump(lumpnum, lumpdata);
@@ -1614,5 +1611,3 @@ const Texture* TextureManager::getTexture(texhandle_t handle)
 	return texture;
 }
 
-
-VERSION_CONTROL (res_texture_cpp, "$Id$")

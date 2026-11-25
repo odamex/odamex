@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -72,6 +70,7 @@ END_DISABLE_WARNING_GNU
 #include "g_musinfo.h"
 #include "g_spree.h"
 #include "g_multikill.h"
+#include "g_deathspot.h"
 #include "cl_freecam.h"
 
 #include <math.h> // for pow()
@@ -194,6 +193,27 @@ CVAR_FUNC_IMPL(joy_freelook)
 	// [RV] - Center view, Update Skies
 	AddCommandString("centerview");
 	R_InitSkyMap();
+}
+
+CVAR_FUNC_IMPL(cl_noclip_spectator)
+{
+	player_t& c = consoleplayer();
+	player_t& d = displayplayer();
+
+	if (c.spectator and not netdemo.isInPlayback())
+	{
+		if (var.asInt())
+			c.cheats |= CF_NOCLIP;
+		else
+			c.cheats &= ~CF_NOCLIP;
+	}
+	if (d.isFreecam)
+	{
+		if (var.asInt())
+			d.cheats |= CF_NOCLIP;
+		else
+			d.cheats &= ~CF_NOCLIP;
+	}
 }
 
 char			demoname[256];
@@ -605,6 +625,10 @@ void G_BuildTiccmd(ticcmd_t& cmd)
 		cmd.buttons = BT_SPECIAL | BTS_SAVEGAME | (savegameslot << BTS_SAVESHIFT);
 	}
 
+	// Modifiers only ever qualify a button, and do nothing on their own.
+	if (cmd.buttons and Actions[ACTION_SPEED])
+		cmd.modifiers |= MOD_RUN;
+
 	cmd.forwardmove <<= 8;
 	cmd.sidemove <<= 8;
 
@@ -740,24 +764,27 @@ bool G_Responder (const event_t& ev)
 	if (gameaction == ga_nothing &&
 		(demoplayback || gamestate == GS_DEMOSCREEN))
 	{
-		const char *cmd = Bindings.GetBind(ev.data1).c_str();
+		const IStringView cmd = Bindings.GetBind(ev.data1);
 
 		if (ev.type == ev_keydown)
 		{
 
-			if (!cmd || (
-				strnicmp (cmd, "menu_", 5) &&
-				stricmp (cmd, "toggleconsole") &&
-				stricmp (cmd, "sizeup") &&
-				stricmp (cmd, "sizedown") &&
-				stricmp (cmd, "togglemap") &&
-				stricmp (cmd, "spynext") &&
-				stricmp (cmd, "chase") &&
-				stricmp (cmd, "+showscores") &&
-				stricmp (cmd, "bumpgamma") &&
-				stricmp (cmd, "screenshot") &&
-                stricmp (cmd, "stepmode") &&
-                stricmp (cmd, "step")))
+			static constexpr std::array idk {
+				"toggleconsole",
+				"sizeup",
+				"sizedown",
+				"togglemap",
+				"spynext",
+				"chase",
+				"+showscores",
+				"bumpgamma",
+				"screenshot",
+				"stepmode",
+				"step",
+			};
+			if (cmd.empty() or
+			    (not cmd.starts_with("menu_") and
+				 std::ranges::none_of(idk, [&cmd](const auto& str){ return cmd == str; })))
 			{
 				M_StartControlPanel ();
 				return true;
@@ -767,13 +794,13 @@ bool G_Responder (const event_t& ev)
 				return C_DoKey(ev, &Bindings, &DoubleBindings);
 			}
 		}
-		if (cmd && cmd[0] == '+')
+		if (not cmd.empty() and cmd[0] == '+')
 			return C_DoKey(ev, &Bindings, &DoubleBindings);
 
 		return false;
 	}
 
-	if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
+	if (gamestate == GS_LEVEL or gamestate == GS_INTERMISSION)
 	{
 		if (C_DoNetDemoKey(ev))	// netdemo playback ate the event
 			return true;
@@ -893,6 +920,7 @@ void CL_CheckDisplayPlayer();
 //
 extern DCanvas *page;
 extern int connecttimeout;
+extern int world_index;
 
 void G_Ticker (void)
 {
@@ -1033,13 +1061,16 @@ void G_Ticker (void)
 
 	netgraph.start(I_GetTime());
 
-	if (connected && !simulated_connection)
+	if (connected and not simulated_connection)
 	{
 		while ((packet_size = NET_GetPacket()) )
 		{
 			// denis - don't accept candy from strangers
 			if (not NET_CompareAdr(serveraddr, net_from))
+			{
+				net_message.clear();
 				break;
+			}
 
 			realrate += packet_size;
 			last_received = gametic;
@@ -1192,48 +1223,68 @@ void G_Ticker (void)
 	{
 	case GS_LEVEL:
 		{
+			player_t& player = consoleplayer();
+
 			const bool isClientSideOnly    = clientside and not serverside;
 			const bool isActuallyConnected = connected  and not simulated_connection;
 
 			// We're about to locally tick the client-side sim - aka predict.
 			//
-			// Make sure that the server gives us a canonical inventory statement about any pickups we
-			// believe we get as a result of this.
-			consoleplayer().inventoryCheckRequestsAreEnabled = isClientSideOnly and isActuallyConnected;
+			// Enable the generation of inventory and mobj refresh requests to the server if
+			// we're actually connected to a live server.  This is required for player inventory
+			// rollbacks and forcing suspected-ghost mobjs to be updated.
+
+			player.serverRefreshRequestsAreEnabled = isClientSideOnly and isActuallyConnected;
+
+			// The client populates sortedMobjs in the main mobj thinker routine.
+			// Make sure we start off with a clean slate every tic.  Note: the contained objects
+			// are intentionally trivially-destructible thus the clear operation is constant-time.
+			player.sortedMobjs.clear();
+
+			bool thinkersHaveRun = false;
 
 			if (isClientSideOnly)
 			{
-				if (!consoleplayer().mo)
+				if (not player.mo)
 				{
 					// [SL] 2011-12-14 - Spawn message from server has not arrived
 					// yet.  Fake it and hope it arrives soon.
 					AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
-					mobj->flags &= ~MF_SOLID;
+
+					// Clear all flags that need to be cleared to trigger the "can't hit thing"
+					// case in PIT_CheckThing.
+					mobj->flags &= ~(MF_SOLID | MF_SPECIAL | MF_SHOOTABLE | MF_TOUCHY | MF_PICKUP);
 					mobj->flags2 |= MF2_DONTDRAW;
 					mobj->oflags |= MFO_ISAWAITINGSPAWN;
-					consoleplayer().mo = consoleplayer().camera = mobj->ptr();
-					consoleplayer().mo->player = &consoleplayer();
-					G_PlayerReborn(consoleplayer());
+					player.mo = player.camera = mobj->ptr();
+					player.mo->player = & player;
+					G_PlayerReborn(player);
 					DPrintFmt("Did not receive spawn for consoleplayer.\n");
 				}
 
 				CL_SimulateWorld();
-				CL_PredictWorld();
+				thinkersHaveRun = CL_PredictWorld();
+				if (not thinkersHaveRun and not netdemo.isPaused())
+				{
+					CL_SimulatePlayers(world_index);
+				}
 
 				// Replay item pickups if the items arrived now.
 				ClientReplay::getInstance().itemReplay();
 			}
 			P_CheckInterpPause();
-			P_Ticker ();
+			P_Ticker (not thinkersHaveRun);
 			P_BobTicker();
 			ST_Ticker ();
 			AM_Ticker ();
 
-			consoleplayer().inventoryCheckRequestsAreEnabled = false;
+			CL_SelectPotentialDesynchedMobjs(player);
+
+			player.serverRefreshRequestsAreEnabled = false;
 
 			if (not netdemo.isPaused())
 			{
-				const RollerRecordResultEnum recordResult = rollerState.Record(gametic, consoleplayer());
+				const RollerRecordResultEnum recordResult = rollerState.Record(gametic, player);
 				switch (recordResult)
 				{
 					case RollerRecordResultEnum::CURRENT_REPLACED:
@@ -1334,6 +1385,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 		p.cheats = 0; // Reset cheat flags
 
 	p.death_time = 0;
+	DeathSpotManager::getInstance().eraseDeathSpot(p.id);
 }
 
 //
@@ -1343,19 +1395,28 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 // because something is occupying it
 //
 void P_SpawnPlayer(player_t &player, const mapthing2_t& mthing);
+void P_SpawnPlayer(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle);
 
+bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle);
 bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
+{
+	return G_CheckSpot(player, INT2FIXED(mthing.x), INT2FIXED(mthing.y),
+	                   INT2FIXED(mthing.z), MapThingToAngle(mthing.angle));
+}
+
+bool G_CheckSpot(player_t &player, fixed_t x, fixed_t y, fixed_t startz, angle_t angle)
 {
 	unsigned			an;
 	AActor* 			mo;
-	fixed_t 			xa,ya;
+	fixed_t 			xa;
+	fixed_t 			ya;
 
-	const fixed_t x = mthing.x << FRACBITS;
-	const fixed_t y = mthing.y << FRACBITS;
+	constexpr int FOG_OFFSET = 20;
+
 	fixed_t z = P_FloorHeight(x, y);
 
 	if (level.flags & LEVEL_USEPLAYERSTARTZ)
-		z = mthing.z << FRACBITS;
+		z = startz;
 
 	if (!player.mo)
 	{
@@ -1368,7 +1429,8 @@ bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
 			if (it->mo && it->mo->x == x && it->mo->y == y)
 				return false;
 		}
-		return true;
+
+		return not P_AvatarBlocksSpot(x, y, z);
 	}
 
 	fixed_t oldz = player.mo->z;	// [RH] Need to save corpse's z-height
@@ -1413,16 +1475,18 @@ bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
 
 		if (co_nosilentspawns)
 		{
-			an = ( ANG45 * (static_cast<unsigned int>(mthing.angle)/45) ) >> ANGLETOFINESHIFT;
+			an = angle >> ANGLETOFINESHIFT;
 			xa = finecosine[an];
 			ya = finesine[an];
 		}
 		else
 		{
-			angle_t mtangle = static_cast<angle_t>(mthing.angle / 45);
+			const angle_t mtangle = angle / ANG45;
 
 			an = ANG45 * mtangle;
 
+			// Need to stay this way to emulate vanilla spawn west silently bug
+			// NOLINTBEGIN(readability-magic-numbers)
 			switch(mtangle)
 			{
 				case 4: // 180 degrees (0x80000000 >> 19 == -4096)
@@ -1446,9 +1510,11 @@ bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
 					ya = finesine[an >> ANGLETOFINESHIFT];
 					break;
 			}
+			// NOLINTEND(readability-magic-numbers)
 		}
 
-		mo = new AActor(x + 20 * xa, y + 20 * ya, z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
+		mo = new AActor(x + (FOG_OFFSET * xa), y + (FOG_OFFSET * ya),
+		                z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
 
 		if (level.time)
 			S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);	// don't start sound on first frame
@@ -1538,20 +1604,28 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
 	mapthing2_t* spot = SelectRandomDeathmatchSpot (player, static_cast<int>(selections));
 
-	if (!spot && !playerstarts.empty())
-	{
-		// no good spot, so the player will probably get stuck
-		spot = &playerstarts[player.id%playerstarts.size()];
-	}
-	else
+	const mapthing2_t* spawnspot = spot;
+
+	if (spot)
 	{
 		if (player.id < 4)
 			spot->type = player.id+1;
 		else
 			spot->type = player.id+4001-4;	// [RH] > 4 players
 	}
+	else if (not playerstarts.empty())
+	{
+		// no good spot, so the player will probably get stuck
+		spawnspot = &P_GetPlayerStart(player.id - 1);
+	}
+	else
+	{
+		// There is at least one deathmatch start or we would
+		// have errored out above, so telefrag into it.
+		spawnspot = &DeathMatchStarts.front();
+	}
 
-	P_SpawnPlayer (player, *spot);
+	P_SpawnPlayer (player, *spawnspot);
 }
 
 //
@@ -1584,11 +1658,11 @@ void G_DoReborn (player_t &player)
 	if(playerstarts.empty())
 		I_Error("No player starts");
 
-	unsigned int playernum = player.id - 1;
+	const mapthing2_t& start = P_GetPlayerStart(player.id - 1);
 
-	if (G_CheckSpot(player, playerstarts[playernum%playerstarts.size()]) )
+	if (G_CheckSpot(player, start) )
 	{
-		P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
+		P_SpawnPlayer(player, start);
 		return;
 	}
 
@@ -1603,7 +1677,7 @@ void G_DoReborn (player_t &player)
 	}
 
 	// he's going to be inside something.  Too bad.
-	P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
+	P_SpawnPlayer(player, start);
 }
 
 
@@ -1706,8 +1780,6 @@ void G_DoLoadGame (void)
 
 	arc >> level.time;
 
-	P_SerializeMusInfo(arc);
-
 	for (i = 0; i < NUM_WORLDVARS; i++)
 	{
 		arc >> ACS_WorldVars[i];
@@ -1809,7 +1881,6 @@ void G_DoSaveGame()
 	P_SerializeHorde(arc);
 
 	arc << level.time;
-	P_SerializeMusInfo(arc);
 
 	for (int i = 0; i < NUM_WORLDVARS; i++)
 	{
@@ -2248,5 +2319,3 @@ bool G_CheckDemoStatus (void)
 	return false;
 }
 
-
-VERSION_CONTROL (g_game_cpp, "$Id$")

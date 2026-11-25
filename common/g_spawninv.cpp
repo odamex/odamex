@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -710,6 +708,12 @@ static void SpawninvCommand(const std::string& cmd, const std::string& param)
 BEGIN_COMMAND(spawninv)
 {
 	static const char* ammonames[] = {"Bullets", "Shells", "Rockets", "Cells"};
+
+	if (not serverside)
+	{
+		PrintFmt("Spawn inventory is under server control");
+		return;
+	}
 
 	if (argc < 2)
 	{

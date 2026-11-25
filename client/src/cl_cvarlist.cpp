@@ -1,8 +1,6 @@
 	// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -199,10 +197,8 @@ CVAR(					am_ovbackcolor, "00 00 00", "Overlay minimap background color",
 CVAR_RANGE(				am_ovbackalpha, "0.25", "Transparency of overlay minimap background",
 						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
-CVAR_RANGE(				am_ovscalewidth, "0.25", "Scale width of overlay minimap",
-						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
-
-CVAR_RANGE(				am_ovscaleheight, "0.5", "Scale height of overlay minimap",
+CVAR_RANGE(				am_ovscalesize, "0.25", "Scale size of overlay minimap",
+						// NOLINTNEXTLINE(readability-magic-numbers) - cvar range
 						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
 CVAR_RANGE(				am_ovlocation, "1", "Overlay minimap location (0:LeftTop, 1:LeftMid, 2:LeftBot, 3:RightTop, 4:RightMid, 5:RightBot)",
@@ -299,6 +295,9 @@ CVAR(				cl_connectalert, "1", "Plays a sound when a player joins",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(				cl_disconnectalert, "1", "Plays a sound when a player quits",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_FUNC_DECL(		cl_noclip_spectator, "0", "Allows the spectator/freecam to move through walls",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE			(cl_chatsounds, "1", "Plays a sound when a chat message appears (0 = never, 1 = always, " \
@@ -629,6 +628,14 @@ CVAR(			hud_timer, "1", "Show the HUD timer:\n// 0: No Timer\n// 1: Count-down T
 
 CVAR(hud_speedometer, "0", "Show the HUD speedometer", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(			cl_shotclock, "0", "Show tenths of a second on all HUD timers, starting when the timer reaches cl_shotclocksecondsleft.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_RANGE(		cl_shotclocksecondsleft, "10", "Seconds left before a HUD timer starts displaying " \
+				"tenths of a second, if cl_shotclock is enabled",
+				// NOLINTNEXTLINE(readability-magic-numbers) - cvar range
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 60.0f)
+
 CVAR_RANGE(		hud_transparency, "1.0", "HUD transparency",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
@@ -780,8 +787,9 @@ CVAR(			r_thingsectorlight, "0", "Things are lit according to the average of the
 CVAR(           r_drawnetcredibility, "0", "Add a particle to each actor indicating how credible the client considers the actor's position",
                 CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR_RANGE(		r_portalrecursions, "16", "Maximum depth of nested portal (skybox) views. 0 draws portal planes as regular sky.",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 64.0f)
+CVAR_RANGE(		r_portalrecursions, "4", "Maximum depth of nested portal (skybox) views. 0 draws portal planes as regular sky.",
+				// NOLINTNEXTLINE(readability-magic-numbers) - cvar range
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 16.0f)
 
 #if 0
 CVAR(			r_drawhitboxes, "0", "Draws a box outlining every actor's hitboxes",
@@ -793,6 +801,12 @@ CVAR_RANGE(		r_drawplayersprites, "1", "Weapon Transparency",
 
 CVAR(			r_particles, "1", "Draw particles",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			r_voxels, "1", "Enable software voxel rendering",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_FUNC_DECL(	r_voxeldir, "voxels", "Directory containing raw .kvx voxel files. Relative paths are resolved against the user directory.",
+				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_RANGE_FUNC_DECL(r_stretchsky, "2", "Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
@@ -886,5 +900,3 @@ CVAR_RANGE_FUNC_DECL(screenblocks, "10", "Selects the size of the visible window
 CVAR_RANGE_FUNC_DECL(vid_overscan, "1.0", "Overscan matting (as a percentage of the screen area)",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.5f, 1.0f)
 
-
-VERSION_CONTROL (cl_cvarlist_cpp, "$Id$")

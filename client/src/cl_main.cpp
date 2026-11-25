@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -65,6 +63,7 @@
 #include "p_acs.h"
 #include "i_input.h"
 #include "i_time.h"
+#include "msg_pack.h"
 
 #include "g_gametype.h"
 #include "cl_parse.h"
@@ -118,7 +117,7 @@ int       world_index = 0;
 float     world_index_accum = 0.0f;
 
 int       last_svgametic = 0;
-int       last_player_update = 0;
+int       lastEchoedClientTic = 0;
 
 bool      hasReceivedFullUpdate = false;
 bool      isReceivingFullUpdate = false;
@@ -170,6 +169,7 @@ EXTERN_CVAR (mute_spectators)
 EXTERN_CVAR (mute_enemies)
 
 EXTERN_CVAR (cl_autoaim)
+EXTERN_CVAR (cl_noclip_spectator)
 
 EXTERN_CVAR (cl_interp)
 EXTERN_CVAR (cl_serverdownload)
@@ -310,8 +310,7 @@ void D_DoAdvanceDemo(void);
 void M_Ticker(void);
 
 size_t P_NumPlayersInGame();
-void G_PlayerReborn (player_t &player);
-void P_KillMobj (AActor *source, AActor *target, const AActor *inflictor, bool joinkill);
+void P_KillMobj (AActor *source, AActor *target, const AActor *inflictor, bool joinkill, int mod);
 void P_SetPsprite (player_t& player, int position, int32_t stnum);
 void P_ExplodeMissile (AActor* mo);
 bool P_CheckMissileSpawn (AActor* th);
@@ -368,6 +367,8 @@ void CL_ResyncWorldIndex()
 {
 	world_index = CL_CalculateWorldIndexSync();
 	world_index_accum = 0.0f;
+
+	CL_ResetWorldPrediction();
 }
 
 void Host_EndGame(const char *msg)
@@ -455,6 +456,9 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 	case NQ_SERVER_DROP:
 		PrintFmt("Dropped by server\n");
 		break;
+	case NQ_SERVER_ABORT:
+		PrintFmt("Server terminated unexpectedly\n");
+		break;
 	}
 
 	if (::debug_disconnect)
@@ -468,7 +472,7 @@ static void CL_HandleDisconnectCompletionPacket()
 	// confirmation.
 	while (::net_message.BytesLeftToRead() > 0)
 	{
-		const ParseResultType result = CL_ParseCommand();
+		const ParseResultType result = CL_ParseCommand(::net_message);
 
 		switch (result.cmd)
 		{
@@ -491,7 +495,7 @@ static void CL_GracefulClientInitiatedDisconnect()
 	// Again, make sure that we allow for immediate retransmits.
 	messenger.SetRetransmitDelay(0);
 
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_DisconnectMe());
+	messenger.Reliable().Write(CLC_DisconnectMe());
 	messenger.SendAll(gametic, serveraddr);
 
 	const dtime_t disconnectStartTime   = I_GetTime();
@@ -568,24 +572,38 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 {
 	if (connected and not simulated_connection)
 	{
-		// The server instructed us to drop, so it's already walking us out the door - we only need to
-		// send the acknowledgements, nothing else.
-		if (reason == NQ_SERVER_DROP)
+		switch (reason)
 		{
-			messenger.SendAll(gametic, serveraddr);
-		}
-		else
-		{
-			CL_GracefulClientInitiatedDisconnect();
+			// The server instructed us to drop, so it's already walking us out the door - we only need to
+			// // send the acknowledgements, nothing else.
+			case NQ_SERVER_DROP:
+				messenger.SendAll(gametic, serveraddr);
+				break;
+
+			// The server is just *gone*.  Just silently go away.
+			case NQ_SERVER_ABORT:
+				break;
+
+			// Now the cases where server and client are operating normally.
+			case NQ_SILENT:             [[ fallthrough ]];
+			case NQ_DISCONNECT:         [[ fallthrough ]];
+			case NQ_ABORT:              [[ fallthrough ]];
+			case NQ_PROTO:
+				CL_GracefulClientInitiatedDisconnect();
+				break;
 		}
 
 		CL_DrainSocket();
 	}
 
-	connected = false;
+	connected             = false;
+	::lastEchoedClientTic = 0;
+	::last_svgametic      = 0;
+	world_index           = 0;
 
 	messenger = OdaMessenger{ pool };
 
+	CL_ResetWorldPrediction();
 	P_ClearAllNetIds();
 	s_canary.reset();
 	gameaction = ga_fullconsole;
@@ -654,9 +672,17 @@ void CL_CheckDisplayPlayer(void)
 		// server doesnt know about clientside freecam, dont tell it
 		if (not displayplayer().isFreecam && newid != freecamplayer_id)
 		{
-			MSG_WriteSVC(messenger.ReliableBuf(), CLC_Spy(newid));
+			messenger.Reliable().Write(CLC_Spy(newid));
 		}
 		displayplayer_id = newid;
+
+		// We have no idea where the new view target's weapon is sitting until the
+		// server tells us, and in a netdemo it may never tell us at all.
+		//
+		// Park it at the neutral position rather than wherever we last
+		// left this player.
+		if (newid != consoleplayer_id && validplayer(displayplayer()))
+			P_RestPsprites(displayplayer());
 
 		// Changing display player can sometimes affect status bar visibility
 		// since the status bar isn't visible when display player is a spectator.
@@ -1004,7 +1030,7 @@ END_COMMAND (playerinfo)
 BEGIN_COMMAND (kill)
 {
     if (sv_allowcheats || G_IsCoopGame())
-        MSG_WriteSVC(messenger.ReliableBuf(), CLC_Kill());
+        messenger.Reliable().Write(CLC_Kill());
     else
         PrintFmt("You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
 }
@@ -1064,7 +1090,7 @@ BEGIN_COMMAND (rcon)
 	{
 		const std::string_view commandString {args, std::min(size_t(256), strlen(args)) };
 
-		MSG_WriteSVC(messenger.ReliableBuf(), CLC_Rcon(commandString));
+		messenger.Reliable().Write(CLC_Rcon(commandString));
 	}
 }
 END_COMMAND (rcon)
@@ -1074,7 +1100,7 @@ BEGIN_COMMAND (rcon_password)
 {
 	if (connected && argc > 1)
 	{
-		MSG_WriteSVC(messenger.ReliableBuf(), CLC_RconPassword(MD5SUM(std::string(argv[1]) + digest)));
+		messenger.Reliable().Write(CLC_RconPassword(MD5SUM(std::string(argv[1]) + digest)));
 	}
 }
 END_COMMAND (rcon_password)
@@ -1083,7 +1109,7 @@ BEGIN_COMMAND (rcon_logout)
 {
 	if (connected)
 	{
-		MSG_WriteSVC(messenger.ReliableBuf(), CLC_RconLogout());
+		messenger.Reliable().Write(CLC_RconLogout());
 	}
 }
 END_COMMAND (rcon_logout)
@@ -1120,14 +1146,14 @@ BEGIN_COMMAND (spectate)
 	// Only send message if currently not a spectator, or to remove from play queue
 	if (!spectator || consoleplayer().QueuePosition > 0)
 	{
-		MSG_WriteSVC(messenger.ReliableBuf(), CLC_SpectateBegin());
+		messenger.Reliable().Write(CLC_SpectateBegin());
 	}
 }
 END_COMMAND (spectate)
 
 BEGIN_COMMAND(ready)
 {
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd("ready"));
+	messenger.Reliable().Write(CLC_Netcmd("ready"));
 }
 END_COMMAND(ready)
 
@@ -1154,7 +1180,7 @@ BEGIN_COMMAND(netcmd)
 		return;
 	}
 
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd(argv+1, argv + argc));
+	messenger.Reliable().Write(CLC_Netcmd(argv+1, argv + argc));
 }
 END_COMMAND(netcmd)
 
@@ -1166,7 +1192,7 @@ BEGIN_COMMAND (join)
 	//	return;
 	//}
 
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_SpectateEnd());
+	messenger.Reliable().Write(CLC_SpectateEnd());
 }
 END_COMMAND (join)
 
@@ -1285,7 +1311,7 @@ void CL_NetDemoPlay(const std::string& filename)
 	std::string found = M_FindUserFileName(filename, ".odd");
 	if (found.empty())
 	{
-		found = M_GetNetDemoFileName(filename, cl_netdemodir);
+		found = M_FindNetDemoFileName(filename, cl_netdemodir);
 		if (found.empty())
 		{
 			PrintFmt(PRINT_WARNING, "Could not find demo {}.\n", filename);
@@ -1621,9 +1647,26 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 	if (mobj->x == x && mobj->y == y && mobj->z == z)
 		return;
 
-	P_CheckPosition(mobj, x, y);
-	mobj->UnlinkFromWorld ();
+	if (not P_CheckPosition(mobj, x, y))
+	{
+		// In the event that the server puts the mobj into a place where it's overlapping
+		// another mobj, the movement code is going to deadlock these mobjs, preventing
+		// motion prediction and certainly ghosting out them out.  They essentially have
+		// mispredicted NON-motion, so downgrade their credibility.
+		if (BlockingMobj)
+		{
+			if (BlockingMobj->IsMonster())
+			{
+				BlockingMobj->credibility.MarkMispredicted();
+			}
+			if (mobj->IsMonster())
+			{
+				mobj->credibility.MarkMispredicted();
+			}
+		}
+	}
 
+	mobj->UnlinkFromWorld ();
 	mobj->x = x;
 	mobj->y = y;
 	mobj->z = z;
@@ -1641,7 +1684,10 @@ void CL_SendUserInfo(buf_t& netBuf)
 {
 	D_SetupUserInfo();
 
-	MSG_WriteSVCBuffer(&netBuf, CLC_UserInfo(consoleplayer().userinfo));
+	if (not simulated_connection)
+	{
+		MSG_Pack(netBuf, CLC_UserInfo(consoleplayer().userinfo));
+	}
 
 	// Refresh Player Translations AFTER sending the new status to the server.
 	CL_RebuildAllPlayerTranslations();
@@ -1692,7 +1738,7 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	if (!player.spectator && !wasalive)
 	{
 		if (player.mo)
-			P_KillMobj(NULL, player.mo, NULL, true);
+			P_KillMobj(nullptr, player.mo, nullptr, true, MOD_NONE);
 
 		player.playerstate = PST_REBORN;
 	}
@@ -1709,6 +1755,9 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 			player.cheats |= CF_FLY;					// Make players fly by default
 			player.deltaviewheight = 1000 << FRACBITS;	// GhostlyDeath -- Sometimes if the player spectates while he is falling down he squats
 
+			if (cl_noclip_spectator)
+				player.cheats |= CF_NOCLIP;
+
 			movingsectors.clear(); // Clear all moving sectors, otherwise client side prediction will not move active sectors
 		}
 		else
@@ -1718,6 +1767,7 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 				displayplayer_id = consoleplayer_id; // get out of spynext
 			}
 			player.cheats &= ~CF_FLY;	// remove flying ability
+			player.cheats &= ~CF_NOCLIP;
 		}
 
 		ClientReplay::getInstance().reset();
@@ -2266,11 +2316,25 @@ MessageResultEnum CL_AcceptNetMessage()
 		}
 		return MessageResultEnum::ACCEPT;
 	}
+
+	// In this case, there is no new packet, but it's possible that the client has
+	// deferred messages on its own entirely in a previous tic.  We want to handle
+	// those even if there's no actual new packet off the network, so try to do so.
+	CL_ProcessDeferredCommands();
+
 	return MessageResultEnum::DEFER;
 }
 
 MessageResultEnum CL_ProcessCurrentAvailableMessages()
 {
+	if (        s_canary
+	    and     s_canary->IsConnected()
+	    and not s_canary->IsAlive())
+	{
+		CL_QuitNetGame(NQ_SERVER_ABORT);
+		return MessageResultEnum::ABORT;
+	}
+
 	auto result = CL_AcceptNetMessage();
 	while (result == MessageResultEnum::ACCEPT)
 	{
@@ -2293,9 +2357,6 @@ void CL_SaveCmd(void)
 
 extern int outrate;
 
-// TODO:  we have to stop doing this willy-nilly extern madness..
-extern vissprite_t* closestNonCredibleVisSprite;
-
 //
 // CL_SendCmd
 //
@@ -2314,15 +2375,30 @@ void CL_SendCmd(void)
 		// GhostlyDeath -- If we are spectating, tell the server of our new position
 		if (player.spectator)
 		{
-			MSG_WriteSVC(messenger.NetBuf(), CLC_SpectateUpdate(player));
+			messenger.BestEffort().Write (CLC_SpectateUpdate(player));
 		}
 
-		if (closestNonCredibleVisSprite)
+		if (not player.mobjsToUpdate.empty())
 		{
-			closestNonCredibleVisSprite->mo->credibility.Challenge();
+			odaproto::clc::SendMobjUpdate onDemandMobjsMsg;
 
-			MSG_WriteSVC(messenger.ReliableBuf(), CLC_SendMobjUpdate(closestNonCredibleVisSprite->mo->netid));
-			closestNonCredibleVisSprite = nullptr;
+			for (auto& mobjPtr : player.mobjsToUpdate)
+			{
+				// We use the collection of AActorPtrs because it lets us safely and lazily keep the
+				// mobjs up to date and not have to worry about all the situations that would otherwise
+				// force us to go out of our way to discard the pending requests.
+				if (mobjPtr)
+				{
+					constexpr int MAX_CHALLENGE_RATE_HZ       = 5;
+					constexpr int MAX_CHALLENGE_INTERVAL_TICS = TICRATE / MAX_CHALLENGE_RATE_HZ;
+
+					mobjPtr.get()->credibility.Challenge(MAX_CHALLENGE_INTERVAL_TICS);
+					onDemandMobjsMsg.add_netid(mobjPtr->netid);
+				}
+			}
+			messenger.Reliable().Write(onDemandMobjsMsg);
+
+			player.mobjsToUpdate.clear();
 		}
 
 		odaproto::clc::PlayerInput& currentNetcmd = localcmds[gametic % MAXSAVETICS];
@@ -2331,7 +2407,7 @@ void CL_SendCmd(void)
 		// when sending svc_updatelocalplayer so the client knows which ticcmds
 		// need to be used for client's positional prediction and item data reconciliation.
 		currentNetcmd.set_tic(gametic);
-		MSG_WriteSVC(messenger.ReliableBuf(), currentNetcmd);
+		messenger.Reliable().Write(currentNetcmd);
 	}
 
 	if (netdemo.isRecording())
@@ -2394,7 +2470,7 @@ void CL_PlayerTimes()
 //
 void CL_SendCheat(int cheats)
 {
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Cheat(cheats));
+	messenger.Reliable().Write(CLC_Cheat(cheats));
 }
 
 //
@@ -2402,7 +2478,7 @@ void CL_SendCheat(int cheats)
 //
 void CL_SendGiveCheat(const char* item)
 {
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CheatGive(item));
+	messenger.Reliable().Write(CLC_CheatGive(item));
 }
 
 //
@@ -2410,7 +2486,7 @@ void CL_SendGiveCheat(const char* item)
 //
 void CL_SendSummonCheat(const char* summon)
 {
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CheatSummon(summon));
+	messenger.Reliable().Write(CLC_CheatSummon(summon));
 }
 
 //
@@ -2418,7 +2494,7 @@ void CL_SendSummonCheat(const char* summon)
 //
 void CL_SendSummonFriendCheat(const char* summon)
 {
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CheatSummonFriend(summon));
+	messenger.Reliable().Write(CLC_CheatSummonFriend(summon));
 }
 
 
@@ -2564,11 +2640,11 @@ static v3fixed_t CurrentDeltaFromSnapshot(const player_t& player, const PlayerSn
 //
 // CL_SimulatePlayers()
 //
-// Iterates through the players vector and loads the world_index snapshot
+// Iterates through the players vector and loads the given world_index snapshot
 // for all players except consoleplayer, as this is handled by the prediction
 // functions.
 //
-void CL_SimulatePlayers()
+void CL_SimulatePlayers(int serverTic)
 {
 	for (auto& player : players)
 	{
@@ -2579,11 +2655,11 @@ void CL_SimulatePlayers()
 		if (player.id == consoleplayer_id)
 			continue;
 
-		PlayerSnapshot snap = player.snapshots.getSnapshot(world_index);
+		PlayerSnapshot snap = player.snapshots.getSnapshot(serverTic);
 		if (snap.isValid())
 		{
 			// Examine the old position.  If it doesn't match the snapshot for the
-			// previous world_index, then old position was probably extrapolated
+			// previous serverTic, then old position was probably extrapolated
 			// and should be smoothly moved towards the corrected position instead
 			// of snapping to it.
 
@@ -2598,7 +2674,7 @@ void CL_SimulatePlayers()
 				player.mo->prevpitch = player.mo->pitch;
 
 				v3fixed_t offset = CurrentDeltaFromSnapshot(player,
-				                                            player.snapshots.getSnapshot(world_index - 1));
+				                                            player.snapshots.getSnapshot(serverTic - 1));
 
 				// The following block is there to "jailbreak" a remote player whose predicted mobj
 				// movement resulted in a substantial disagreement with the server for a relatively
@@ -2629,7 +2705,7 @@ void CL_SimulatePlayers()
 					int ticsAgo = 2;
 					while (ticsAgo <= EXCESSIVE_TIME)
 					{
-						const PlayerSnapshot historicalSnap = player.snapshots.getSnapshot(world_index - ticsAgo);
+						const PlayerSnapshot historicalSnap = player.snapshots.getSnapshot(serverTic - ticsAgo);
 
 							if (not (    historicalSnap.isValid()
 							     and historicalSnap.isContinuous()
@@ -2650,7 +2726,7 @@ void CL_SimulatePlayers()
 				{
 					#ifdef _SNAPSHOT_DEBUG_
 					PrintFmt(PRINT_HIGH, "Snapshot {}, Correcting extrapolation error of {}\n",
-					         world_index, dist >> FRACBITS);
+					         serverTic, dist >> FRACBITS);
 					#endif  // _SNAPSHOT_DEBUG_
 
 					static constexpr fixed_t correction_amount = FRACUNIT * 0.80f;
@@ -2748,7 +2824,6 @@ void CL_SimulateWorld()
 	netgraph.setWorldIndexSync(world_index - (last_svgametic - cl_interp));
 
 	CL_SimulateSectors();
-	CL_SimulatePlayers();
 
 	// [SL] 2012-03-17 - Try to maintain sync with the server by gradually
 	// slowing down or speeding up world_index
@@ -2763,10 +2838,99 @@ void CL_SimulateWorld()
 	world_index = world_index + 1 + drift_correction;
 }
 
+/// This function updates the given player's mobjsToUpdate to contain only the small subset
+/// that are highest-priority for immediate on-demand updates from the server.  The intended
+/// use is to bust ghosts that are nearby and/or are likely to create other ghosts.
+///
+/// It assumes that the player's sortedMobjs have been pre-loaded with mobjs that are believed
+/// likely candidates to be ghosts.
+void CL_SelectPotentialDesynchedMobjs(player_t& player)
+{
+	if (player.sortedMobjs.empty())
+		return;
+
+	if (not player.serverRefreshRequestsAreEnabled)
+	{
+		player.sortedMobjs.clear();
+		return;
+	}
+
+	// Though we are updating the player given to this function, we want to sort from wherever
+	// the camera is, which may or may not be the same player.
+	const player_t& viewingPlayer = displayplayer();
+	const AActor*   camera        = viewingPlayer.camera ? viewingPlayer.camera : viewingPlayer.mo;
+	if (camera)
+	{
+		constexpr size_t MAX_ELEMENTS_TO_REQUEST = 10;
+		if (player.sortedMobjs.size() > MAX_ELEMENTS_TO_REQUEST)
+		{
+			const int mostSignificantX = FIXED2INT(camera->x);
+			const int mostSignificantY = FIXED2INT(camera->y);
+
+			for (auto mobjInfoIter  = player.sortedMobjs.begin();
+			          mobjInfoIter != player.sortedMobjs.end();
+			        )
+			{
+				// Make sure that any mobjs that will go away at the end of this tic are excluded.
+				if (mobjInfoIter->actorPtr->WasDestroyed())
+				{
+					using std::swap;
+					swap(*mobjInfoIter, player.sortedMobjs.back());
+					player.sortedMobjs.pop_back();
+
+					// Note that we leave the iterator in place because it already points to an
+					// unprocessed element.
+				}
+				else
+				{
+					// Do the arithmetic in 64 bits to avoid a known integer overflow at the extremes of our range.
+					const int64_t dx = mostSignificantX - FIXED2INT(mobjInfoIter->actorPtr->x);
+					const int64_t dy = mostSignificantY - FIXED2INT(mobjInfoIter->actorPtr->y);
+
+					// The sort key is distance squared divided by time since start of predicted
+					// motion.  This provides a decent balance between closest mobjs and mobjs that
+					// are distant but have been wandering long enough to cause credible monsters
+					// to become ghosts themselves.
+					mobjInfoIter->distanceSquared = (dx * dx) + (dy * dy);
+
+					if (const int64_t age = mobjInfoIter->actorPtr->credibility.GetMotionAge())
+					{
+						mobjInfoIter->distanceSquared /= age;
+					}
+					++mobjInfoIter;
+				}
+			}
+
+			// If we happened to drop below the max elements due to destroyed mobjs, don't bother sorting.
+			if (player.sortedMobjs.size() > MAX_ELEMENTS_TO_REQUEST)
+			{
+				auto priorityCompare = [](const auto& mobj1, const auto& mobj2)
+				{
+					return mobj1.distanceSquared < mobj2.distanceSquared;
+				};
+
+				// Partial_sort because it's optimized for selecting a small number of sorted
+				// elements from a much, much larger set.
+				std::partial_sort(player.sortedMobjs.begin(),
+				                  player.sortedMobjs.begin() + MAX_ELEMENTS_TO_REQUEST,
+				                  player.sortedMobjs.end(),
+				                  priorityCompare);
+
+				player.sortedMobjs.erase(player.sortedMobjs.begin() + MAX_ELEMENTS_TO_REQUEST,
+				                         player.sortedMobjs.end());
+			}
+
+			for (const auto& mobjInfo : player.sortedMobjs)
+			{
+				player.mobjsToUpdate.insert(mobjInfo.actorPtr->ptr());
+			}
+			player.sortedMobjs.clear();
+		}
+	}
+}
+
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
                         const LineActivationType activationType, const bool bossaction)
 {
 }
-
-VERSION_CONTROL (cl_main_cpp, "$Id$")

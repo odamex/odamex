@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -66,6 +64,8 @@ void G_PlayerFinishLevel(player_t &player);
 void G_AddViewAngle(int yaw);
 void G_AddViewPitch(int pitch);
 bool G_ShouldIgnoreMouseInput();
+
+void G_SetFast(const bool wantFast);
 
 extern int mapchange;
 

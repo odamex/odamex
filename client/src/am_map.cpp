@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -144,8 +142,7 @@ EXTERN_CVAR(am_ovteleportcolor)
 EXTERN_CVAR(am_ovminimap)
 EXTERN_CVAR(am_ovbackcolor)
 EXTERN_CVAR(am_ovbackalpha)
-EXTERN_CVAR(am_ovscalewidth)
-EXTERN_CVAR(am_ovscaleheight)
+EXTERN_CVAR(am_ovscalesize)
 EXTERN_CVAR(am_ovlocation)
 
 EXTERN_CVAR(netdebug_automap)
@@ -897,14 +894,14 @@ bool AM_Responder(const event_t& ev)
 		if (am_followplayer)
 		{
 			// check for am_pan* and ignore in follow mode
-			const std::string defbind = AutomapBindings.Binds[ev.data1];
-			if (iequals(defbind, "+am_pan"))
+			const auto defbind = AutomapBindings.Binds[ev.data1];
+			if (defbind.starts_with("+am_pan"))
 				return false;
 		}
 
 		if (ev.type == ev_keydown)
 		{
-			const std::string defbind = Bindings.Binds[ev.data1];
+			const auto defbind = Bindings.Binds[ev.data1];
 			// Check for automap, in order not to be stuck
 			if (iequals(defbind, "togglemap"))
 				return false;
@@ -915,7 +912,7 @@ bool AM_Responder(const event_t& ev)
 		{
 			// If this is a release event we also need to check if it released a button in
 			// the main Bindings so that that button does not get stuck.
-			const std::string defbind = Bindings.Binds[ev.data1];
+			const auto defbind = Bindings.Binds[ev.data1];
 
 			// Check for automap, in order not to be stuck
 			if (iequals(defbind, "togglemap"))
@@ -1475,13 +1472,13 @@ void AM_drawWalls()
 					else
 						AM_drawMline(&l, gameinfo.currentAutomapColors.WallColor);
 				}
-				else if (line.backsector->floorheight !=
-				         line.frontsector->floorheight)
+				else if (P_FloorHeight(line.backsector) !=
+				         P_FloorHeight(line.frontsector))
 				{
 					AM_drawMline(&l, gameinfo.currentAutomapColors.FDWallColor); // floor level change
 				}
-				else if (line.backsector->ceilingheight !=
-				         line.frontsector->ceilingheight)
+				else if (P_CeilingHeight(line.backsector) !=
+				         P_CeilingHeight(line.frontsector))
 				{
 					AM_drawMline(&l, gameinfo.currentAutomapColors.CDWallColor); // ceiling level change
 				}
@@ -2043,6 +2040,10 @@ void AM_drawMarks()
 
 void AM_drawCrosshair(am_color_t color)
 {
+	// Don't draw on top of the player arrow
+	if (am_followplayer || minimapactive)
+		return;
+
 	// single point for now
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 		PUTDOT_THICK(f_w / 2, (f_h + 1) / 2, color.index);
@@ -2433,8 +2434,8 @@ void AM_Drawer()
 		int x_offset = 0;
 		int y_offset = 0;
 
-		f_w = v_width * am_ovscalewidth;
-		f_h = v_height * am_ovscaleheight;
+		f_w = v_width * am_ovscalesize;
+		f_h = std::min(f_w, v_height);
 
 		switch (loc)
 		{
@@ -2499,8 +2500,7 @@ void AM_Drawer()
 	if (G_IsHordeMode() || G_GetCurrentSkill().easy_key || (am_cheating == 2))
 		AM_drawThings();
 
-	if (!(viewactive && am_overlay < 2))
-		AM_drawCrosshair(gameinfo.currentAutomapColors.XHairColor);
+	AM_drawCrosshair(gameinfo.currentAutomapColors.XHairColor);
 
 	AM_drawMarks();
 
@@ -2704,5 +2704,3 @@ void AM_Drawer()
 		}
 	}
 }
-
-VERSION_CONTROL(am_map_cpp, "$Id$")

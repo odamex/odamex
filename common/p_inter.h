@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -44,6 +42,6 @@ ItemEquipVal P_GiveWeapon(player_t& player, weapontype_t weapon, OUtil::SafeBool
 ItemEquipVal P_GiveArmor(player_t& player, int armortype);
 ItemEquipVal P_GiveCard(player_t& player, card_t card);
 ItemEquipVal P_GivePower(player_t& player, int /*powertype_t*/ power);
-void P_KillMobj(AActor* source, AActor* target, const AActor* inflictor, bool joinkill);
+void P_KillMobj(AActor* source, AActor* target, const AActor* inflictor, bool joinkill, int mod);
 void P_HealMobj(AActor* mo, int num);
 bool P_InfightingImmune(AActor* target, AActor* source);

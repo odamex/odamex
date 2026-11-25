@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -41,7 +39,7 @@ void COM_PushToast(const toast_t& toast)
 #if defined(SERVER_APP)
 	for (auto& player : ::players)
 	{
-		MSG_WriteSVC(player.client.messenger->ReliableBuf(), SVC_Toast(toast));
+		player.client.messenger->Reliable().Write(SVC_Toast(toast));
 	}
 #elif defined(CLIENT_APP)
 	hud::PushToast(toast);

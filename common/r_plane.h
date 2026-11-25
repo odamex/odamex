@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -59,6 +57,8 @@ R_MakeSpans
 
 void R_DrawPlanes (void);
 void R_DrawPortals (void);
+
+bool R_IsStackBoundary(const AActor* mo);
 
 visplane_t *R_FindPlane
 ( const plane_t	&secplane,

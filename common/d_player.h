@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -72,6 +70,7 @@ struct client_t
 	std::string digest            { };          // randomly generated string that the client must use for any hashes it sends back
 	bool        allow_rcon        { false };    // allow remote admin
 	bool        displaydisconnect { true  };    // display disconnect message when disconnecting
+	bool        isFlushing        { false };    // TODO: fold this into the protocol state machine.  Indicates that we're driving down to 0 unacked messages.
 
 	struct download_t
 	{
@@ -121,7 +120,7 @@ typedef enum
 
     // [BC] Entered the game
 	PST_ENTER,
-	
+
 	// this player is the freecam
 	PST_FREECAM
 
@@ -148,6 +147,9 @@ inline constexpr int ReJoinDelay = TICRATE * 5;
 inline constexpr int SuicideDelay = TICRATE * 10;
 
 inline constexpr int BACKUPTICS = 12;
+
+// psprite_authority_tic when the server has never told us a player's psprites.
+inline constexpr int PSPRITE_AUTHORITY_NONE = -1;
 
 class player_t
 {
@@ -235,6 +237,12 @@ public:
 	int                               psprnum;
 	std::array<pspdef_t, NUMPSPRITES> psprites;     // Overlay view sprites (gun, etc).
 
+	// The gametic we last had authoritative psprites for this player, or
+	// PSPRITE_AUTHORITY_NONE if we never have.
+	// Used to tell whether their weapon still needs guessing at.
+	// Client only
+	int                               psprite_authority_tic { PSPRITE_AUTHORITY_NONE };
+
 	// This is the comparator for the psprite latch vs the real data value.
 	// We specifically ONLY compare the statenum and not the tics because we don't want to trigger
 	// the PlayerPsprite message unless the state number has changed - we're happy to just let the
@@ -259,7 +267,8 @@ public:
 	                        PspriteEquals>      pspriteMonitors;
 
     // True if button down last tic.
-	int			attackdown, usedown;
+	bool attackdown = false;
+	bool usedown    = false;
 
 	// Bit flags, for cheats and debug.
     // See cheat_t, above.
@@ -317,7 +326,7 @@ public:
 
 	byte        QueuePosition;            //Queue position to join game. 0 means not in queue
 
-	uint32_t    requestedNetIdUpdate;   // ID of a mobj for which this player is requesting an update.
+	std::unordered_set<uint32_t> requestedNetIdUpdates;   // IDs of mobjs for which this player is requesting an update.
 
 	// zdoom
 	int hazardcount;
@@ -330,27 +339,37 @@ public:
 		std::string	Message;
 	} LastMessage;
 
-	// denis - things that are pending to be sent to this player
-	std::queue<AActor::AActorPtr> to_spawn;
+	// Server:  Queue of elevated-priority mobjs to spawn during the player message write operation.
+	// Client:  N/A
+	std::queue<AActor::AActorPtr>           mobjsToSpawn;   // std::queue because we may not pop everything off this tic.
 
-	// For prioritization of mobj updates from server to client.
+	// Server:  The set of mobjs that need to be updated to the client during message write, due to mid-tic state changes.
+	// Client:  The set of mobjs for which we need to request out-of-cycle "ghostbuster" updates.
+	std::unordered_set<AActor::AActorPtr>   mobjsToUpdate;
+
+	// Server:  For prioritization of mobj updates from server to client.
+	// Client:  For prioritization of mobj "ghostbuster" requests to the server.
 	struct ActorDistanceType
 	{
 		AActor* actorPtr;
-		int     distanceSquared;
+		int64_t distanceSquared;
 
-		ActorDistanceType(AActor* i_actorPtr, int i_distanceSquared) : actorPtr(i_actorPtr), distanceSquared(i_distanceSquared) {}
+		ActorDistanceType(AActor* i_actorPtr, int64_t i_distanceSquared) : actorPtr(i_actorPtr), distanceSquared(i_distanceSquared) {}
 	};
 	std::vector<ActorDistanceType> sortedMobjs;
+	std::vector<const AActor*>     onDemandMobjs;
 
 	// Client:  Indicate that we want the server to send us a PlayerInfo for inventory validation.
 	//          Cleared when the command is packed.
 	// Server:  If set true, send a reliable PlayerInfo message back to the client.  Cleared when
 	//          the PlayerInfo is packed.
 	bool playerInfoIsRequested;
-	bool inventoryCheckRequestsAreEnabled;
+	void RequestInventoryCheckFromServer() { playerInfoIsRequested = serverRefreshRequestsAreEnabled; }
 
-	void RequestInventoryCheckFromServer() { playerInfoIsRequested = inventoryCheckRequestsAreEnabled; }
+	// Client:  Indicates that the netcode should generate requests to the server for on-demand refreshes
+	//          for the sake of prediction rollbacks and on-demand mobj updates.
+	// Server:  N/A
+	bool serverRefreshRequestsAreEnabled;
 
 	hordeInfo_t hordeInfo;
 

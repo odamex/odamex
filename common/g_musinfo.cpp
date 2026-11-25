@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -48,7 +46,7 @@ void G_ParseMusInfo()
 			const std::string map_name = os.getToken();
 			level_pwad_info_t& map = levels.findByName(map_name);
 
-			if (!map.exists())
+			if (not map.exists())
 			{
 				// Don't abort for invalid maps
 				os.warning("Unknown map '{}'", map_name);
@@ -56,7 +54,7 @@ void G_ParseMusInfo()
 
 			while (os.scan())
 			{
-				if (!IsNum(os.getToken().c_str()))
+				if (not IsNum(os.getToken()))
 				{
 					os.unScan();
 					break;
@@ -121,18 +119,4 @@ void S_ClearMusInfo()
 	musinfo.mapthing.init(nullptr);
 	musinfo.lastmapthing.init(nullptr);
 	musinfo.savedmusic.clear();
-}
-
-void P_SerializeMusInfo(FArchive& arc)
-{
-	if (arc.IsStoring())
-	{
-		arc << musinfo.savedmusic.c_str();
-	}
-	else
-	{
-		arc >> musinfo.savedmusic;
-		if (!musinfo.savedmusic.empty())
-			S_ChangeMusic(musinfo.savedmusic, true);
-	}
 }

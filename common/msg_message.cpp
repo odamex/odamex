@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -33,6 +31,24 @@ odaproto::Header MSG_Header(const PacketHeaderType& i_header)
 	msg.set_destination_tic (i_header.destinationTic);
 	msg.set_reliable_size   (i_header.reliableSize);
 	msg.set_flags           (i_header.flags);
+
+	return msg;
+}
+
+odaproto::LargeMessageStart MSG_LargeMessageStart(size_t i_size)
+{
+	odaproto::LargeMessageStart msg;
+
+	msg.set_size(i_size);
+
+	return msg;
+}
+
+odaproto::LargeMessageFragment MSG_LargeMessageFragment(const void* i_data, size_t i_size)
+{
+	odaproto::LargeMessageFragment msg;
+
+	msg.set_payload(i_data, i_size);
 
 	return msg;
 }

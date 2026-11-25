@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2026 by Jim Thoenen.
 //
 // This program is free software; you can redistribute it and/or
@@ -33,15 +31,23 @@ class MessageQueue
 {
 	public:
 
+		explicit MessageQueue(size_t i_maxMessageBufferSize = MAX_UDP_PACKET) :
+			m_maxMessageBufferSize { i_maxMessageBufferSize }
+		{
+		}
+
 		size_t SizeInBytes()    const { return not m_queue.empty() ? m_totalEnqueuedBytesSansMostRecent + m_queue.back().size() : m_totalEnqueuedBytesSansMostRecent; }
 		size_t SizeInMessages() const { return m_queue.size(); }
 
 		// Pushing messages
 		buf_t& Obtain();
-		void Emplace(buf_t& io_str);
+
+		void Write(const google::protobuf::Message& msg);
+		void Write(msg_t id, const std::string& msg);
 
 		// Using messages.
 		const buf_t& Front() const { return m_queue.front(); }
+		buf_t& Front()             { return m_queue.front(); }
 
 		// Popping messages.
 		bool Pop();
@@ -85,4 +91,5 @@ class MessageQueue
 		// "finalized" until the next slot is created.
 		//
 		size_t m_totalEnqueuedBytesSansMostRecent { 0 };
+		size_t m_maxMessageBufferSize { MAX_UDP_PACKET };
 };

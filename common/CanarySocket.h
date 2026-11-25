@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2026 by Jim Thoenen.
 //
 // This program is free software; you can redistribute it and/or
@@ -90,6 +88,14 @@ class CanarySocketClient
 		/// and supply the local UDP i_dataAddress that this client uses to communicate game traffic.
 		/// Returns true if a new connection was successfully established, false otherwise.
 		bool Connect(const sockaddr_in& i_toAddress, const sockaddr_in& i_dataAddress);
+
+		/// Returns true if the socket was successfully connected, false otherwise.
+		[[ nodiscard ]]
+		bool IsConnected() const { return m_socket != CANARY_BAD_SOCKET; }
+
+		/// Returns true if the socket is connected and fully alive - both client and server are healthy.  False otherwise.
+		[[ nodiscard ]]
+		bool IsAlive() const;
 
 	protected:
 		CANARY_SOCKET_INT m_socket { CANARY_BAD_SOCKET };

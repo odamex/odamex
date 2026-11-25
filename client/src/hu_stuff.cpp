@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -82,6 +80,7 @@ EXTERN_CVAR(screenblocks)
 EXTERN_CVAR(idmypos)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
+EXTERN_CVAR(sv_allowcrosshair)
 
 static int crosshair_lump;
 
@@ -390,6 +389,10 @@ static void HU_DrawCrosshair()
 	if (camera->player && camera->player->spectator)
 		return;
 
+	// servers can disallow
+	if (connected and not netdemo.isInPlayback() and not sv_allowcrosshair)
+		return;
+
 	if (hud_crosshair && crosshair_lump)
 	{
 		static constexpr byte crosshair_color = 0xB0;
@@ -532,6 +535,8 @@ void HU_Drawer()
 	{
 		bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
 
+		hud::ResetMessageColumn();
+
 		hud::DrawToasts();
 
 		if ((viewactive && !R_StatusBarVisible()) || spechud)
@@ -605,9 +610,9 @@ static void ShoveChatStr (const std::string& str, byte visibility)
 	if (str.length() == 0)
 		return;
 
-    const std::string_view visiblePortion {str.begin(), str.begin() + std::min(str.length(), size_t(MAX_CHATSTR_LEN))};
+	const std::string_view visiblePortion {str.begin(), str.begin() + std::min(str.length(), size_t(MAX_CHATSTR_LEN))};
 
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Say(visiblePortion, visibility));
+	messenger.Reliable().Write(CLC_Say(visiblePortion, visibility));
 }
 
 static void ShovePrivMsg(byte pid, const std::string& str)
@@ -618,7 +623,7 @@ static void ShovePrivMsg(byte pid, const std::string& str)
 
 	const std::string_view visiblePortion {str.begin(), str.begin() + std::min(str.length(), size_t(MAX_CHATSTR_LEN))};
 
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_PrivMsg(pid, visiblePortion));
+	messenger.Reliable().Write(CLC_PrivMsg(pid, visiblePortion));
 }
 
 BEGIN_COMMAND (messagemode)
@@ -2179,5 +2184,3 @@ BEGIN_COMMAND (displayscores)
 		PrintFmt(PRINT_HIGH, "This command is only used for multiplayer games.");
 }
 END_COMMAND (displayscores)
-
-VERSION_CONTROL (hu_stuff_cpp, "$Id$")

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -184,7 +182,7 @@ size_t C_BasePrint(const int printlevel, const char* color_code, const std::stri
 		if (cl->allow_rcon && (printlevel == PRINT_HIGH || printlevel == PRINT_WARNING ||
 		                       printlevel == PRINT_ERROR))
 		{
-			MSG_WriteSVC(cl->messenger->ReliableBuf(), SVC_Print(PRINT_WARNING, newStr));
+			cl->messenger->Reliable().Write(SVC_Print(PRINT_WARNING, newStr));
 		}
 	}
 
@@ -248,5 +246,3 @@ void C_RemoveTabCommand (const char *name)
 		if(!--i->second)
 			TabCommands().erase(i);
 }
-
-VERSION_CONTROL (c_console_cpp, "$Id$")

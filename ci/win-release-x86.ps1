@@ -17,7 +17,7 @@ if ($env:new_version.length -gt 0)
 }
 else
 {
-    Set-Variable -Name "OdamexVersion" -Value "10.2.0"
+    Set-Variable -Name "OdamexVersion" -Value "13.0.0"
 }
 
 if ($env:build_number.length -gt 0)
@@ -96,21 +96,21 @@ function CopyFilesX86 {
         -Destination "${CommonDir}\README.txt"
     Copy-Item -Force -Path "${CurrentDir}\BuildX86\odamex\RelWithDebInfo\odamex.wad" `
         -Destination "${CommonDir}"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.1\LICENSE.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.2\LICENSE.txt" `
         -Destination "${CommonDir}\licenses\COPYING.SDL2_mixer.txt"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.1\lib\x86\optional\LICENSE.xmp.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.2\lib\x86\optional\LICENSE.xmp.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.1\lib\x86\optional\LICENSE.ogg-vorbis.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.2\lib\x86\optional\LICENSE.ogg-vorbis.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.1\lib\x86\optional\LICENSE.opus.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.2\lib\x86\optional\LICENSE.opus.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.1\lib\x86\optional\LICENSE.opusfile.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.2\lib\x86\optional\LICENSE.opusfile.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.1\lib\x64\optional\LICENSE.wavpack.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.2\lib\x64\optional\LICENSE.wavpack.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.1\lib\x64\optional\LICENSE.gme.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.2\lib\x64\optional\LICENSE.gme.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2-2.32.8\LICENSE.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2-2.32.10\LICENSE.txt" `
         -Destination "${CommonDir}\licenses\LICENSE.SDL2.txt"
 
     ########################################

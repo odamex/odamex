@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -67,10 +65,13 @@
 #include "m_doomobjcontainer.h"
 #include "cl_netgraph.h"
 #include "g_spree.h"
+#include "g_deathspot.h"
 #include "g_multikill.h"
 #include "cl_freecam.h"
 
 #include "PlayerItemDataType.h"
+
+#include "msg_message.h"
 
 // Extern data from other files.
 
@@ -84,6 +85,7 @@ EXTERN_CVAR(cl_autorecord_horde)
 EXTERN_CVAR(cl_chatsounds)
 EXTERN_CVAR(cl_connectalert)
 EXTERN_CVAR(cl_disconnectalert)
+EXTERN_CVAR(cl_interp)
 EXTERN_CVAR(cl_netdemoname)
 EXTERN_CVAR(cl_splitnetdemos)
 EXTERN_CVAR(cl_team)
@@ -99,12 +101,13 @@ EXTERN_CVAR(sv_showsprees)
 extern std::string digest;
 extern bool forcenetdemosplit;
 extern int last_svgametic;
-extern int last_player_update;
+extern int lastEchoedClientTic;
 extern bool hasReceivedFullUpdate;
 extern bool isReceivingFullUpdate;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 extern std::set<byte> teleported_players;
 extern NetGraph netgraph;
+extern int world_index;
 
 void CL_CheckDisplayPlayer(void);
 void CL_ClearPlayerJustTeleported(const player_t& player);
@@ -129,8 +132,11 @@ namespace
 
 PacketHeaderType s_currentHeader;
 
-int32_t ThisMessageClientTic() { return s_currentHeader.destinationTic; }
-int32_t ThisMessageServerTic() { return s_currentHeader.originatorTic; }
+int32_t ThisMessageClientTic()      { return s_currentHeader.destinationTic; }
+int32_t ThisMessageServerTic()      { return s_currentHeader.originatorTic; }
+bool    ThisMessageIsHighPriority() { return (s_currentHeader.flags & PacketHeaderType::FLAG_HIGH_PRIORITY) != 0; }
+
+LargeMessage s_receivedLargeMessage;
 
 /**
  * @brief Unpack a bitfield into an array of booleans.
@@ -146,7 +152,7 @@ void UnpackBoolArray(std::span<bool> bools, uint32_t in)
 /**
  * @brief Common code for activating a line.
  */
-void ActivateLine(AActor* mo, line_s* line, byte side,
+void ActivateLine(AActor* mo, line_t* line, byte side,
                          LineActivationType activationType, const bool bossaction,
                          byte special = 0, int arg0 = 0, int arg1 = 0, int arg2 = 0,
                          int arg3 = 0, int arg4 = 0)
@@ -208,6 +214,39 @@ void CL_Header(const odaproto::Header* msg)
 	s_currentHeader.destinationTic  = msg->destination_tic();
 	s_currentHeader.reliableSize    = static_cast<uint16_t>(msg->reliable_size());
 	s_currentHeader.flags           = static_cast<uint16_t>(msg->flags());
+
+	if (ThisMessageIsHighPriority())
+	{
+		last_svgametic = s_currentHeader.originatorTic;
+	}
+}
+
+void CL_LargeMessageStart(const odaproto::LargeMessageStart* msg)
+{
+	s_receivedLargeMessage.Restart(msg->size());
+}
+
+void CL_LargeMessageFragment(const odaproto::LargeMessageFragment* msg)
+{
+	s_receivedLargeMessage.Append(msg->payload().data(), msg->payload().length());
+}
+
+void CL_ParseBuffer(buf_t& buffer, int currentExpectedNewestPacket);
+
+void CL_LargeMessageEnd(const odaproto::LargeMessageEnd* )
+{
+	if (s_receivedLargeMessage.IsComplete() and not s_receivedLargeMessage.IsEmpty())
+	{
+		CL_ParseBuffer(s_receivedLargeMessage.GetBufferRef(), ThisMessageServerTic());
+		s_receivedLargeMessage.Restart(0);
+	}
+	else
+	{
+		PrintFmt(PRINT_WARNING,
+		        "Incomplete large message!  total: {}, current: {}\n",
+		        s_receivedLargeMessage.TotalSize(),
+		        s_receivedLargeMessage.CurrentSize());
+	}
 }
 
 /**
@@ -376,12 +415,13 @@ void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 		return;
 
 	p.last_received = gametic;
-	::last_player_update = gametic;
 
 	// [SL] 2012-02-21 - Save the position information to a snapshot
 	const int snaptime = ThisMessageServerTic();
 	PlayerSnapshot newsnap(snaptime);
 	newsnap.setAuthoritative(true);
+
+	newsnap.setClientTic(::lastEchoedClientTic);
 
 	newsnap.setX(x);
 	newsnap.setY(y);
@@ -422,6 +462,8 @@ void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
 	const int snaptime = ThisMessageServerTic();
 	PlayerSnapshot newsnapshot(snaptime);
 	newsnapshot.setAuthoritative(true);
+	newsnapshot.setPlayerTic(p.tic);
+	newsnapshot.setClientTic(::lastEchoedClientTic);
 	newsnapshot.setX(x);
 	newsnapshot.setY(y);
 	newsnapshot.setZ(z);
@@ -486,7 +528,7 @@ void CL_LevelLocals(const odaproto::svc::LevelLocals* msg)
 //
 void CL_PingRequest(const odaproto::svc::PingRequest* msg)
 {
-	MSG_WriteSVC(messenger.NetBuf(), CLC_PingReply(msg->ms_time()));
+	messenger.BestEffort().Write (CLC_PingReply(msg->ms_time()));
 }
 
 //
@@ -552,8 +594,8 @@ void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	mo->baseline               = base;
 	mo->updatedDuringLocalTic  = gametic;
 	mo->updatedDuringServerTic = ThisMessageServerTic();
-	mo->mobjtic                = msg->timebase_tic();
-
+	mo->mobjtic                = ThisMessageServerTic() + 1;   // Because when the server sends the spawn message,
+	                                                           // the mobjtic has already advanced.
 	P_SetThingId(mo, netid);
 
 	// Assign baseline/current data to spawned mobj
@@ -1028,6 +1070,7 @@ void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	// reset the world_index (force it to sync)
 	CL_ResyncWorldIndex();
 	::last_svgametic = 0;
+	::lastEchoedClientTic = 0;
 
 	CTF_CheckFlags(consoleplayer());
 
@@ -1228,6 +1271,7 @@ static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = 
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
+		newsnap.setClientTic(::lastEchoedClientTic);
 		newsnap.setX(update.pos.x);
 		newsnap.setY(update.pos.y);
 		newsnap.setZ(update.pos.z);
@@ -1283,6 +1327,10 @@ void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 		return;
 	}
 
+	// Keep action-internal tic checks in sync, and +1 because mobjtic was already advanced on the server
+	// beyond gametic by the time the message was sent.
+	mo->mobjtic = ThisMessageServerTic() + 1;
+
 	const MobjModeEnum mode = static_cast<MobjModeEnum>(msg->mode());
 	if (mode != mo->mode)
 	{
@@ -1315,12 +1363,13 @@ void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
 			default:
 				break;
 		}
-		if (mo->state->statenum != msg->state())
-		{
-			P_SetMobjState(mo, msg->state());
-		}
-		mo->tics = msg->tics();
 	}
+
+	if (mo->state->statenum != msg->state())
+	{
+		P_SetMobjState(mo, msg->state());
+	}
+	mo->tics = msg->tics();
 
 	// Now apply the update mobj, on the off chance that a mode change caused
 	// us to mispredict the fine-grained position, momentum, angle, etc.
@@ -1343,11 +1392,17 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 
 	P_ClearId(netid);
 
-	// first disassociate the corpse
+	// First, disassociate the corpse or the temporary placeholder mobj.
 	if (p.mo)
 	{
 		p.mo->player = nullptr;
 		p.mo->health = 0;
+
+		// Don't leave a stale placeholder mobj hanging around forever, if that's what it is!
+		if (p.mo->oflags & MFO_ISAWAITINGSPAWN)
+		{
+			p.mo->Destroy();
+		}
 	}
 
 	G_PlayerReborn(p);
@@ -1416,6 +1471,8 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		// [SL] 2012-04-23 - Clear predicted sectors
 		movingsectors.clear();
 
+		CL_ResetWorldPrediction();
+
 		// Rollback history from time-of-respawn to now is full of the dead state.
 		// Instead of doing complex rollbacks, just wipe history and start fresh.
 		// Any intervening updates to important state will come in subsequent
@@ -1450,7 +1507,7 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	}
 
 	const int snaptime = ThisMessageServerTic();
-	PlayerSnapshot newsnap(snaptime, p);
+	PlayerSnapshot newsnap(snaptime, p, ::lastEchoedClientTic);
 	newsnap.setAuthoritative(true);
 	newsnap.setContinuous(false);
 	p.snapshots.clearSnapshots();
@@ -1521,8 +1578,6 @@ void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	}
 }
 
-extern int MeansOfDeath;
-
 //
 // CL_KillMobj
 //
@@ -1552,6 +1607,9 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 		const int snaptime = ThisMessageServerTic();
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
+
+		newsnap.setPlayerTic(target->player->tic);
+		newsnap.setClientTic(::lastEchoedClientTic);
 
 		newsnap.setX(msg->target_pos().x());
 		newsnap.setY(msg->target_pos().y());
@@ -1592,7 +1650,15 @@ void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	if (target->player && lives >= 0)
 		target->player->lives = lives;
 
-	P_KillMobj(source, target, inflictor, joinkill);
+	P_KillMobj(source, target, inflictor, joinkill, MOD_NONE);
+
+	if (not netdemo.isInPlayback() and Freecam::isActive() and
+	    target->player == &consoleplayer() and
+	    DeathSpotManager::getInstance().hasDeathSpot(consoleplayer_id))
+	{
+		const DeathSpot_s spot = DeathSpotManager::getInstance().getDeathSpot(consoleplayer_id);
+		Freecam::moveToPosition(spot.x, spot.y, spot.z, spot.angle);
+	}
 }
 
 //
@@ -1688,7 +1754,8 @@ void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 
 	P_ChangeSector(sector, false);
 
-	const SectorSnapshot snap(ThisMessageServerTic(), sector);
+	SectorSnapshot snap(ThisMessageServerTic(), sector);
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -1717,7 +1784,7 @@ void CL_Print(const odaproto::svc::Print* msg)
 	if (show_messages)
 	{
 		if (level == PRINT_CHAT || level == PRINT_SERVERCHAT)
-			S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+			S_Sound(CHAN_INTERFACE, gameinfo.chatSound.data(), 1, ATTN_NONE);
 		else if (level == PRINT_TEAMCHAT)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
 	}
@@ -1767,6 +1834,24 @@ void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 	{
 		if (!p.spectator)
 			p.cheats = msg->cheats();
+	}
+
+	// Our own weapon is driven by prediction and the rollback state, so this is only
+	// here to tell us what everyone else is holding.
+	if ((flags & SVC_PM_WEAPON) && p.id != consoleplayer_id)
+	{
+		const int32_t ready = msg->readyweapon();
+		const int32_t pending = msg->pendingweapon();
+
+		if (ready >= 0 && ready < NUMWEAPONS && p.readyweapon != ready)
+		{
+			p.readyweapon = static_cast<weapontype_t>(ready);
+			p.pendingweapon = wp_nochange;
+			P_BringUpWeapon(p);
+		}
+
+		if (pending >= 0 && pending < NUMWEAPONS)
+			p.pendingweapon = static_cast<weapontype_t>(pending);
 	}
 }
 
@@ -1838,6 +1923,7 @@ void CL_MovingSectorElevator(const odaproto::svc::MovingSectorElevator* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -1872,6 +1958,7 @@ void CL_MovingSectorPillar(const odaproto::svc::MovingSectorPillar* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -1904,6 +1991,7 @@ void CL_MovingSectorCeiling(const odaproto::svc::MovingSectorCeiling* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -1937,6 +2025,7 @@ void CL_MovingSectorDoor(const odaproto::svc::MovingSectorDoor* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -1979,6 +2068,7 @@ void CL_MovingSectorFloor(const odaproto::svc::MovingSectorFloor* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -2010,6 +2100,7 @@ void CL_MovingSectorPlat(const odaproto::svc::MovingSectorPlat* msg)
 
 	snap.setSector(&::sectors[sectornum]);
 
+	snap.setAuthoritative(true);
 	sector_snaps[sectornum].addSnapshot(snap);
 }
 
@@ -2142,7 +2233,11 @@ void CL_Switch(const odaproto::svc::Switch* msg)
 		return;
 
 	// denis - fixme - security
-	if (!P_SetButtonInfo(&lines[l], state, time) && switchactive)
+
+	// P_ChangeSwitchTexture toggles, so the presser has to skip the server's
+	// copy of its own change.
+	if (not P_SetButtonInfo(&lines[l], state, time) and switchactive and
+	    not lines[l].switchactive)
 	{
 		// only playsound if we've received the full update from
 		// the server (not setting up the map from the server)
@@ -2209,7 +2304,7 @@ void CL_Say(const odaproto::svc::Say* msg)
 		if (show_messages && !filtermessage)
 		{
 			if (cl_chatsounds == 1)
-				S_Sound(CHAN_INTERFACE, gameinfo.chatSound, 1, ATTN_NONE);
+				S_Sound(CHAN_INTERFACE, gameinfo.chatSound.data(), 1, ATTN_NONE);
 		}
 	}
 	else if (message_visibility == 1)
@@ -2458,21 +2553,17 @@ void CL_MidPrint(const odaproto::svc::MidPrint* msg)
 }
 
 //
-// CL_SaveSvGametic
+// CL_ServerGametic
+// Announces that the server has advanced its gametic.  Please see the schema / protocol
+// file for detailed notes.
 //
-// Receives the server's gametic at the time the packet was sent.  It will be
-// sent back to the server with the next cmd.
-//
-// [SL] 2011-05-11
 void CL_ServerGametic(const odaproto::svc::ServerGametic* msg)
 {
-	::last_svgametic = msg->tic();
+	::lastEchoedClientTic = msg->client_tic();
+
+	CL_AdvanceWorldPredictionTic(ThisMessageServerTic());
 
 	netgraph.addServerSideMetrics(msg->reliable_messages_in_flight(), msg->throttle());
-
-#ifdef _WORLD_INDEX_DEBUG_
-	PrintFmt(PRINT_HIGH, "Gametic {}, received world index {}\n", gametic, last_svgametic);
-#endif // _WORLD_INDEX_DEBUG_
 }
 
 //
@@ -2521,7 +2612,7 @@ void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	int armortype = msg->player().armortype();
 	int armorpoints = msg->player().armorpoints();
 	int lives = msg->player().lives();
-	weapontype_t weap = static_cast<weapontype_t>(msg->player().readyweapon());
+	const int32_t readyweapon = msg->player().readyweapon();
 
 	byte cardByte = msg->player().cards();
 	std::bitset<6> cardBits(cardByte);
@@ -2539,17 +2630,29 @@ void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 		}
 	}
 
-	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
+	struct PspriteUpdate
+	{
+		statenum_t statenum   = S_NULL;
+		fixed_t    sx         = 0;
+		fixed_t    sy         = 0;
+		bool       positioned = false;
+	};
+
+	std::array<PspriteUpdate, NUMPSPRITES> pspupdates;
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
 		if (i < msg->player().psprites_size())
 		{
-			const int32_t state = msg->player().psprites().Get(i).statenum();
+			const odaproto::PspriteState& psprite = msg->player().psprites().Get(i);
+			const int32_t state = psprite.statenum();
             if (!states.contains(state))
 			{
 				continue;
 			}
-			stnum[i] = static_cast<statenum_t>(state);
+			pspupdates[i].statenum = static_cast<statenum_t>(state);
+			pspupdates[i].sx = psprite.sx();
+			pspupdates[i].sy = psprite.sy();
+			pspupdates[i].positioned = true;
 		}
 	}
 
@@ -2577,20 +2680,41 @@ void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	player.armorpoints = armorpoints;
 	player.lives = lives;
 
-	player.readyweapon = weap;
-	player.pendingweapon = wp_nochange;
+	if (readyweapon >= 0 && readyweapon < NUMWEAPONS)
+	{
+		const auto weap = static_cast<weapontype_t>(readyweapon);
+
+		player.readyweapon = weap;
+		player.pendingweapon = wp_nochange;
+
+		if (!player.weaponowned[weap])
+			P_GiveWeapon(player, weap, false);
+	}
 
 	for (int i = 0; i < NUMCARDS; i++)
 		player.cards[i] = cardBits[i];
 
-	if (!player.weaponowned[weap])
-		P_GiveWeapon(player, weap, false);
-
 	for (int i = 0; i < NUMAMMO; i++)
 		player.ammo[i] = ammo[i];
 
+	player.psprite_authority_tic = gametic;
+
 	for (int i = 0; i < NUMPSPRITES; i++)
-		P_SetPsprite(player, i, stnum[i]);
+	{
+		// S_LIGHTDONE wont be sent by server bc it has length of 0 tics, so reset like this
+		if (i == ps_flash and pspupdates[ps_flash].statenum == S_NULL and player.psprites[ps_flash].statenum != S_NULL)
+		{
+			player.extralight = 0;
+		}
+
+		P_SetPsprite(player, i, pspupdates[i].statenum);
+
+		if (pspupdates[i].positioned && player.psprites[i].statenum != S_NULL)
+		{
+			player.psprites[i].sx = pspupdates[i].sx;
+			player.psprites[i].sy = pspupdates[i].sy;
+		}
+	}
 
 	for (int i = 0; i < NUMPOWERS; i++)
 		player.powers[i] = powerups[i];
@@ -2622,6 +2746,8 @@ void CL_ResetMap( [[ maybe_unused ]] const odaproto::svc::ResetMap* msg)
 	ClientReplay::getInstance().reset();
 
 	G_ClearRoundKillStats();
+
+	DeathSpotManager::getInstance().clearDeathSpots();
 
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.
@@ -2657,6 +2783,13 @@ void CL_ResetMap( [[ maybe_unused ]] const odaproto::svc::ResetMap* msg)
 	}
 
 	P_DestroyButtonThinkers();
+
+	// Nothing else clears these once the buttons are gone, and a line left
+	// marked active ignores every switch message the new round sends it.
+	for (int i = 0; i < numlines; i++)
+	{
+		lines[i].switchactive = false;
+	}
 
 	P_DestroyScrollerThinkers();
 
@@ -2927,7 +3060,7 @@ void CL_ExecuteLineSpecial(const odaproto::svc::ExecuteLineSpecial* msg)
 	if (linenum != -1 && linenum >= ::numlines)
 		return;
 
-	line_s* line = NULL;
+	line_t* line = nullptr;
 	if (linenum != -1)
 		line = &::lines[linenum];
 
@@ -3388,7 +3521,9 @@ void CL_PlayerPsprites(const odaproto::svc::PlayerPsprites* msg)
 {
 	std::array<PspriteStateType, NUMPSPRITES> psprites;
 
-	for (size_t i = 0; i < psprites.size(); ++i)
+	const size_t count = std::min(psprites.size(),
+	                              static_cast<size_t>(msg->psprites_size()));
+	for (size_t i = 0; i < count; ++i)
 	{
 	    psprites[i].statenum = static_cast<statenum_t>(msg->psprites(i).statenum());
 	    psprites[i].tics     = msg->psprites(i).tics();
@@ -3556,15 +3691,31 @@ const Protos& CL_GetTicProtos()
 	return ::protos;
 }
 
+namespace
+{
+	// multimap because:
+	//  1.  Packets can technically arrive well out-of-order, and
+	//      we want ordered handling.
+	//  2.  c++11 and up guarantee that ordering between
+	//      values that share a given key is the order of iteration.
+	//
+	// ParseResultType contains a unique_ptr to a parsed message.
+	//
+	// The key is the server tic that the message originated on.
+	// It is expected that the first value for a given tic is the header.
+	std::multimap<int32_t, ParseResultType> s_deferredMessages;
+}
+
+
 /**
  * @brief Read a server message off the wire.
  */
-ParseResultType CL_ParseCommand()
+ParseResultType CL_ParseCommand(buf_t& buffer)
 {
 	ParseResultType result;
 
 	// What type of message we have.
-	result.cmd = static_cast<msg_t>(MSG_ReadUnVarint());
+	result.cmd = static_cast<msg_t>(buffer.ReadUnVarint());
 
 	if (result.cmd == msg_ack)
 	{
@@ -3576,7 +3727,7 @@ ParseResultType CL_ParseCommand()
 		// proper way of defering ack handling to ProcessCommand.  It's just a lot
 		// easier and less complication overall to say that acks get special handling,
 		// especially as something that has to operate as part of the protocol itself.
-		const int sequence = MSG_ReadLong();
+		const int sequence = buffer.ReadLong();
 		messenger.Acknowledge(sequence);
 		result.code = PERR_OK;
 		return result;
@@ -3584,8 +3735,21 @@ ParseResultType CL_ParseCommand()
 
 	// Turn the message into a protobuf.
 	google::protobuf::Message* msg = nullptr;
-	result.code = MSG_ParseMessage(msg, result.cmd);
+	result.code = MSG_ParseMessage(msg, result.cmd, buffer);
 	result.msg.reset(msg);                      // This does the right thing even if nullptr.
+
+	// Process headers immediately so that if, somehow, we have a netdemo with multiple
+	// tics worth of messages in a single step, including the headers, we have the current
+	// header state set immediately to know that we need to actually process the header
+	// again in the future IAW the logic that pushes any message into the future.
+	//
+	// Also, this is just more technically correct because the header's information applies
+	// to *itself* just as much as the messages that follow it.
+	//
+	if (result.code == PERR_OK and result.cmd == msg_header)
+	{
+		CL_Header(static_cast<const odaproto::Header*>(result.msg.get()));
+	}
 
 	// Because the result type contains a unique_ptr, which is uncopyable,
 	// we can be sure that either copy elision or a move happens here.
@@ -3612,6 +3776,10 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		/* clang-format off */
 		SV_MSG(msg_noop, CL_Noop, odaproto::Noop);
 		SV_MSG(msg_header, CL_Header, odaproto::Header);
+
+		SV_MSG(msg_largemessagestart,    CL_LargeMessageStart,    odaproto::LargeMessageStart);
+		SV_MSG(msg_largemessagefragment, CL_LargeMessageFragment, odaproto::LargeMessageFragment);
+		SV_MSG(msg_largemessageend,      CL_LargeMessageEnd,      odaproto::LargeMessageEnd);
 
 		SV_MSG(svc_disconnect, CL_Disconnect, odaproto::svc::Disconnect);
 		SV_MSG(svc_playerinfo, CL_PlayerInfo, odaproto::svc::PlayerInfo);
@@ -3716,42 +3884,46 @@ namespace
 		}
 		return svc;
 	}
-}
 
-//
-// CL_ParseCommands
-//
-void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
-{
-	if (optionalHeader)
+	void CL_ParseOne(buf_t& buffer, int currentExpectedNewestPacket)
 	{
-		s_currentHeader = *optionalHeader;
-	}
+		ParseResultType result = CL_ParseCommand(buffer);
 
-	while (connected)
-	{
-		if (::net_message.BytesLeftToRead() == 0)
+		parseError_e processResult = result.code;
+		if (result.code == PERR_OK)
 		{
-			break;
+			// Any messages that exceed the expected newest packet are deferred.
+			//
+			// Special exception: clc_netdemocap.  It must always be handled immediately because the
+			//                    NetDemo class always delineates local tics with it, and it contains
+			//                    critical information for the next tic, particularly PlayerInputs.
+			if (ThisMessageServerTic() <= currentExpectedNewestPacket
+				or result.cmd == clc_netdemocap)
+			{
+				// When echoing server gametic back to it, use the tic that comes from the High Priority packet.
+				// This is because the High Priority packet is always live and comes out every tic.  It's totally
+				// possible for the server to go without sending anything Reliable or Best-Effort if things are
+				// all-quiet.
+				if (ThisMessageIsHighPriority())
+				{
+					messenger.SetDestinationTic(ThisMessageServerTic());
+				}
+
+				processResult = CL_ProcessCommand(result);
+			}
+			else
+			{
+				// Acks have already been handled by CL_ParseCommand and are processed without regard to tic.
+				// Don't bother deferring them.
+				if (result.cmd != msg_ack)
+				{
+					s_deferredMessages.emplace(ThisMessageServerTic(), std::move(result));
+				}
+				return;
+			}
 		}
 
-		// When echoing server gametic back to it, use the tic that comes from the High Priority packet.
-		// This is because the High Priority packet is always live and comes out every tic.  It's totally
-		// possible for the server to go without sending anything Reliable or Best-Effort if things are
-		// all-quiet.
-		if (messenger.GetCurrentReceivedIsHighPriority())
-		{
-			messenger.SetDestinationTic(messenger.GetCurrentReceivedRemoteTic());
-		}
-
-		const size_t          byteStart = ::net_message.BytesRead();
-		const ParseResultType result    = CL_ParseCommand();
-
-		const parseError_e processResult = result.code == PERR_OK ?
-			CL_ProcessCommand(result) :
-			result.code;
-
-		if (processResult != PERR_OK or ::net_message.overflowed)
+		if (processResult != PERR_OK or buffer.overflowed)
 		{
 			const Protos& protos = CL_GetTicProtos();
 
@@ -3768,7 +3940,7 @@ void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 			{
 				err = "Could not decode message";
 			}
-			else if (::net_message.overflowed)
+			else if (buffer.overflowed)
 			{
 				err = "Message overflowed";
 			}
@@ -3798,14 +3970,86 @@ void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
 
 			CL_QuitNetGame(NQ_PROTO);
 		}
+	}
 
-		// Measure length of each message, so we can keep track of bandwidth.
-		if (::net_message.BytesRead() < byteStart)
+	void CL_ParseBuffer(buf_t& buffer, int currentExpectedNewestPacket)
+	{
+		while (connected)
 		{
-			PrintFmt("CL_ParseCommands: end byte ({}) < start byte ({})\n",
-			         ::net_message.BytesRead(), byteStart);
+			if (buffer.BytesLeftToRead() == 0)
+			{
+				break;
+			}
+
+			const size_t byteStart = buffer.BytesRead();
+			CL_ParseOne(buffer, currentExpectedNewestPacket);
+
+			// Measure length of each message, so we can keep track of bandwidth.
+			if (buffer.BytesRead() < byteStart)
+			{
+				PrintFmt("CL_ParseCommands: end byte ({}) < start byte ({})\n",
+				        buffer.BytesRead(), byteStart);
+			}
 		}
+	}
+
+	int CL_HandleCurrentDeferredMessages()
+	{
+		const bool syncValuesAreSet           = world_index != 0 and last_svgametic != 0;
+		const bool worldIsCycling             = gamestate == GS_LEVEL;
+		const int currentExpectedNewestPacket = syncValuesAreSet and worldIsCycling ? (world_index + int(cl_interp)) : std::numeric_limits<int>::max();
+
+		for (auto deferredMessageIter  = s_deferredMessages.begin();
+		          deferredMessageIter != s_deferredMessages.end();
+		          deferredMessageIter  = s_deferredMessages.erase(deferredMessageIter)
+		    )
+		{
+			if (deferredMessageIter->first > currentExpectedNewestPacket)
+			{
+				break;
+			}
+			CL_ProcessCommand(deferredMessageIter->second);
+		}
+		return currentExpectedNewestPacket;
 	}
 }
 
-VERSION_CONTROL (cl_parse_cpp, "$Id$")
+
+void CL_ProcessDeferredCommands()
+{
+	CL_HandleCurrentDeferredMessages();
+}
+
+//
+// CL_ParseCommands
+//
+void CL_ParseCommands(const std::optional<PacketHeaderType>& optionalHeader)
+{
+	// Before we move onto anything new in the net_message buffer, deal with any
+	// previously-received deferred messages that have become current.
+	const int currentExpectedNewestPacket = CL_HandleCurrentDeferredMessages();
+
+	if (optionalHeader)
+	{
+		s_currentHeader = *optionalHeader;
+		if (ThisMessageIsHighPriority())
+		{
+			last_svgametic = s_currentHeader.originatorTic;
+		}
+
+		// If this packet is "from the future," we'll put its decoded messages into the deferredMessages container
+		// in ParseOne via ParseBuffer, but we need to make sure that we put the corresponding header in, too.  We
+		// do that here, right away, so that when we eventually process the future tic's deferred messages, we handle
+		// the header first.
+		if (s_currentHeader.originatorTic > currentExpectedNewestPacket)
+		{
+			auto headerProto = MSG_Header(s_currentHeader);
+			ParseResultType futureReception { .msg  = std::make_unique<decltype(headerProto)>(std::move(headerProto)),
+			                                  .code = PERR_OK,
+			                                  .cmd  = msg_header };
+			s_deferredMessages.emplace(s_currentHeader.originatorTic, std::move(futureReception));
+		}
+	}
+
+	CL_ParseBuffer(::net_message, currentExpectedNewestPacket);
+}

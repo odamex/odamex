@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -47,34 +45,27 @@
 #include <ctype.h>
 #include <stdarg.h>
 
+#include "istring.h"
+#include "doomdef.h"
+
 struct OTimespan
 {
-	int csecs;
-	int tics;
-	int seconds;
-	int minutes;
-	int hours;
-	OTimespan() : csecs(0), tics(0), seconds(0), minutes(0), hours(0) { }
+	int csecs   = 0;
+	int tics    = 0;
+	int seconds = 0;
+	int minutes = 0;
+	int hours   = 0;
 };
 
-int		ParseHex(const char *str);
-int 	ParseNum(const char *str);
-bool	IsNum(const char* str);		// [RH] added
-bool	IsNum(std::string_view str);
-bool	IsRealNum(const char* str);
-bool	IsRealNum(std::string_view str);
+bool IsNum(std::string_view str);
+bool IsRealNum(std::string_view str);
 
-template<std::integral T>
+template <std::integral T>
 std::optional<T> ParseNum(std::string_view str, int base = 10)
 {
     T out;
 	while (!str.empty() && std::isspace(static_cast<unsigned char>(str.front())))
 		str.remove_prefix(1);
-	if (str[0] == '$')
-	{
-		str.remove_prefix(1);
-		base = 16;
-	}
     const std::from_chars_result result = std::from_chars(str.data(), str.data() + str.size(), out, base);
     if (result.ec != std::errc())
     {
@@ -86,7 +77,7 @@ std::optional<T> ParseNum(std::string_view str, int base = 10)
 namespace cmd_detail
 {
 
-template<typename T>
+template <typename T>
 concept has_from_chars_float =
 requires(const char* f, const char* l, T v)
 {
@@ -98,7 +89,7 @@ inline constexpr bool always_false = false;
 
 }
 
-template<typename T>
+template <typename T>
 requires std::is_floating_point_v<T>
 std::optional<T> ParseNum(std::string_view str)
 {
@@ -146,6 +137,8 @@ std::optional<T> ParseNum(std::string_view str)
 // [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
 bool iequals(std::string_view, std::string_view);
+bool iequals(const char*, const char*);
+bool iequals(IStringView, IStringView);
 
 size_t  StdStringFind(const std::string& haystack, const std::string& needle,
     size_t pos = 0, size_t n = std::string::npos, bool CIS = false);
@@ -183,6 +176,100 @@ bool StrParseISOTime(const std::string& s, tm* utc_tm);
 bool StrToTime(std::string str, time_t &tim);
 
 void TicsToTime(OTimespan& span, int time, bool ceilsec = false);
+
+inline constexpr int TENTHS_PER_SECOND = 10;
+inline constexpr int SECONDS_PER_MINUTE = 60;
+inline constexpr int MINUTES_PER_HOUR = 60;
+inline constexpr int SECONDS_PER_HOUR = SECONDS_PER_MINUTE * MINUTES_PER_HOUR;
+
+/**
+ * @brief Round a tic count to tenths of a second.
+ *
+ * Callers that go on to split the result into seconds, minutes and hours must
+ * round here first and divide afterwards.
+ *
+ * @param tics    Tics to round. Negative counts as zero.
+ * @param ceilsec Round up rather than down.
+ */
+inline int TicsToTenths(int tics, const bool ceilsec = false)
+{
+	tics = std::max(tics, 0);
+
+	return ceilsec ? ((tics * TENTHS_PER_SECOND) + TICRATE - 1) / TICRATE
+	               : (tics * TENTHS_PER_SECOND) / TICRATE;
+}
+
+/**
+ * @brief Render a tic count as a clock with a tenths place - "mm:ss.t", or
+ *        "hh:mm:ss.t" if there is an hour to show. (currently limited to 60s)
+ *
+ * @param tics    Tics to render. Negative counts as zero.
+ * @param ceilsec Round up rather than down. Counting down wants this so the
+ *                clock never claims less time than is left, and counting up wants
+ *                it off so it never claims more time than has elapsed.
+ */
+inline std::string TicsToClockTenths(const int tics, const bool ceilsec = false)
+{
+	const int tenths = TicsToTenths(tics, ceilsec);
+	const int secs = tenths / TENTHS_PER_SECOND;
+	const int hours = secs / SECONDS_PER_HOUR;
+
+	constexpr int PAD_BELOW = 10;
+
+	const auto pad = [](const int n) {
+		return (n < PAD_BELOW ? "0" : "") + std::to_string(n);
+	};
+
+	std::string clock = pad((secs / SECONDS_PER_MINUTE) % MINUTES_PER_HOUR) + ":" +
+	                    pad(secs % SECONDS_PER_MINUTE) + "." +
+	                    std::to_string(tenths % TENTHS_PER_SECOND);
+
+	if (hours)
+	{
+		return pad(hours) + ":" + clock;
+	}
+
+	return clock;
+}
+
+/**
+ * @brief Render a tic count as a compact seconds string, growing a tenths part
+ *        once it is small enough to be worth watching closely.
+ *
+ * Both halves round the same way, chosen by ceilsec.
+ *
+ * Rounding down is what a countdown on screen wants. Every value then holds for
+ * its own full share of time, so the last whole second before the tenths take
+ * over gets a whole second rather than a few tics, and hands over to "x.9".
+ *
+ * Rounding up buys a "0.0" that only ever appears at a true zero, at the cost
+ * of that first tenths value flashing past.
+ *
+ * @param tics       Tics to render. Negative counts as zero.
+ * @param tenthstics Render "Seconds.Tenths" BELOW this many tics, and whole
+ *                   seconds at or above it.
+ *                   Zero for whole seconds only. Keep this an exact multiple of
+ *                   TICRATE, or the last whole second is cut short.
+ * @param ceilsec    Round up rather than down, as described above.
+ */
+inline std::string TicsToShortTime(int tics, const int tenthstics,
+                                   const bool ceilsec = false)
+{
+	tics = std::max(tics, 0);
+
+	if (tenthstics > 0 and tics < tenthstics)
+	{
+		const int tenths = TicsToTenths(tics, ceilsec);
+
+		return std::to_string(tenths / TENTHS_PER_SECOND) + "." +
+		       std::to_string(tenths % TENTHS_PER_SECOND);
+	}
+
+	if (ceilsec)
+		return std::to_string((tics + TICRATE - 1) / TICRATE);
+
+	return std::to_string(tics / TICRATE);
+}
 
 bool CheckWildcards (const char *pattern, const char *text);
 void ReplaceString (char** ptr, const char* str);

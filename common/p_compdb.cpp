@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -70,5 +68,3 @@ const levelcompdata_t& P_GetLevelCompData(fhfprint_t fingerprint)
 	static constexpr levelcompdata_t defaultData{};
 	return defaultData;
 }
-
-VERSION_CONTROL (p_compdb_cpp, "$Id$")

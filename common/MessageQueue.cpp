@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2026 by Jim Thoenen.
 //
 // This program is free software; you can redistribute it and/or
@@ -21,6 +19,8 @@
 //-----------------------------------------------------------------------------
 
 #include "MessageQueue.h"
+
+#include "msg_pack.h"
 
 buf_t& MessageQueue::Obtain()
 {
@@ -42,17 +42,29 @@ buf_t& MessageQueue::Obtain()
 	}
 	else
 	{
-		m_queue.emplace_back(MAX_UDP_PACKET);
+		m_queue.emplace_back(m_maxMessageBufferSize);
 	}
 	return m_queue.back();
 }
 
-void MessageQueue::Emplace(buf_t& io_str)
+void MessageQueue::Write(msg_t id, const std::string& msg)
 {
-	buf_t& obtainedBuffer = MessageQueue::Obtain();
+	if (simulated_connection)
+		return;
 
-	obtainedBuffer.swap(io_str);
-	io_str.clear();
+	buf_t& buffer = Obtain();
+	buffer.WriteMessage(id, msg);
+}
+
+void MessageQueue::Write(const google::protobuf::Message& msg)
+{
+	if (simulated_connection)
+		return;
+
+	if (const auto messageId = MSG_Pack(m_serializationBuffer, msg))
+	{
+		Write(*messageId, m_serializationBuffer);
+	}
 }
 
 void MessageQueue::PopFromQueueToFreeStack()

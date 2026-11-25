@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -151,7 +149,7 @@ void CMD_MapVoteCallback(const maplist_qrows_t &result) {
 	std::ostringstream index;
 	index << result[0].first;
 
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CallVote(VOTE_MAP, index.str()));
+	messenger.Reliable().Write(CLC_CallVote(VOTE_MAP, index.str()));
 }
 
 void CMD_RandmapVoteErrback(const std::string &error) {
@@ -169,7 +167,7 @@ void CMD_RandmapVoteCallback(const maplist_qrows_t &result) {
 		return;
 	}
 
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CallVote(VOTE_RANDMAP));
+	messenger.Reliable().Write(CLC_CallVote(VOTE_RANDMAP));
 }
 
 //////// CONSOLE COMMANDS ////////
@@ -261,7 +259,7 @@ BEGIN_COMMAND(callvote) {
 		return;
 	}
 
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CallVote(votecmd, arguments));
+	messenger.Reliable().Write(CLC_CallVote(votecmd, arguments));
 
 } END_COMMAND(callvote)
 
@@ -277,7 +275,7 @@ BEGIN_COMMAND(vote_yes)
 	}
 
 	std::array cmd { "vote", "yes" };
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd(cmd.begin(), cmd.end()));
+	messenger.Reliable().Write(CLC_Netcmd(cmd.begin(), cmd.end()));
 
 	if (snd_votesfx)
 		S_Sound(CHAN_INTERFACE, "ui/vote/yes", 1.0f, ATTN_NONE);
@@ -296,7 +294,7 @@ BEGIN_COMMAND(vote_no)
 	}
 
 	std::array cmd { "vote", "no" };
-	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd(cmd.begin(), cmd.end()));
+	messenger.Reliable().Write(CLC_Netcmd(cmd.begin(), cmd.end()));
 
 	if (snd_votesfx)
 		S_Sound(CHAN_INTERFACE, "ui/vote/no", 1.0f, ATTN_NONE);

@@ -147,21 +147,12 @@
          "type" : "string"
       },
       {
-         "default" : 0.5,
-         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
-         "helptext" : "Scale height of overlay minimap",
-         "max" : 1.0,
-         "min" : 0.0,
-         "name" : "am_ovscaleheight",
-         "type" : "number"
-      },
-      {
          "default" : 0.25,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
-         "helptext" : "Scale width of overlay minimap",
+         "helptext" : "Scale size of overlay minimap",
          "max" : 1.0,
          "min" : 0.0,
-         "name" : "am_ovscalewidth",
+         "name" : "am_ovscalesize",
          "type" : "number"
       },
       {
@@ -699,6 +690,13 @@
          "type" : "boolean"
       },
       {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Allows the spectator/freecam to move through walls",
+         "name" : "cl_noclip_spectator",
+         "type" : "boolean"
+      },
+      {
          "default" : true,
          "flags" : [ "CLIENTARCHIVE" ],
          "helptext" : "Predict weapon pickups",
@@ -757,6 +755,22 @@
          "helptext" : "Enable or disable downloading game files and resources from the internet (see cl_downloadsites for more information)",
          "name" : "cl_serverdownload",
          "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Show tenths of a second on all HUD timers, starting when the timer reaches cl_shotclocksecondsleft.",
+         "name" : "cl_shotclock",
+         "type" : "boolean"
+      },
+      {
+         "default" : 10,
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Seconds left before a HUD timer starts displaying tenths of a second, if cl_shotclock is enabled",
+         "max" : 60,
+         "min" : 0,
+         "name" : "cl_shotclocksecondsleft",
+         "type" : "integer"
       },
       {
          "default" : false,
@@ -1356,6 +1370,13 @@
          "flags" : [ "SERVERINFO", "LATCH", "SERVERARCHIVE" ],
          "helptext" : "Turns on offensive vs defensive sides for team-based game modes - teams on offense don't have to defend any team objective, teams on defense win if time expires, and if rounds are enabled the team on defense changes every round",
          "name" : "g_sides",
+         "type" : "boolean"
+      },
+      {
+         "default" : false,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Players respawn on the spot where they died instead of at a player start.",
+         "name" : "g_spawnatdeathspot",
          "type" : "boolean"
       },
       {
@@ -2047,10 +2068,10 @@
          "type" : "boolean"
       },
       {
-         "default" : 16,
+         "default" : 4,
          "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
          "helptext" : "Maximum depth of nested portal (skybox) views. 0 draws portal planes as regular sky.",
-         "max" : 64,
+         "max" : 16,
          "min" : 0,
          "name" : "r_portalrecursions",
          "type" : "integer"
@@ -2107,6 +2128,20 @@
          "helptext" : "Set to the current video resolution",
          "name" : "r_viewsize",
          "type" : "string"
+      },
+      {
+         "default" : "voxels",
+         "flags" : [ "NOENABLEDISABLE", "CLIENTARCHIVE" ],
+         "helptext" : "Directory containing raw .kvx voxel files. Relative paths are resolved against the user directory.",
+         "name" : "r_voxeldir",
+         "type" : "string"
+      },
+      {
+         "default" : true,
+         "flags" : [ "CLIENTARCHIVE" ],
+         "helptext" : "Enable software voxel rendering",
+         "name" : "r_voxels",
+         "type" : "boolean"
       },
       {
          "default" : 1,
@@ -2323,6 +2358,13 @@
       {
          "default" : true,
          "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to use crosshair",
+         "name" : "sv_allowcrosshair",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
          "helptext" : "Allow use of Exit switch/teleports in all game modes",
          "name" : "sv_allowexit",
          "type" : "boolean"
@@ -2374,6 +2416,13 @@
          "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
          "helptext" : "When set, names of players appear in the FOV",
          "name" : "sv_allowtargetnames",
+         "type" : "boolean"
+      },
+      {
+         "default" : true,
+         "flags" : [ "SERVERINFO", "SERVERARCHIVE" ],
+         "helptext" : "Allow clients to load custom voxel models from external directory. Does not affect voxels contained within server loaded wads.",
+         "name" : "sv_allowvoxels",
          "type" : "boolean"
       },
       {

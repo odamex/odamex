@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -25,11 +23,16 @@
 #pragma once
 
 #include <stdexcept>
+#include <vector>
 
 #include "v_textcolors.h"	// Ch0wW : Colorized textcodes
 #include "hu_stuff.h"
 #include "r_defs.h"
 #include "w_wad.h"
+
+// The console font: 256 glyphs of 8 rows, each row 8 color bytes followed by 8
+// transparency mask bytes. Built from the CONCHARS lumps by C_InitConCharsFont.
+extern std::vector<byte> ConChars;
 
 struct OGlobalFont
 {

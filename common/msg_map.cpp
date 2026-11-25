@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2021, 2026 by Alex Mayfield and et al.
 //
 // This program is free software; you can redistribute it and/or
@@ -60,6 +58,10 @@ static void InitMap()
 {
 	MapProto(msg_noop,   odaproto::Noop::descriptor());
 	MapProto(msg_header, odaproto::Header::descriptor());
+
+	MapProto(msg_largemessagestart,    odaproto::LargeMessageStart::descriptor());
+	MapProto(msg_largemessagefragment, odaproto::LargeMessageFragment::descriptor());
+	MapProto(msg_largemessageend,      odaproto::LargeMessageEnd::descriptor());
 
 	MapProto(svc_disconnect, odaproto::svc::Disconnect::descriptor());
 	MapProto(svc_playerinfo, odaproto::svc::PlayerInfo::descriptor());
