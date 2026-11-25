@@ -160,6 +160,7 @@ bool P_AvatarBlocksSpot(fixed_t x, fixed_t y, fixed_t z);
 
 // [ML] From EE
 int P_ThingInfoHeight(mobjinfo_t *mi);
+fixed_t P_CeilingHangHeight(const AActor* mo);
 bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound);
 void SpawnFlag(const mapthing2_t& mthing, team_t flag);
 

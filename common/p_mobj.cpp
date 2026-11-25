@@ -318,7 +318,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 	}
 	else if (iz == ONCEILINGZ)
 	{
-		z = ceilingz - height;
+		z = ceilingz - P_CeilingHangHeight(this);
 	}
 	else if (flags2 & MF2_FLOATBOB)
 	{
@@ -1025,6 +1025,20 @@ int P_ThingInfoHeight(mobjinfo_t *mi)
        mi->cdheight : mi->height);
 }
 
+//
+// P_CeilingHangHeight
+//
+// An actor's height gets changed if co_realactorheight is 1, which messes
+// up the calculation for ceiling hang height.
+// 
+// This function will return the correct value for ceiling hang height
+// in all instances.
+//
+fixed_t P_CeilingHangHeight(const AActor* mo)
+{
+	return (mo->flags & MF_SPAWNCEILING) ? mo->info->height : mo->height;
+}
+
 // Use a heuristic approach to detect infinite state cycles: Count the number
 // of times the loop in P_SetMobjState() executes and exit with an error once
 // an arbitrary very large limit is reached.
@@ -1699,7 +1713,7 @@ static bool P_ClipMovementToFloor(AActor* mo)
 //
 static bool P_ClipMovementToCeiling(AActor* mo)
 {
-	if (mo->z + mo->height > mo->ceilingz)
+	if (mo->z + P_CeilingHangHeight(mo) > mo->ceilingz)
 	{
 		// [AM] If there is a actor special for hitting the floor, activate it.
 		if (mo->subsector->sector->SecActTarget &&
@@ -1709,7 +1723,7 @@ static bool P_ClipMovementToCeiling(AActor* mo)
 		if (mo->momz > 0)
 			mo->momz = 0;
 
-		mo->z = mo->ceilingz - mo->height;
+		mo->z = mo->ceilingz - P_CeilingHangHeight(mo);
 
 		// Lost Soul hit the ceiling
 		if (mo->flags & MF_SKULLFLY)
