@@ -60,6 +60,7 @@ bool G_Responder(const event_t&	ev);
 void G_ScreenShot(const char* filename);
 
 void G_PlayerFinishLevel(player_t &player);
+void G_PlayerReborn(player_t& p);
 
 void G_AddViewAngle(int yaw);
 void G_AddViewPitch(int pitch);

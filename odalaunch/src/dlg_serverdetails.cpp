@@ -95,7 +95,7 @@ static const CvarCategories& GetCvarCategories()
 	    {"sv_aircontrol", "sv_doubleammo", "sv_fastmonsters", "sv_forcerespawn",
 	     "sv_forcerespawntime", "sv_forcewater", "sv_friendlyfire",
 	     "sv_friendlymonsterfire", "sv_gravity", "sv_infiniteammo",
-	     "sv_itemrespawntime", "sv_itemsrespawn", "sv_keepkeys",
+	     "sv_itemrespawntime", "sv_itemsrespawn", "sv_keepkeys", "sv_keepweapons",
 	     "sv_monsterdamage", "sv_monstershealth", "sv_monstersrespawn",
 	     "sv_nomonsters", "sv_showplayerpowerups", "sv_skill",
 	     "sv_spawndelaytime", "sv_splashfactor", "sv_weapondamage",

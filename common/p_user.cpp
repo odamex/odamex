@@ -44,6 +44,7 @@
 #include "p_mapformat.h"
 #include "g_multikill.h"
 #include "g_deathspot.h"
+#include "g_keepweapons.h"
 
 #include <span>
 
@@ -71,6 +72,7 @@ static player_t nullplayer;		// used to indicate 'player not found' when searchi
 EXTERN_CVAR (sv_allowmovebob)
 EXTERN_CVAR (sv_showplayerpowerups)
 EXTERN_CVAR (cl_movebob)
+EXTERN_CVAR (sv_keepweapons)
 
 player_t &idplayer(byte id)
 {
@@ -767,6 +769,11 @@ void P_DeathThink (player_t& player)
 			}
 
 			player.playerstate = PST_REBORN;
+
+			// Granting the respawn is what earns the loadout back, so only a
+			// death stashes one.
+			if (::sv_keepweapons)
+				KeepWeaponsManager::getInstance().setLoadout(player.id, player);
 		}
 	}
 }

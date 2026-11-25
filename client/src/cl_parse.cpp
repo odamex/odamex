@@ -66,6 +66,7 @@
 #include "cl_netgraph.h"
 #include "g_spree.h"
 #include "g_deathspot.h"
+#include "g_keepweapons.h"
 #include "g_multikill.h"
 #include "cl_freecam.h"
 
@@ -932,6 +933,8 @@ void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 	if (players.empty() || !validplayer(player))
 		return;
 
+	const int playerid = player.id;
+
 	if (player.id == consoleplayer().id)
 	{
 		connected = false;
@@ -960,6 +963,11 @@ void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 			break;
 		}
 	}
+
+	// Player ids get recycled, so anything left behind here would be handed to
+	// whoever joins next under the same id.
+	DeathSpotManager::getInstance().eraseDeathSpot(playerid);
+	KeepWeaponsManager::getInstance().eraseLoadout(playerid);
 
 	// if this was our displayplayer, update camera
 	CL_CheckDisplayPlayer();
@@ -1404,6 +1412,10 @@ void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 			p.mo->Destroy();
 		}
 	}
+
+	// The server decides whether this spawn keeps the loadout.
+	if (msg->keepweapons())
+		KeepWeaponsManager::getInstance().setLoadout(p.id, p);
 
 	G_PlayerReborn(p);
 
@@ -2751,6 +2763,7 @@ void CL_ResetMap( [[ maybe_unused ]] const odaproto::svc::ResetMap* msg)
 	G_ClearRoundKillStats();
 
 	DeathSpotManager::getInstance().clearDeathSpots();
+	KeepWeaponsManager::getInstance().clearLoadouts();
 
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.
