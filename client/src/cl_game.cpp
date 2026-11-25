@@ -64,13 +64,11 @@ END_DISABLE_WARNING_GNU
 #include "cl_netgraph.h"
 #include "gi.h"
 #include "hu_mousegraph.h"
-#include "g_spawninv.h"
 #include "g_gametype.h"
 #include "p_horde.h"
 #include "g_musinfo.h"
 #include "g_spree.h"
 #include "g_multikill.h"
-#include "g_deathspot.h"
 #include "cl_freecam.h"
 
 #include <math.h> // for pow()
@@ -82,7 +80,6 @@ END_DISABLE_WARNING_GNU
 bool	G_CheckDemoStatus (void);
 void	G_ReadDemoTiccmd ();
 void	G_WriteDemoTiccmd ();
-void	G_PlayerReborn (player_t &player);
 
 void	G_DoNewGame (void);
 void	G_DoLoadGame (void);
@@ -105,8 +102,6 @@ EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_respawnsuper)
 EXTERN_CVAR (sv_respawnbarrels)
 EXTERN_CVAR (sv_weaponstay)
-EXTERN_CVAR (sv_keepkeys)
-EXTERN_CVAR (sv_sharekeys)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (in_autosr50)
 
@@ -1061,7 +1056,7 @@ void G_Ticker (void)
 
 	netgraph.start(I_GetTime());
 
-	if (connected && !simulated_connection)
+	if (connected and not simulated_connection)
 	{
 		while ((packet_size = NET_GetPacket()) )
 		{
@@ -1349,44 +1344,6 @@ void G_PlayerFinishLevel (player_t& player)
 	player.bonuscount = 0;
 }
 
-
-//
-// G_PlayerReborn
-// Called after a player dies
-// almost everything is cleared and initialized
-//
-void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
-{
-	size_t i;
-	for (i = 0; i < NUMAMMO; i++)
-	{
-		p.maxammo[i] = maxammo[i];
-		p.ammo[i] = 0;
-	}
-	for (i = 0; i < NUMWEAPONS; i++)
-		p.weaponowned[i] = false;
-
-	if (!sv_keepkeys && !sv_sharekeys)
-		P_ClearPlayerCards(p);
-
-	P_ClearPlayerPowerups(p);
-
-	for (i = 0; i < NUMTEAMS; i++)
-		p.flags[i] = false;
-	p.backpack = false;
-
-	G_GiveSpawnInventory(p);
-
-	p.usedown = p.attackdown = true;	// don't do anything immediately
-	p.playerstate = PST_LIVE;
-	p.weaponowned[wp_none] = true;
-
-	if (!p.spectator)
-		p.cheats = 0; // Reset cheat flags
-
-	p.death_time = 0;
-	DeathSpotManager::getInstance().eraseDeathSpot(p.id);
-}
 
 //
 // G_CheckSpot
