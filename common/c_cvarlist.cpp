@@ -151,6 +151,12 @@ CVAR(				sv_weaponstay,    "1", "Weapons stay after pickup",
 CVAR(				sv_keepkeys, "0", "Keep keys on death",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+CVAR(				sv_keepweapons, "0", "Keep weapons and ammo when respawning after a death.\n" \
+					"// All weapons and ammo are lost when you become a spectator, or run out of lives in a g_lives game.\n" \
+					"// The weapons and ammo from sv_keepweapons are awarded after g_spawninv provides the spawn inventory.\n" \
+					"// Keeping weapons and ammo through level exits are still governed by g_resetinvonexit.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 CVAR_FUNC_DECL(		sv_sharekeys, "0", "Share keys found to every player.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
