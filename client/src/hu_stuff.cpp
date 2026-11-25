@@ -39,6 +39,7 @@
 
 #include "cl_main.h"
 #include "p_ctf.h"
+#include "i_input.h"
 #include "i_video.h"
 #include "cl_netgraph.h"
 #include "hu_mousegraph.h"
@@ -139,16 +140,19 @@ chatmode_t HU_ChatMode()
 void HU_SetChatMode()
 {
 	chatmode = CHAT_NORMAL;
+	I_EnableTextEntry();
 }
 
 void HU_SetTeamChatMode()
 {
 	chatmode = CHAT_TEAM;
+	I_EnableTextEntry();
 }
 
 void HU_UnsetChatMode()
 {
 	chatmode = CHAT_INACTIVE;
+	I_DisableTextEntry();
 }
 
 

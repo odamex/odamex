@@ -56,9 +56,12 @@ bool tab_keydown = false;	// [ML] Actual status of tab key
 EXTERN_CVAR(ui_mouse)
 EXTERN_CVAR(joy_gamepadmode)
 
-static IInputSubsystem* input_subsystem = NULL;
+namespace
+{
 
-static bool nomouse = false;
+std::unique_ptr<IInputSubsystem> input_subsystem;
+
+bool nomouse = false;
 
 enum EInputMode
 {
@@ -67,7 +70,9 @@ enum EInputMode
 	INPUT_MODE_GAME
 };
 
-static EInputMode current_input_mode = INPUT_MODE_RELEASED;
+EInputMode current_input_mode = INPUT_MODE_RELEASED;
+
+} // namespace
 
 KeyNameTable key_names;
 
@@ -717,7 +722,7 @@ bool I_InitInput()
 	atterm(I_ShutdownInput);
 
 	#ifdef SDL20
-	input_subsystem = new ISDL20InputSubsystem();
+	input_subsystem = std::make_unique<ISDL20InputSubsystem>();
 	#endif
 
 	input_subsystem->initKeyboard(0);
@@ -730,8 +735,6 @@ bool I_InitInput()
 
 	I_ForceUpdateGrab();
 
-	input_subsystem->enableTextEntry();
-
 	return true;
 }
 
@@ -741,12 +744,9 @@ bool I_InitInput()
 //
 void I_ShutdownInput()
 {
-	input_subsystem->disableTextEntry();
-
 	I_ApplyInputMode(INPUT_MODE_RELEASED);
 
-	delete input_subsystem;
-	input_subsystem = NULL;
+	input_subsystem.reset();
 }
 
 
@@ -793,12 +793,22 @@ void I_GetEvents(bool mouseOnly)
 //
 // I_StartTic
 //
-void I_StartTic (void)
+void I_StartTic()
 {
 	I_GetEvents(false);
 }
 
+void I_EnableTextEntry()
+{
+	if (input_subsystem)
+		input_subsystem->enableTextEntry();
+}
 
+void I_DisableTextEntry()
+{
+	if (input_subsystem)
+		input_subsystem->disableTextEntry();
+}
 
 // ============================================================================
 //
@@ -879,7 +889,7 @@ void IInputSubsystem::disableKeyRepeat()
 //
 void IInputSubsystem::enableTextEntry()
 {
-	IKeyboardInputDevice* device = static_cast<IKeyboardInputDevice*>(getKeyboardInputDevice());
+	auto* device = static_cast<IKeyboardInputDevice*>(getKeyboardInputDevice());
 	if (device)
 		device->enableTextEntry();
 }
@@ -890,7 +900,7 @@ void IInputSubsystem::enableTextEntry()
 //
 void IInputSubsystem::disableTextEntry()
 {
-	IKeyboardInputDevice* device = static_cast<IKeyboardInputDevice*>(getKeyboardInputDevice());
+	auto* device = static_cast<IKeyboardInputDevice*>(getKeyboardInputDevice());
 	if (device)
 		device->disableTextEntry();
 }

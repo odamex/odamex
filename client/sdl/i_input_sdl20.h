@@ -25,10 +25,9 @@
 
 #include "d_event.h"
 #include <queue>
-#include <list>
 #include "hashtable.h"
 
-typedef OHashTable<int, int> KeyTranslationTable;
+using KeyTranslationTable = OHashTable<int, int>;
 
 #ifdef SDL20
 
@@ -42,25 +41,25 @@ class ISDL20KeyboardInputDevice : public IKeyboardInputDevice
 {
 public:
 	ISDL20KeyboardInputDevice(int id);
-	virtual ~ISDL20KeyboardInputDevice();
+	~ISDL20KeyboardInputDevice() override;
 
-	virtual bool active() const;
+	[[nodiscard]] bool active() const override;
 
-	virtual void pause();
-	virtual void resume();
-	virtual void reset();
+	void pause() override;
+	void resume() override;
+	void reset() override;
 
-	virtual void gatherEvents();
+	void gatherEvents() override;
 
-	virtual bool hasEvent() const
+	[[nodiscard]] bool hasEvent() const override
 	{	return !mEvents.empty();	}
 
-	virtual void getEvent(event_t* ev);
+	void getEvent(event_t* ev) override;
 
-	virtual void flushEvents();
+	void flushEvents() override;
 
-	virtual void enableTextEntry();
-	virtual void disableTextEntry();
+	void enableTextEntry() override;
+	void disableTextEntry() override;
 
 private:
 	int translateKey(SDL_Keysym keysym);
@@ -69,7 +68,7 @@ private:
 	bool					mActive;
 	bool					mTextEntry;
 
-	typedef std::queue<event_t> EventQueue;
+	using EventQueue = std::queue<event_t>;
 	EventQueue				mEvents;
 };
 
@@ -84,23 +83,23 @@ class ISDL20MouseInputDevice : public IInputDevice
 {
 public:
 	ISDL20MouseInputDevice(int id);
-	virtual ~ISDL20MouseInputDevice();
+	~ISDL20MouseInputDevice() override;
 
-	virtual bool active() const;
+	[[nodiscard]] bool active() const override;
 
-	virtual void pause();
-	virtual void resume();
-	virtual void resumeUI();
-	virtual void reset();
+	void pause() override;
+	void resume() override;
+	void resumeUI() override;
+	void reset() override;
 
-	virtual void gatherEvents();
+	void gatherEvents() override;
 
-	virtual bool hasEvent() const
+	[[nodiscard]] bool hasEvent() const override
 	{	return !mEvents.empty();	}
 
-	virtual void getEvent(event_t* ev);
+	void getEvent(event_t* ev) override;
 
-	virtual void flushEvents();
+	void flushEvents() override;
 
 private:
 	void enableEvents(bool relative);
@@ -109,7 +108,7 @@ private:
 
 	bool			mUIMode;
 
-	typedef std::queue<event_t> EventQueue;
+	using EventQueue = std::queue<event_t>;
 	EventQueue		mEvents;
 };
 
@@ -124,22 +123,22 @@ class ISDL20JoystickInputDevice : public IInputDevice
 {
 public:
 	ISDL20JoystickInputDevice(int id);
-	virtual ~ISDL20JoystickInputDevice();
+	~ISDL20JoystickInputDevice() override;
 
-	virtual bool active() const;
+	[[nodiscard]] bool active() const override;
 
-	virtual void pause();
-	virtual void resume();
-	virtual void reset();
+	void pause() override;
+	void resume() override;
+	void reset() override;
 
-	virtual void gatherEvents();
+	void gatherEvents() override;
 
-	virtual bool hasEvent() const
+	[[nodiscard]] bool hasEvent() const override
 	{	return !mEvents.empty();	}
 
-	virtual void getEvent(event_t* ev);
+	void getEvent(event_t* ev) override;
 
-	virtual void flushEvents();
+	void flushEvents() override;
 
 private:
 	int calcAxisValue(int raw_value);
@@ -148,7 +147,7 @@ private:
 
 	bool			mActive;
 
-	typedef std::queue<event_t> EventQueue;
+	using EventQueue = std::queue<event_t>;
 	EventQueue		mEvents;
 
 	int				mJoystickId;
@@ -166,26 +165,26 @@ class ISDL20InputSubsystem : public IInputSubsystem
 {
 public:
 	ISDL20InputSubsystem();
-	virtual ~ISDL20InputSubsystem();
+	~ISDL20InputSubsystem() override;
 
-	virtual void grabInput();
-	virtual void releaseInput();
-	virtual void grabInputForUI();
+	void grabInput() override;
+	void releaseInput() override;
+	void grabInputForUI() override;
 
-	virtual bool isInputGrabbed() const
+	[[nodiscard]] bool isInputGrabbed() const override
 	{	return mInputGrabbed;	}
 
-	virtual std::vector<IInputDeviceInfo> getKeyboardDevices() const;
-	virtual void initKeyboard(int id);
-	virtual void shutdownKeyboard(int id);
+	[[nodiscard]] std::vector<IInputDeviceInfo> getKeyboardDevices() const override;
+	void initKeyboard(int id) override;
+	void shutdownKeyboard(int id) override;
 
-	virtual std::vector<IInputDeviceInfo> getMouseDevices() const;
-	virtual void initMouse(int id);
-	virtual void shutdownMouse(int id);
+	[[nodiscard]] std::vector<IInputDeviceInfo> getMouseDevices() const override;
+	void initMouse(int id) override;
+	void shutdownMouse(int id) override;
 
-	virtual std::vector<IInputDeviceInfo> getJoystickDevices() const;
-	virtual void initJoystick(int id);
-	virtual void shutdownJoystick(int id);
+	[[nodiscard]] std::vector<IInputDeviceInfo> getJoystickDevices() const override;
+	void initJoystick(int id) override;
+	void shutdownJoystick(int id) override;
 
 private:
 	bool				mInputGrabbed;
