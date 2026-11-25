@@ -189,36 +189,36 @@ protected:
 	void DrawCWrapper (EWrapperCode drawer, const Texture* texture, int x, int y) const;
 	void DrawCNMWrapper (EWrapperCode drawer, const Texture* texture, int x, int y) const;
 
-	static void DrawPatchP (const byte *source, byte *dest, int count, int pitch);
-	static void DrawLucentPatchP (const byte *source, byte *dest, int count, int pitch);
-	static void DrawTranslatedPatchP (const byte *source, byte *dest, int count, int pitch);
-	static void DrawTlatedLucentPatchP (const byte *source, byte *dest, int count, int pitch);
-	static void DrawColoredPatchP (const byte *source, byte *dest, int count, int pitch);
-	static void DrawColorLucentPatchP (const byte *source, byte *dest, int count, int pitch);
+	static void DrawPatchP (const byte *source, const byte *mask, byte *dest, int count, int pitch);
+	static void DrawLucentPatchP (const byte *source, const byte *mask, byte *dest, int count, int pitch);
+	static void DrawTranslatedPatchP (const byte *source, const byte *mask, byte *dest, int count, int pitch);
+	static void DrawTlatedLucentPatchP (const byte *source, const byte *mask, byte *dest, int count, int pitch);
+	static void DrawColoredPatchP (const byte *source, const byte *mask, byte *dest, int count, int pitch);
+	static void DrawColorLucentPatchP (const byte *source, const byte *mask, byte *dest, int count, int pitch);
 
-	static void DrawPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
-	static void DrawLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
-	static void DrawTranslatedPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
-	static void DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
-	static void DrawColoredPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
-	static void DrawColorLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
+	static void DrawPatchSP (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc);
+	static void DrawLucentPatchSP (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc);
+	static void DrawTranslatedPatchSP (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc);
+	static void DrawTlatedLucentPatchSP (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc);
+	static void DrawColoredPatchSP (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc);
+	static void DrawColorLucentPatchSP (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc);
 
-	static void DrawPatchD (const byte *source, byte *dest, int count, int pitch);
-	static void DrawLucentPatchD (const byte *source, byte *dest, int count, int pitch);
-	static void DrawTranslatedPatchD (const byte *source, byte *dest, int count, int pitch);
-	static void DrawTlatedLucentPatchD (const byte *source, byte *dest, int count, int pitch);
-	static void DrawColoredPatchD (const byte *source, byte *dest, int count, int pitch);
-	static void DrawColorLucentPatchD (const byte *source, byte *dest, int count, int pitch);
+	static void DrawPatchD (const byte *source, const byte *mask, byte *dest, int count, int pitch);
+	static void DrawLucentPatchD (const byte *source, const byte *mask, byte *dest, int count, int pitch);
+	static void DrawTranslatedPatchD (const byte *source, const byte *mask, byte *dest, int count, int pitch);
+	static void DrawTlatedLucentPatchD (const byte *source, const byte *mask, byte *dest, int count, int pitch);
+	static void DrawColoredPatchD (const byte *source, const byte *mask, byte *dest, int count, int pitch);
+	static void DrawColorLucentPatchD (const byte *source, const byte *mask, byte *dest, int count, int pitch);
 
-	static void DrawPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
-	static void DrawLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
-	static void DrawTranslatedPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
-	static void DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
-	static void DrawColoredPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
-	static void DrawColorLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
+	static void DrawPatchSD (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc);
+	static void DrawLucentPatchSD (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc);
+	static void DrawTranslatedPatchSD (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc);
+	static void DrawTlatedLucentPatchSD (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc);
+	static void DrawColoredPatchSD (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc);
+	static void DrawColorLucentPatchSD (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc);
 
-	typedef void (*vdrawfunc) (const byte *source, byte *dest, int count, int pitch);
-	typedef void (*vdrawsfunc) (const byte *source, byte *dest, int count, int pitch, int yinc);
+	typedef void (*vdrawfunc) (const byte *source, const byte *mask, byte *dest, int count, int pitch);
+	typedef void (*vdrawsfunc) (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc);
 
 	// Palettized versions of the column drawers
 	static vdrawfunc Pfuncs[6];

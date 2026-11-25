@@ -198,9 +198,11 @@ public:
 		mamask = R_SplatU32(argb_t::alphaMask());
 	}
 
-	// dest must be 16-byte aligned.
+	// dest must be 16-byte aligned. m0-m3 are the texels' mask bytes, read
+	// only when MASKED.
 	template<bool MASKED>
-	inline void quad(uint32_t i0, uint32_t i1, uint32_t i2, uint32_t i3, argb_t* dest) const
+	inline void quad(uint32_t i0, uint32_t i1, uint32_t i2, uint32_t i3, argb_t* dest,
+	                 uint32_t m0, uint32_t m1, uint32_t m2, uint32_t m3) const
 	{
 		ALTIVEC_ALIGNED(uint32_t fgs[4]) = { shademap[i0], shademap[i1], shademap[i2], shademap[i3] };
 
@@ -223,8 +225,8 @@ public:
 		}
 
 		// The lanes the scalar drawer would not have written keep the background.
-		const vu32 indices = { i0, i1, i2, i3 };
-		vec_st(vec_sel(res, bg, vec_cmpeq(indices, vec_splat_u32(0))), 0, d);
+		const vu32 drawn = { m0, m1, m2, m3 };
+		vec_st(vec_sel(res, bg, vec_cmpeq(drawn, vec_splat_u32(0))), 0, d);
 	}
 
 	inline void operator()(palindex_t c, argb_t* dest) const
@@ -253,6 +255,8 @@ inline void R_DrawColumnQuadGenericAltivec(argb_t* dest, const drawcolumn_t& d)
 		return;
 
 	const palindex_t* const source = d.source;
+	// which texels are drawn, for a masked column whose texture has holes
+	const uint8_t* const drawn = MASKED ? R_ColumnMask(d) : nullptr;
 	const fixed_t fracstep = d.iscale;
 	fixed_t frac = d.texturefrac;
 
@@ -270,10 +274,9 @@ inline void R_DrawColumnQuadGenericAltivec(argb_t* dest, const drawcolumn_t& d)
 
 	// Scalar pixels before the first quad and after the last.
 	const auto single = [&]() {
-		const palindex_t pixel = MASKED ? source[frac >> FRACBITS]
-		               : source[(frac >> FRACBITS) & mask];
-		if (not MASKED or pixel != 0)
-			f(pixel, dest);
+		const int offset = MASKED ? int(frac >> FRACBITS) : int((frac >> FRACBITS) & mask);
+		if (not drawn or drawn[offset])
+			f(source[offset], dest);
 		dest++;
 		frac += fracstep;
 	};
@@ -298,10 +301,20 @@ inline void R_DrawColumnQuadGenericAltivec(argb_t* dest, const drawcolumn_t& d)
 		const uint32_t i2 = source[o2];
 		const uint32_t i3 = source[o3];
 
-		if (not MASKED)
-			f.template quad<false>(i0, i1, i2, i3, dest);
-		else if (not EARLYOUT or (i0 | i1 | i2 | i3))
-			f.template quad<true>(i0, i1, i2, i3, dest);
+		if (not MASKED or not drawn)
+		{
+			f.template quad<false>(i0, i1, i2, i3, dest, 1, 1, 1, 1);
+		}
+		else
+		{
+			const uint32_t m0 = drawn[o0];
+			const uint32_t m1 = drawn[o1];
+			const uint32_t m2 = drawn[o2];
+			const uint32_t m3 = drawn[o3];
+
+			if (not EARLYOUT or (m0 | m1 | m2 | m3))
+				f.template quad<true>(i0, i1, i2, i3, dest, m0, m1, m2, m3);
+		}
 
 		dest += 4;
 		frac += fracstep * 4;

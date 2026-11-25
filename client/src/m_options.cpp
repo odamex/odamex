@@ -2116,7 +2116,7 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 
 	screen->DrawTextureClean(g_texture, x + 5 + static_cast<int>(dist * 78.0), y);
 
-	V_ColorFill = V_BestOpaqueColor(V_GetDefaultPalette()->basecolors, color);
+	V_ColorFill = V_BestColor(V_GetDefaultPalette()->basecolors, color);
 
 	screen->DrawColoredTextureClean(o_texture, x + 5 + static_cast<int>(dist * 78.0), y);
 }

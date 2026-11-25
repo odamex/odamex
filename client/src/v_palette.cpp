@@ -411,12 +411,9 @@ void V_RestoreScreenPalette()
 palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b)
 {
 	int bestdistortion = limits::MAXINT;
-	int bestcolor = 1;
+	int bestcolor = 0;
 
-	// Index 0 (mask_color) is reserved to represent transparency, so
-	// it is never a valid result: the drawers would treat the pixel as
-	// transparent and the display palette shows the raw lump color there.
-	for (int i = 1; i < 256; i++)
+	for (int i = 0; i < 256; i++)
 	{
 		argb_t color(palette_colors[i]);
 
@@ -440,18 +437,6 @@ palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b)
 palindex_t V_BestColor(const argb_t* palette_colors, argb_t color)
 {
 	return V_BestColor(palette_colors, color.getr(), color.getg(), color.getb());
-}
-
-
-//
-// V_BestOpaqueColor
-//
-// Alias for V_BestColor, which never returns the transparency mask slot
-// (index 0).
-//
-palindex_t V_BestOpaqueColor(const argb_t* palette_colors, argb_t color)
-{
-	return V_BestColor(palette_colors, color);
 }
 
 
@@ -642,15 +627,6 @@ void V_InitPalette(const char* lumpname)
 		default_palette.basecolors[i] = argb_t(255, data[0], data[1], data[2]);
 
 
-	const argb_t original_mask_rgb = default_palette.basecolors[default_palette.mask_color];
-	default_palette.basecolors[default_palette.mask_color] = argb_t(255, 0, 255, 255);
-
-	for (int i = 0; i < 256; i++)
-		default_palette.mask_translation[i] = i;
-
-	default_palette.mask_translation[default_palette.mask_color] =
-	    V_BestOpaqueColor(default_palette.basecolors, original_mask_rgb);
-
 	V_GammaAdjustPalette(&default_palette);
 	V_ForceBlend(argb_t(0, 255, 255, 255));
 	V_RefreshColormaps();
@@ -659,9 +635,8 @@ void V_InitPalette(const char* lumpname)
 	assert(default_palette.maps.shademap != NULL);
 	V_Palette = shaderef_t(&default_palette.maps, 0);
 
-	// game_palette inherits the tables from default_palette, but
-	// V_ResetPalette replaces its colors with the raw (unmasked) palette
-	// lump colors for display.
+	// game_palette inherits the tables from default_palette, and
+	// V_ResetPalette sets its colors for display.
 	game_palette = default_palette;
 	V_ResetPalette();
 }
@@ -742,7 +717,7 @@ void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps)
 	{
 		for (int c = 0; c < 256; c++)
 		{
-			const argb_t& base = palette[c == pal->mask_color ? pal->mask_translation[c] : c];
+			const argb_t& base = palette[c];
 
 			unsigned int r = ((base.getr() * (NUMCOLORMAPS - i)) + (fadecolor.getr() * i)
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
@@ -752,7 +727,7 @@ void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps)
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
 
 			argb_t color(255, r, g, b);
-			colormap[c] = V_BestOpaqueColor(palette, color);
+			colormap[c] = V_BestColor(palette, color);
 			shademap[c] = V_GammaCorrect(color);
 		}
 	}
@@ -760,7 +735,7 @@ void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps)
 	// build special maps (e.g. invulnerability)
 	for (int c = 0; c < 256; c++)
 	{
-		const argb_t& base = palette[c == pal->mask_color ? pal->mask_translation[c] : c];
+		const argb_t& base = palette[c];
 
 		const int grayint = static_cast<int>(255.0f * std::clamp(1.0f -
 						((base.getr() * 0.00116796875f) +
@@ -768,7 +743,7 @@ void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps)
 			 			 (base.getb() * 0.0005625f)), 0.0f, 1.0f));
 
 		argb_t color(255, grayint, grayint, grayint);
-		colormap[c] = V_BestOpaqueColor(palette, color);
+		colormap[c] = V_BestColor(palette, color);
 		shademap[c] = V_GammaCorrect(color);
 	}
 }
@@ -789,7 +764,7 @@ void BuildDefaultShademap(const palette_t* pal, shademap_t& maps)
 	{
 		for (int c = 0; c < 256; c++)
 		{
-			const argb_t& base = palette[c == pal->mask_color ? pal->mask_translation[c] : c];
+			const argb_t& base = palette[c];
 
 			unsigned int r = ((base.getr() * (NUMCOLORMAPS - i)) + (fadecolor.getr() * i)
 					+ NUMCOLORMAPS/2) / NUMCOLORMAPS;
@@ -806,7 +781,7 @@ void BuildDefaultShademap(const palette_t* pal, shademap_t& maps)
 	// build special maps (e.g. invulnerability)
 	for (int c = 0; c < 256; c++)
 	{
-		const argb_t& base = palette[c == pal->mask_color ? pal->mask_translation[c] : c];
+		const argb_t& base = palette[c];
 
 		const int grayint = static_cast<int>(255.0f * std::clamp(1.0f -
 						((base.getr() * 0.00116796875f) +

@@ -135,8 +135,8 @@ const Texture* Res_PlaneTexture(const ResourceId res_id, const Texture* source);
 // [dx1,dy1]-[dx2,dy2] region of dest_texture, scaling the source region to
 // fit the destination region.
 //
-// Transparency travels with the pixels: palette index 0 is the transparent
-// slot, so it copies through like any other color.
+// Transparency travels with the pixels: where both textures have a mask
+// plane, the mask is copied along with them.
 //
 // Warning: no clipping is performed, so it is possible to read past the end of
 // the source texture.
@@ -238,7 +238,8 @@ inline OLumpName W_CheckWidescreenPatch(const OLumpName& lump_main)
 //
 // Texture is a straight-forward abstraction of Doom's various graphic formats.
 // The image is stored in column-major format as a set of 8-bit palettized
-// pixels.
+// pixels, with a mask plane marking which are drawn for a texture that can
+// have transparent pixels. Every palette index is an ordinary color.
 //
 // A Texture is allocated and initialized by TextureManager so that all memory
 // used by a Texture can freed at the same time when the Zone heap needs to
@@ -264,6 +265,12 @@ public:
 	// at the plane.
 	static uint32_t calculateARGBPlaneSize(int width, int height);
 	void placeARGBPlane();
+
+	// A transparency mask plane, where a texture has one, follows the
+	// palettized plane: one byte per pixel, non-zero where the pixel is drawn.
+	// A texture without one is drawn everywhere.
+	static uint32_t calculateMaskPlaneSize(int width, int height);
+	void placeMaskPlane();
 
 	[[nodiscard]] fixed_t getScaledHeight() const
 	{
@@ -304,6 +311,12 @@ public:
 		return mARGBData ? mARGBData + (mHeight * col) : nullptr;
 	}
 
+	// Transparency mask plane, or nullptr when every pixel is drawn.
+	[[nodiscard]] const uint8_t* getMaskColumn(int col) const
+	{
+		return mMask ? mMask + (mHeight * col) : nullptr;
+	}
+
 	fixed_t				mScaleX;
 	fixed_t				mScaleY;
 
@@ -319,9 +332,8 @@ public:
 	unsigned short		mWidthMask;
 	unsigned short		mHeightMask;
 
-	byte				mMaskColor;
-
 	palindex_t*			mData;
+	uint8_t*			mMask;
 	argb_t*				mARGBData;
 
 private:

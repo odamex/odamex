@@ -75,7 +75,8 @@ static void Res_WarpPixels(PIXEL* dest, const PIXEL* source, const int width, co
 //
 // Alters the image in source_texture with a warping effect and saves the
 // result in dest_texture: the palettized pixels and, where the texture has
-// them, the native ARGB pixels that 32-bit mode draws.
+// them, its mask, so that its holes move with it, and the native ARGB pixels
+// that 32-bit mode draws.
 //
 static void Res_WarpTexture(Texture* dest_texture, const Texture* source_texture)
 {
@@ -101,6 +102,9 @@ static void Res_WarpTexture(Texture* dest_texture, const Texture* source_texture
 		colshift[x] = wrap(finesine[(coltimebase + (x << 7)) & FINEMASK] >> 13, height);
 
 	Res_WarpPixels(dest_texture->mData, source_texture->mData, width, height, rowshift, colshift);
+
+	if (dest_texture->mMask and source_texture->mMask)
+		Res_WarpPixels(dest_texture->mMask, source_texture->mMask, width, height, rowshift, colshift);
 
 	if (dest_texture->mARGBData and source_texture->mARGBData)
 	{
@@ -133,15 +137,39 @@ void Texture::init(int width, int height)
 	mOffsetY = 0;
 	mScaleX = FRACUNIT;
 	mScaleY = FRACUNIT;
-	mMaskColor = 0;
 	mData = nullptr;
+	mMask = nullptr;
 	mARGBData = nullptr;
 
 	#if CLIENT_APP
 	// mData follows the header in memory
 	mData = reinterpret_cast<uint8_t*>(this) + calculateHeaderSize(width, height);
-	memset(mData, mMaskColor, calculateDataSize(width, height));
+	memset(mData, 0, calculateDataSize(width, height));
 	#endif
+}
+
+
+//
+// Texture::calculateMaskPlaneSize
+//
+// The bytes a mask plane adds to a texture's allocation.
+//
+uint32_t Texture::calculateMaskPlaneSize(int width, int height)
+{
+	return sizeof(uint8_t) * width * height;
+}
+
+
+//
+// Texture::placeMaskPlane
+//
+// Points mMask at the mask plane following the palettized one, with every
+// pixel transparent until drawn.
+//
+void Texture::placeMaskPlane()
+{
+	mMask = mData + (sizeof(palindex_t) * mWidth * mHeight);
+	memset(mMask, 0, calculateMaskPlaneSize(mWidth, mHeight));
 }
 
 
@@ -160,11 +188,14 @@ uint32_t Texture::calculateARGBPlaneSize(int width, int height)
 //
 // Texture::placeARGBPlane
 //
-// Points mARGBData at the native ARGB plane following the palettized one.
+// Points mARGBData at the native ARGB plane following the palettized one, and
+// the mask plane where there is one.
 //
 void Texture::placeARGBPlane()
 {
-	uintptr_t plane_addr = reinterpret_cast<uintptr_t>(mData + (sizeof(palindex_t) * mWidth * mHeight));
+	const uint8_t* plane_start = mMask ? mMask + calculateMaskPlaneSize(mWidth, mHeight)
+	                                   : mData + (sizeof(palindex_t) * mWidth * mHeight);
+	uintptr_t plane_addr = reinterpret_cast<uintptr_t>(plane_start);
 	plane_addr = (plane_addr + sizeof(argb_t) - 1) & ~static_cast<uintptr_t>(sizeof(argb_t) - 1);
 	mARGBData = reinterpret_cast<argb_t*>(plane_addr);
 }
@@ -205,22 +236,30 @@ void Res_CopySubimage(Texture* dest_texture, const Texture* source_texture,
 	const fixed_t xstep = FixedDiv(sourcewidth << FRACBITS, destwidth << FRACBITS) + 1;
 	const fixed_t ystep = FixedDiv(sourceheight << FRACBITS, destheight << FRACBITS) + 1;
 
-	palindex_t* dest = dest_texture->mData + (dx1 * dest_texture->mHeight) + dy1;
+	const int dest_offset = (dx1 * dest_texture->mHeight) + dy1;
+	palindex_t* dest = dest_texture->mData + dest_offset;
+	// a source without a mask is drawn everywhere
+	uint8_t* dest_mask = dest_texture->mMask ? dest_texture->mMask + dest_offset : nullptr;
 
 	fixed_t xfrac = 0;
 	for (int xcount = destwidth; xcount > 0; xcount--)
 	{
-		const palindex_t* source = source_texture->mData +
-				((sx1 + (xfrac >> FRACBITS)) * source_texture->mHeight) + sy1;
+		const int source_offset = ((sx1 + (xfrac >> FRACBITS)) * source_texture->mHeight) + sy1;
+		const palindex_t* source = source_texture->mData + source_offset;
+		const uint8_t* source_mask = source_texture->mMask ? source_texture->mMask + source_offset : nullptr;
 
 		fixed_t yfrac = 0;
 		for (int ycount = destheight; ycount > 0; ycount--)
 		{
 			*dest++ = source[yfrac >> FRACBITS];
+			if (dest_mask)
+				*dest_mask++ = source_mask ? source_mask[yfrac >> FRACBITS] : 1;
 			yfrac += ystep;
 		}
 
 		dest += dest_texture->mHeight - destheight;
+		if (dest_mask)
+			dest_mask += dest_texture->mHeight - destheight;
 		xfrac += xstep;
 	}
 
@@ -705,7 +744,15 @@ void AnimatedTextureManager::copyTexture(Texture* destination_texture, const Tex
 	destination_texture->init(width, height);
 	memcpy(destination_texture->mData, source_texture->mData, sizeof(palindex_t) * width * height);
 
-	// The ARGB plane too, where there is one: the allocation must have room.
+	// The mask and ARGB planes too, where there are: the allocation must have
+	// room.
+	if (source_texture->mMask)
+	{
+		destination_texture->placeMaskPlane();
+		memcpy(destination_texture->mMask, source_texture->mMask,
+		       Texture::calculateMaskPlaneSize(width, height));
+	}
+
 	if (source_texture->mARGBData)
 	{
 		destination_texture->placeARGBPlane();
@@ -1191,6 +1238,8 @@ void AnimatedTextureManager::addWarpedTexture(const ResourceId res_id)
 	warp.res_id = res_id;
 	warp.working_texture = const_cast<Texture*>(Res_CacheTexture(res_id, PU_STATIC));
 	size_t size = Texture::calculateSize(warp.working_texture->mWidth, warp.working_texture->mHeight);
+	if (warp.working_texture->mMask)
+		size += Texture::calculateMaskPlaneSize(warp.working_texture->mWidth, warp.working_texture->mHeight);
 	if (warp.working_texture->mARGBData)
 		size += Texture::calculateARGBPlaneSize(warp.working_texture->mWidth, warp.working_texture->mHeight);
 	warp.original_texture = reinterpret_cast<Texture*>(new uint8_t[size]);
@@ -1543,7 +1592,6 @@ static Texture* Res_AllocatePlaneTexture(const Texture* source)
 	dest->init(width, height);
 	dest->mScaleX = source->mScaleX;
 	dest->mScaleY = source->mScaleY;
-	dest->mMaskColor = source->mMaskColor;
 
 	if (source->mARGBData)
 		dest->placeARGBPlane();

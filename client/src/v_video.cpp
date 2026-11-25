@@ -1089,7 +1089,7 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 		const argb_t *bg2rgb = Col2RGB8[64-amount];
 
 		const argb_t color = V_GetColorFromString(color_str);
-		const unsigned int fg = fg2rgb[V_BestOpaqueColor(V_GetDefaultPalette()->basecolors, color)];
+		const unsigned int fg = fg2rgb[V_BestColor(V_GetDefaultPalette()->basecolors, color)];
 
 		// A screen column is the contiguous run
 		const int run = h;
@@ -1138,16 +1138,14 @@ static void BuildTransTable(const palette_t* pal)
 	for (int r = 0; r < 32; r++)
 		for (int g = 0; g < 32; g++)
 			for (int b = 0; b < 32; b++)
-				RGB32k[r][g][b] = V_BestOpaqueColor(palette_colors,
+				RGB32k[r][g][b] = V_BestColor(palette_colors,
 					argb_t((r<<3)|(r>>2), (g<<3)|(g>>2), (b<<3)|(b>>2)));
 
 	for (int x = 0; x < 65; x++)
 	{
 		for (int y = 0; y < 256; y++)
 		{
-			const argb_t color = (y == pal->mask_color)
-				? palette_colors[pal->mask_translation[y]]
-				: palette_colors[y];
+			const argb_t color = palette_colors[y];
 
 			Col2RGB8[x][y] = (((color.getr() * x) >> 4) << 20)  |
 							  ((color.getg() * x )>> 4) |

@@ -27,7 +27,6 @@ struct palette_t
 {
 	argb_t			basecolors[256];		// non-gamma corrected colors
 	argb_t			colors[256];			// gamma corrected colors
-	palindex_t		mask_translation[256];	// table to translate textures to avoid accidental masking
 
 	shademap_t      maps;
 
@@ -41,8 +40,6 @@ struct palette_t
 		maps = other.maps;
 		return *this;
 	}
-
-	static const palindex_t mask_color = 0;
 };
 
 struct argbshadelut_t;
@@ -71,7 +68,6 @@ static inline argb_t V_GammaCorrect(const argb_t value)
 
 palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b);
 palindex_t V_BestColor(const argb_t *palette_colors, argb_t color);
-palindex_t V_BestOpaqueColor(const argb_t* palette_colors, argb_t color);
 void V_ClosestColors(const argb_t* palette_colors, palindex_t& color1, palindex_t& color2);
 
 void V_InitPalette(const char* lumpname);

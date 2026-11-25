@@ -273,6 +273,8 @@ forceinline void R_DrawColumnQuadGenericMMX(argb_t* dest, const drawcolumn_t& d)
 		return;
 
 	const palindex_t* const source = d.source;
+	// which texels are drawn, for a masked column whose texture has holes
+	const uint8_t* const drawn = MASKED ? R_ColumnMask(d) : nullptr;
 	const fixed_t fracstep = d.iscale;
 	fixed_t frac = d.texturefrac;
 
@@ -297,19 +299,27 @@ forceinline void R_DrawColumnQuadGenericMMX(argb_t* dest, const drawcolumn_t& d)
 		const uint32_t i2 = source[o2];
 		const uint32_t i3 = source[o3];
 
-		if (not MASKED)
+		if (not MASKED or not drawn)
 		{
 			f.template half<false>(i0, i1, dest, _mm_setzero_si64());
 			f.template half<false>(i2, i3, dest + 2, _mm_setzero_si64());
 		}
-		else if (not EARLYOUT or (i0 | i1 | i2 | i3))
+		else
 		{
-			// All ones in the lanes the scalar drawer would not have written.
-			const __m64 zero = _mm_setzero_si64();
-			f.template half<true>(i0, i1, dest,
-			    _mm_cmpeq_pi32(_mm_setr_pi32(int(i0), int(i1)), zero));
-			f.template half<true>(i2, i3, dest + 2,
-			    _mm_cmpeq_pi32(_mm_setr_pi32(int(i2), int(i3)), zero));
+			const uint32_t m0 = drawn[o0];
+			const uint32_t m1 = drawn[o1];
+			const uint32_t m2 = drawn[o2];
+			const uint32_t m3 = drawn[o3];
+
+			if (not EARLYOUT or (m0 | m1 | m2 | m3))
+			{
+				// All ones in the lanes the scalar drawer would not have written.
+				const __m64 zero = _mm_setzero_si64();
+				f.template half<true>(i0, i1, dest,
+				    _mm_cmpeq_pi32(_mm_setr_pi32(int(m0), int(m1)), zero));
+				f.template half<true>(i2, i3, dest + 2,
+				    _mm_cmpeq_pi32(_mm_setr_pi32(int(m2), int(m3)), zero));
+			}
 		}
 
 		dest += 4;
@@ -320,10 +330,9 @@ forceinline void R_DrawColumnQuadGenericMMX(argb_t* dest, const drawcolumn_t& d)
 	// Scalar tail, for the reason R_DrawColumnQuadGeneric gives.
 	while (count--)
 	{
-		const palindex_t pixel = MASKED ? source[frac >> FRACBITS]
-		               : source[(frac >> FRACBITS) & mask];
-		if (not MASKED or pixel != 0)
-			f(pixel, dest);
+		const int offset = MASKED ? int(frac >> FRACBITS) : int((frac >> FRACBITS) & mask);
+		if (not drawn or drawn[offset])
+			f(source[offset], dest);
 		dest++;
 		frac += fracstep;
 	}

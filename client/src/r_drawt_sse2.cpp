@@ -195,8 +195,9 @@ private:
 // R_DrawColumnQuadGeneric
 //
 // MASKED mirrors R_DrawColumnGeneric's masked arm: the texel index is used raw
-// and a zero texel leaves the destination alone. Otherwise it mirrors the
-// power-of-two arm, masking the index and writing every pixel.
+// and a texel the mask plane leaves undrawn leaves the destination alone.
+// Otherwise it mirrors the power-of-two arm, masking the index and writing
+// every pixel.
 //
 // EARLYOUT skips a quad whose four texels are all transparent, which also skips
 // the framebuffer read-modify-write behind it. The top and bottom of a masked
@@ -211,6 +212,8 @@ forceinline void R_DrawColumnQuadGeneric(argb_t* dest, const drawcolumn_t& d)
 		return;
 
 	const palindex_t* const source = d.source;
+	// which texels are drawn, for a masked column whose texture has holes
+	const uint8_t* const drawn = MASKED ? R_ColumnMask(d) : nullptr;
 	const fixed_t fracstep = d.iscale;
 	fixed_t frac = d.texturefrac;
 
@@ -225,8 +228,7 @@ forceinline void R_DrawColumnQuadGeneric(argb_t* dest, const drawcolumn_t& d)
 	while (count >= 4)
 	{
 		// The texel OFFSETS, then the palette indices they name. The drawers shade
-		// and test the palette value, never the offset -- conflating the two
-		// samples the wrong colour and tests the wrong thing against zero.
+		// the palette value and look the offset up in the mask.
 		const int o0 = MASKED ? int( frac                   >> FRACBITS)
 		          : int((frac                   >> FRACBITS) & mask);
 		const int o1 = MASKED ? int((frac + fracstep)       >> FRACBITS)
@@ -241,18 +243,26 @@ forceinline void R_DrawColumnQuadGeneric(argb_t* dest, const drawcolumn_t& d)
 		const uint32_t i2 = source[o2];
 		const uint32_t i3 = source[o3];
 
-		if (not MASKED)
+		if (not MASKED or not drawn)
 		{
 			f.template quad<false>(i0, i1, i2, i3, dest, _mm_setzero_si128());
 		}
-		else if (not EARLYOUT or (i0 | i1 | i2 | i3))
+		else
 		{
-			// All ones in the lanes the scalar drawer would not have written.
-			const __m128i keep = _mm_cmpeq_epi32(
-			    _mm_setr_epi32(int(i0), int(i1), int(i2), int(i3)),
-			    _mm_setzero_si128());
+			const uint32_t m0 = drawn[o0];
+			const uint32_t m1 = drawn[o1];
+			const uint32_t m2 = drawn[o2];
+			const uint32_t m3 = drawn[o3];
 
-			f.template quad<true>(i0, i1, i2, i3, dest, keep);
+			if (not EARLYOUT or (m0 | m1 | m2 | m3))
+			{
+				// All ones in the lanes the scalar drawer would not have written.
+				const __m128i keep = _mm_cmpeq_epi32(
+				    _mm_setr_epi32(int(m0), int(m1), int(m2), int(m3)),
+				    _mm_setzero_si128());
+
+				f.template quad<true>(i0, i1, i2, i3, dest, keep);
+			}
 		}
 
 		dest += 4;
@@ -265,10 +275,9 @@ forceinline void R_DrawColumnQuadGeneric(argb_t* dest, const drawcolumn_t& d)
 	// pixels, and a blend is not idempotent.
 	while (count--)
 	{
-		const palindex_t pixel = MASKED ? source[frac >> FRACBITS]
-		               : source[(frac >> FRACBITS) & mask];
-		if (not MASKED or pixel != 0)
-			f(pixel, dest);
+		const int offset = MASKED ? int(frac >> FRACBITS) : int((frac >> FRACBITS) & mask);
+		if (not drawn or drawn[offset])
+			f(source[offset], dest);
 		dest++;
 		frac += fracstep;
 	}

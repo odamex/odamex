@@ -189,6 +189,8 @@ forceinline void R_DrawColumnQuadGenericNEON(argb_t* dest, const drawcolumn_t& d
 		return;
 
 	const palindex_t* const source = d.source;
+	// which texels are drawn, for a masked column whose texture has holes
+	const uint8_t* const drawn = MASKED ? R_ColumnMask(d) : nullptr;
 	const fixed_t fracstep = d.iscale;
 	fixed_t frac = d.texturefrac;
 
@@ -213,14 +215,23 @@ forceinline void R_DrawColumnQuadGenericNEON(argb_t* dest, const drawcolumn_t& d
 		const uint32_t i2 = source[o2];
 		const uint32_t i3 = source[o3];
 
-		if (not MASKED)
+		if (not MASKED or not drawn)
 		{
 			f.template quad<false>(i0, i1, i2, i3, dest, vdupq_n_u32(0));
 		}
-		else if (not EARLYOUT or (i0 | i1 | i2 | i3))
+		else
 		{
-			// All ones in the lanes the scalar drawer would not have written.
-			f.template quad<true>(i0, i1, i2, i3, dest, vceqq_u32(R_NeonLanes(i0, i1, i2, i3), vdupq_n_u32(0)));
+			const uint32_t m0 = drawn[o0];
+			const uint32_t m1 = drawn[o1];
+			const uint32_t m2 = drawn[o2];
+			const uint32_t m3 = drawn[o3];
+
+			if (not EARLYOUT or (m0 | m1 | m2 | m3))
+			{
+				// All ones in the lanes the scalar drawer would not have written.
+				f.template quad<true>(i0, i1, i2, i3, dest,
+				    vceqq_u32(R_NeonLanes(m0, m1, m2, m3), vdupq_n_u32(0)));
+			}
 		}
 
 		dest += 4;
@@ -230,10 +241,9 @@ forceinline void R_DrawColumnQuadGenericNEON(argb_t* dest, const drawcolumn_t& d
 
 	while (count--)
 	{
-		const palindex_t pixel = MASKED ? source[frac >> FRACBITS]
-		              : source[(frac >> FRACBITS) & mask];
-		if (not MASKED or pixel != 0)
-			f(pixel, dest);
+		const int offset = MASKED ? int(frac >> FRACBITS) : int((frac >> FRACBITS) & mask);
+		if (not drawn or drawn[offset])
+			f(source[offset], dest);
 		dest++;
 		frac += fracstep;
 	}

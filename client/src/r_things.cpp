@@ -345,6 +345,7 @@ void R_DrawVisSprite(rendercontext_t& ctx, vissprite_t *vis, int x1, int x2)
 	ctx.draw.dcol.textureheight = texture->mHeight << FRACBITS;
 	ctx.draw.dcol.texturedata = texture->mData;
 	ctx.draw.dcol.argbtexturedata = texture->mARGBData;
+	ctx.draw.dcol.masktexturedata = texture->mMask;
 
 	ctx.draw.dcol.masked = true;
 	ctx.draw.dcol.iscale = 0xffffffffu / static_cast<unsigned>(vis->yscale);

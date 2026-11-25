@@ -550,6 +550,7 @@ void R_RenderMaskedSegRange(rendercontext_t& ctx, drawseg_t* ds, int x1, int x2)
 	ctx.draw.dcol.textureheight = texture->mHeight << FRACBITS;
 	ctx.draw.dcol.texturedata = texture->mData;
 	ctx.draw.dcol.argbtexturedata = texture->mARGBData;
+	ctx.draw.dcol.masktexturedata = texture->mMask;
 
 	// [SL] pre-calculate scaling for each column
 	if (ctx.seg.masked_midscales)

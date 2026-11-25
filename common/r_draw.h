@@ -86,6 +86,10 @@ typedef struct
 	// raw argb texture data (null if not argb)
 	const argb_t*		argbtexturedata;
 
+	// transparency mask plane, parallel to texturedata (null if every pixel
+	// is drawn); read only by masked columns
+	const uint8_t*		masktexturedata;
+
 	uint8_t*			destination;
 
 	// Steps, in pixels, to the neighbouring element one row down and one column
@@ -116,6 +120,19 @@ typedef struct
 	FuzzTable*			fuzz;
 	const shaderef_t*	basecolormap;
 } drawcolumn_t;
+
+//
+// R_ColumnMask
+//
+// The column's transparency mask, parallel to dcol.source, or nullptr when
+// every pixel of it is drawn.
+//
+inline const uint8_t* R_ColumnMask(const drawcolumn_t& dcol)
+{
+	if (dcol.masktexturedata == nullptr or dcol.texturedata == nullptr)
+		return nullptr;
+	return dcol.masktexturedata + (dcol.source - dcol.texturedata);
+}
 
 // A solid-color row: planes under r_drawflat and nodrawers, particles, and the
 // netgraph.

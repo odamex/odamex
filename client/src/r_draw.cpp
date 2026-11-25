@@ -646,15 +646,14 @@ static forceinline void R_FillColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 
 	COLORFUNC colorfunc(drawcolumn);
 
-	if (drawcolumn.masked and drawcolumn.source != nullptr)
+	const uint8_t* mask = drawcolumn.masked and drawcolumn.source != nullptr ? R_ColumnMask(drawcolumn) : nullptr;
+	if (mask)
 	{
 		// preserve the silhouette of the masked texture
-		const palindex_t* source = drawcolumn.source;
-		const fixed_t fracstep = drawcolumn.iscale; 
+		const fixed_t fracstep = drawcolumn.iscale;
 		fixed_t frac = drawcolumn.texturefrac;
 		do {
-			palindex_t pixel = source[frac >> FRACBITS];
-			if (pixel != 0)
+			if (mask[frac >> FRACBITS])
 				colorfunc(color, dest);
 			dest += pitch;
 			frac += fracstep;
@@ -711,15 +710,27 @@ static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 
 	if (drawcolumn.masked)
 	{
-		// handle masked (partially transparent) textures
-		do
+		// handle masked (partially transparent) textures, whose mask says
+		// which pixels are drawn
+		if (const uint8_t* mask = R_ColumnMask(drawcolumn))
 		{
-			palindex_t pixel = source[frac >> FRACBITS];
-			if (pixel != 0)
-				colorfunc(pixel, dest);
-			dest += pitch;
-			frac += fracstep;
-		} while (--count);
+			do
+			{
+				if (mask[frac >> FRACBITS])
+					colorfunc(source[frac >> FRACBITS], dest);
+				dest += pitch;
+				frac += fracstep;
+			} while (--count);
+		}
+		else
+		{
+			do
+			{
+				colorfunc(source[frac >> FRACBITS], dest);
+				dest += pitch;
+				frac += fracstep;
+			} while (--count);
+		}
 	}
 	else if (texheight & (texheight - 1))
 	{

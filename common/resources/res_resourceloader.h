@@ -98,8 +98,10 @@ public:
 	~BaseTextureLoader() override = default;
 
 protected:
-	uint32_t calculateTextureSize(uint16_t width, uint16_t height) const;
-	Texture* createTexture(uint8_t* data, uint16_t width, uint16_t height) const;
+	// A masked texture has a mask plane, for images that can have transparent
+	// pixels.
+	uint32_t calculateTextureSize(uint16_t width, uint16_t height, bool masked = false) const;
+	Texture* createTexture(uint8_t* data, uint16_t width, uint16_t height, bool masked = false) const;
 };
 
 

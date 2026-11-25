@@ -97,7 +97,7 @@ shaderef_t V_Palette;
 /*********************************/
 
 // Normal patch drawers
-void DCanvas::DrawPatchP (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawPatchP (const byte *source, const byte *mask, byte *dest, int count, int pitch)
 {
 	if (count <= 0)
 		return;
@@ -105,16 +105,18 @@ void DCanvas::DrawPatchP (const byte *source, byte *dest, int count, int pitch)
 	do
 	{
 		palindex_t pixel = *source;
-		if (pixel != 0)
+		if (not mask or *mask)
 		{
 			*dest = pixel;
 		}
 		source++;
+		if (mask)
+			mask++;
 		dest += pitch;
 	} while (--count);
 }
 
-void DCanvas::DrawPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawPatchSP (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc)
 {
 	if (count <= 0)
 		return;
@@ -124,7 +126,7 @@ void DCanvas::DrawPatchSP (const byte *source, byte *dest, int count, int pitch,
 	do
 	{
 		palindex_t pixel = source[c >> 16];
-		if (pixel != 0)
+		if (not mask or mask[c >> 16])
 		{
 			*dest = pixel;
 		}
@@ -135,13 +137,13 @@ void DCanvas::DrawPatchSP (const byte *source, byte *dest, int count, int pitch,
 
 
 // Translucent patch drawers (always 50%) [ML] 3/2/10: Not anymore!
-void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawLucentPatchP (const byte *source, const byte *mask, byte *dest, int count, int pitch)
 {
 	if (count <= 0 || !hud_transparency)
 		return;
 
 	if (::hud_transparency >= 1.0)
-		return DrawPatchP(source, dest, count, pitch);
+		return DrawPatchP(source, mask, dest, count, pitch);
 
 	argb_t *fg2rgb, *bg2rgb;
 
@@ -158,7 +160,7 @@ void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int p
 	do
 	{
 		palindex_t pixel = *source;
-		if (pixel != 0)
+		if (not mask or *mask)
 		{
 			unsigned int fg = pixel;
 			unsigned int bg = *dest;
@@ -169,17 +171,19 @@ void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int p
 			*dest = RGB32k[0][0][fg & (fg>>15)];
 		}
 		source++;
+		if (mask)
+			mask++;
 		dest += pitch;
 	} while (--count);
 }
 
-void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawLucentPatchSP (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc)
 {
 	if (count <= 0 || !hud_transparency)
 		return;
 
 	if (::hud_transparency >= 1.0)
-		return DrawPatchSP(source, dest, count, pitch, yinc);
+		return DrawPatchSP(source, mask, dest, count, pitch, yinc);
 
 	argb_t *fg2rgb, *bg2rgb;
 	int c = 0;
@@ -197,7 +201,7 @@ void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int 
 	do
 	{
 		palindex_t pixel = source[c >> 16];
-		if (pixel != 0)
+		if (not mask or mask[c >> 16])
 		{
 			unsigned int fg = pixel;
 			unsigned int bg = *dest;
@@ -214,7 +218,7 @@ void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int 
 
 
 // Translated patch drawers
-void DCanvas::DrawTranslatedPatchP (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawTranslatedPatchP (const byte *source, const byte *mask, byte *dest, int count, int pitch)
 {
 	if (count <= 0)
 		return;
@@ -222,16 +226,18 @@ void DCanvas::DrawTranslatedPatchP (const byte *source, byte *dest, int count, i
 	do
 	{
 		palindex_t pixel = *source;
-		if (pixel != 0)
+		if (not mask or *mask)
 		{
 			*dest = V_ColorMap.tlate(pixel);
 		}
 		source++;
+		if (mask)
+			mask++;
 		dest += pitch;
 	} while (--count);
 }
 
-void DCanvas::DrawTranslatedPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawTranslatedPatchSP (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc)
 {
 	if (count <= 0)
 		return;
@@ -241,7 +247,7 @@ void DCanvas::DrawTranslatedPatchSP (const byte *source, byte *dest, int count, 
 	do
 	{
 		palindex_t pixel = source[c >> 16];
-		if (pixel != 0)
+		if (not mask or mask[c >> 16])
 		{
 			*dest = V_ColorMap.tlate(pixel);
 		}
@@ -252,13 +258,13 @@ void DCanvas::DrawTranslatedPatchSP (const byte *source, byte *dest, int count, 
 
 
 // Translated, translucent patch drawers
-void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawTlatedLucentPatchP (const byte *source, const byte *mask, byte *dest, int count, int pitch)
 {
 	if (count <= 0 || !hud_transparency)
 		return;
 
 	if (::hud_transparency >= 1.0)
-		return DrawTranslatedPatchP(source, dest, count, pitch);
+		return DrawTranslatedPatchP(source, mask, dest, count, pitch);
 
 	argb_t *fg2rgb, *bg2rgb;
 
@@ -275,7 +281,7 @@ void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count,
 	do
 	{
 		palindex_t pixel = *source;
-		if (pixel != 0)
+		if (not mask or *mask)
 		{
 			unsigned int fg = V_ColorMap.tlate(pixel);
 			unsigned int bg = *dest;
@@ -286,17 +292,19 @@ void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count,
 			*dest = RGB32k[0][0][fg & (fg>>15)];
 		}
 		source++;
+		if (mask)
+			mask++;
 		dest += pitch;
 	} while (--count);
 }
 
-void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawTlatedLucentPatchSP (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc)
 {
 	if (count <= 0 || !hud_transparency)
 		return;
 
 	if (::hud_transparency >= 1.0)
-		return DrawTranslatedPatchSP(source, dest, count, pitch, yinc);
+		return DrawTranslatedPatchSP(source, mask, dest, count, pitch, yinc);
 
 	int c = 0;
 	argb_t *fg2rgb, *bg2rgb;
@@ -314,7 +322,7 @@ void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count
 	do
 	{
 		palindex_t pixel = source[c >> 16];
-		if (pixel != 0)
+		if (not mask or mask[c >> 16])
 		{
 			unsigned int fg = V_ColorMap.tlate(pixel);
 			unsigned int bg = *dest;
@@ -333,7 +341,7 @@ void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count
 // Colored patch drawer
 //
 // Fills the texture's opaque pixels with V_ColorFill.
-void DCanvas::DrawColoredPatchP (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawColoredPatchP (const byte *source, const byte *mask, byte *dest, int count, int pitch)
 {
 	if (count <= 0)
 		return;
@@ -342,16 +350,18 @@ void DCanvas::DrawColoredPatchP (const byte *source, byte *dest, int count, int 
 
 	do
 	{
-		if (*source != 0)
+		if (not mask or *mask)
 		{
 			*dest = fill;
 		}
 		source++;
+		if (mask)
+			mask++;
 		dest += pitch;
 	} while (--count);
 }
 
-void DCanvas::DrawColoredPatchSP(const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawColoredPatchSP(const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc)
 {
 	if (count <= 0)
 		return;
@@ -362,7 +372,7 @@ void DCanvas::DrawColoredPatchSP(const byte *source, byte *dest, int count, int 
 
 	do
 	{
-		if (source[c >> 16] != 0)
+		if (not mask or mask[c >> 16])
 		{
 			*dest = fill;
 		}
@@ -376,13 +386,13 @@ void DCanvas::DrawColoredPatchSP(const byte *source, byte *dest, int count, int 
 //
 // This routine is the same for the stretched version since we don't
 // care about the patch's actual contents, just it's outline.
-void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawColorLucentPatchP (const byte *source, const byte *mask, byte *dest, int count, int pitch)
 {
 	if (count <= 0 || !hud_transparency)
 		return;
 
 	if (::hud_transparency >= 1.0)
-		return DrawColoredPatchP(source, dest, count, pitch);
+		return DrawColoredPatchP(source, mask, dest, count, pitch);
 
 	argb_t *bg2rgb;
 
@@ -397,24 +407,26 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 
 	do
 	{
-		if (*source != 0)
+		if (not mask or *mask)
 		{
 			unsigned int bg = bg2rgb[*dest];
 			bg = (bg+bg) | 0x1f07c1f;
 			*dest = RGB32k[0][0][bg & (bg>>15)];
 		}
 		source++;
+		if (mask)
+			mask++;
 		dest += pitch;
 	} while (--count);
 }
 
-void DCanvas::DrawColorLucentPatchSP(const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawColorLucentPatchSP(const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc)
 {
 	if (count <= 0 or not hud_transparency)
 		return;
 
 	if (::hud_transparency >= 1.0)
-		return DrawColoredPatchSP(source, dest, count, pitch, yinc);
+		return DrawColoredPatchSP(source, mask, dest, count, pitch, yinc);
 
 	argb_t *bg2rgb;
 
@@ -431,7 +443,7 @@ void DCanvas::DrawColorLucentPatchSP(const byte *source, byte *dest, int count, 
 
 	do
 	{
-		if (source[c >> 16] != 0)
+		if (not mask or mask[c >> 16])
 		{
 			unsigned int bg = bg2rgb[*dest];
 			bg = (bg+bg) | 0x1f07c1f;
@@ -449,7 +461,7 @@ void DCanvas::DrawColorLucentPatchSP(const byte *source, byte *dest, int count, 
 /**************************/
 
 // Normal patch drawers
-void DCanvas::DrawPatchD (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawPatchD (const byte *source, const byte *mask, byte *dest, int count, int pitch)
 {
 	if (count <= 0)
 		return;
@@ -457,16 +469,18 @@ void DCanvas::DrawPatchD (const byte *source, byte *dest, int count, int pitch)
 	do
 	{
 		palindex_t pixel = *source;
-		if (pixel != 0)
+		if (not mask or *mask)
 		{
 			*(reinterpret_cast<argb_t*>(dest)) = V_Palette.shade(pixel);
 		}
 		source++;
+		if (mask)
+			mask++;
 		dest += pitch;
 	} while (--count);
 }
 
-void DCanvas::DrawPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawPatchSD (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc)
 {
 	if (count <= 0)
 		return;
@@ -476,7 +490,7 @@ void DCanvas::DrawPatchSD (const byte *source, byte *dest, int count, int pitch,
 	do
 	{
 		palindex_t pixel = source[c >> 16];
-		if (pixel != 0)
+		if (not mask or mask[c >> 16])
 		{
 			*(reinterpret_cast<argb_t*>(dest)) = V_Palette.shade(pixel);
 		}
@@ -487,13 +501,13 @@ void DCanvas::DrawPatchSD (const byte *source, byte *dest, int count, int pitch,
 
 
 // Translucent patch drawers (always 50%)
-void DCanvas::DrawLucentPatchD (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawLucentPatchD (const byte *source, const byte *mask, byte *dest, int count, int pitch)
 {
 	if (count <= 0 || !hud_transparency)
 		return;
 
 	if (::hud_transparency >= 1.0)
-		return DrawPatchD(source, dest, count, pitch);
+		return DrawPatchD(source, mask, dest, count, pitch);
 
 	int alpha = static_cast<int>(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
@@ -501,24 +515,26 @@ void DCanvas::DrawLucentPatchD (const byte *source, byte *dest, int count, int p
 	do
 	{
 		palindex_t pixel = *source;
-		if (pixel != 0)
+		if (not mask or *mask)
 		{
 			argb_t fg = V_Palette.shade(pixel);
 			argb_t bg = *(reinterpret_cast<argb_t*>(dest));
 			*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, invAlpha, fg, alpha);
 		}
 		source++;
+		if (mask)
+			mask++;
 		dest += pitch;
 	} while (--count);
 }
 
-void DCanvas::DrawLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawLucentPatchSD (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc)
 {
 	if (count <= 0 || !hud_transparency)
 		return;
 
 	if (::hud_transparency >= 1.0)
-		return DrawPatchSD(source, dest, count, pitch, yinc);
+		return DrawPatchSD(source, mask, dest, count, pitch, yinc);
 
 	int alpha = static_cast<int>(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
@@ -528,7 +544,7 @@ void DCanvas::DrawLucentPatchSD (const byte *source, byte *dest, int count, int 
 	do
 	{
 		palindex_t pixel = source[c >> 16];
-		if (pixel != 0)
+		if (not mask or mask[c >> 16])
 		{
 			argb_t fg = V_Palette.shade(pixel);
 			argb_t bg = *(reinterpret_cast<argb_t*>(dest));
@@ -541,7 +557,7 @@ void DCanvas::DrawLucentPatchSD (const byte *source, byte *dest, int count, int 
 
 
 // Translated patch drawers
-void DCanvas::DrawTranslatedPatchD (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawTranslatedPatchD (const byte *source, const byte *mask, byte *dest, int count, int pitch)
 {
 	if (count <= 0)
 		return;
@@ -549,16 +565,18 @@ void DCanvas::DrawTranslatedPatchD (const byte *source, byte *dest, int count, i
 	do
 	{
 		palindex_t pixel = *source;
-		if (pixel != 0)
+		if (not mask or *mask)
 		{
 			*(reinterpret_cast<argb_t*>(dest)) = V_Palette.tlate(V_ColorMap, pixel);
 		}
 		source++;
+		if (mask)
+			mask++;
 		dest += pitch;
 	} while (--count);
 }
 
-void DCanvas::DrawTranslatedPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawTranslatedPatchSD (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc)
 {
 	if (count <= 0)
 		return;
@@ -568,7 +586,7 @@ void DCanvas::DrawTranslatedPatchSD (const byte *source, byte *dest, int count, 
 	do
 	{
 		palindex_t pixel = source[c >> 16];
-		if (pixel != 0)
+		if (not mask or mask[c >> 16])
 		{
 			*(reinterpret_cast<argb_t*>(dest)) = V_Palette.tlate(V_ColorMap, pixel);
 		}
@@ -579,13 +597,13 @@ void DCanvas::DrawTranslatedPatchSD (const byte *source, byte *dest, int count, 
 
 
 // Translated, translucent patch drawers
-void DCanvas::DrawTlatedLucentPatchD (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawTlatedLucentPatchD (const byte *source, const byte *mask, byte *dest, int count, int pitch)
 {
 	if (count <= 0 || !hud_transparency)
 		return;
 
 	if (::hud_transparency >= 1.0)
-		return DrawTranslatedPatchD(source, dest, count, pitch);
+		return DrawTranslatedPatchD(source, mask, dest, count, pitch);
 
 	int alpha = static_cast<int>(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
@@ -593,24 +611,26 @@ void DCanvas::DrawTlatedLucentPatchD (const byte *source, byte *dest, int count,
 	do
 	{
 		palindex_t pixel = *source;
-		if (pixel != 0)
+		if (not mask or *mask)
 		{
 			argb_t fg = V_Palette.tlate(V_ColorMap, pixel);
 			argb_t bg = *(reinterpret_cast<argb_t*>(dest));
 			*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, invAlpha, fg, alpha);
 		}
 		source++;
+		if (mask)
+			mask++;
 		dest += pitch;
 	} while (--count);
 }
 
-void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawTlatedLucentPatchSD (const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc)
 {
 	if (count <= 0 || !hud_transparency)
 		return;
 
 	if (::hud_transparency >= 1.0)
-		return DrawTranslatedPatchSD(source, dest, count, pitch, yinc);
+		return DrawTranslatedPatchSD(source, mask, dest, count, pitch, yinc);
 
 	int alpha = static_cast<int>(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
@@ -620,7 +640,7 @@ void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count
 	do
 	{
 		palindex_t pixel = source[c >> 16];
-		if (pixel != 0)
+		if (not mask or mask[c >> 16])
 		{
 			argb_t fg = V_Palette.tlate(V_ColorMap, pixel);
 			argb_t bg = *(reinterpret_cast<argb_t*>(dest));
@@ -636,7 +656,7 @@ void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count
 //
 // This routine is the same for the stretched version since we don't
 // care about the patch's actual contents, just it's outline.
-void DCanvas::DrawColoredPatchD (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawColoredPatchD (const byte *source, const byte *mask, byte *dest, int count, int pitch)
 {
 	if (count <= 0)
 		return;
@@ -644,16 +664,18 @@ void DCanvas::DrawColoredPatchD (const byte *source, byte *dest, int count, int 
 	argb_t color = V_Palette.shade(V_ColorFill);
 	do
 	{
-		if (*source != 0)
+		if (not mask or *mask)
 		{
 			*(reinterpret_cast<argb_t*>(dest)) = color;
 		}
 		source++;
+		if (mask)
+			mask++;
 		dest += pitch;
 	} while (--count);
 }
 
-void DCanvas::DrawColoredPatchSD(const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawColoredPatchSD(const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc)
 {
 	if (count <= 0)
 		return;
@@ -664,7 +686,7 @@ void DCanvas::DrawColoredPatchSD(const byte *source, byte *dest, int count, int 
 
 	do
 	{
-		if (source[c >> 16] != 0)
+		if (not mask or mask[c >> 16])
 		{
 			*(reinterpret_cast<argb_t*>(dest)) = color;
 		}
@@ -678,13 +700,13 @@ void DCanvas::DrawColoredPatchSD(const byte *source, byte *dest, int count, int 
 //
 // Like DrawColoredPatchD, only the texture's opaque (non mask color) pixels
 // are drawn.
-void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, int pitch)
+void DCanvas::DrawColorLucentPatchD (const byte *source, const byte *mask, byte *dest, int count, int pitch)
 {
 	if (count <= 0 || !hud_transparency)
 		return;
 
 	if (::hud_transparency >= 1.0)
-		return DrawColoredPatchD(source, dest, count, pitch);
+		return DrawColoredPatchD(source, mask, dest, count, pitch);
 
 	int alpha = static_cast<int>(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
@@ -693,23 +715,25 @@ void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, 
 
 	do
 	{
-		if (*source != 0)
+		if (not mask or *mask)
 		{
 			argb_t bg = *(reinterpret_cast<argb_t*>(dest));
 			*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, invAlpha, fg, alpha);
 		}
 		source++;
+		if (mask)
+			mask++;
 		dest += pitch;
 	} while (--count);
 }
 
-void DCanvas::DrawColorLucentPatchSD(const byte *source, byte *dest, int count, int pitch, int yinc)
+void DCanvas::DrawColorLucentPatchSD(const byte *source, const byte *mask, byte *dest, int count, int pitch, int yinc)
 {
 	if (count <= 0 or not hud_transparency)
 		return;
 
 	if (::hud_transparency >= 1.0)
-		return DrawColoredPatchSD(source, dest, count, pitch, yinc);
+		return DrawColoredPatchSD(source, mask, dest, count, pitch, yinc);
 
 	int alpha = static_cast<int>(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
@@ -720,7 +744,7 @@ void DCanvas::DrawColorLucentPatchSD(const byte *source, byte *dest, int count, 
 
 	do
 	{
-		if (source[c >> 16] != 0)
+		if (not mask or mask[c >> 16])
 		{
 			argb_t bg = *(reinterpret_cast<argb_t*>(dest));
 			*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, invAlpha, fg, alpha);
@@ -834,7 +858,11 @@ void DCanvas::DrawGlyphClipped(EWrapperCode drawer, const Texture* glyph, int x,
 
 	byte* dest = mSurface->getBuffer() + y1 * surface_pitch + x1 * colstep;
 	for (int col = x1; col < x2; col++, dest += colstep)
-		drawfunc(glyph->getColumn(col - x) + (y1 - y), dest, y2 - y1, surface_pitch);
+	{
+		const uint8_t* mask = glyph->getMaskColumn(col - x);
+		drawfunc(glyph->getColumn(col - x) + (y1 - y), mask ? mask + (y1 - y) : nullptr,
+		         dest, y2 - y1, surface_pitch);
+	}
 }
 
 
@@ -993,7 +1021,7 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const Texture* texture, int x, in
 	for (int col = 0; col < texture->mWidth; x++, col++, desttop += colstep)
 	{
 		const palindex_t* col_data = texture->getColumn(col);
-		drawfunc(col_data, desttop, texture->mHeight, surface_pitch);
+		drawfunc(col_data, texture->getMaskColumn(col), desttop, texture->mHeight, surface_pitch);
 	}
 }
 
@@ -1082,7 +1110,8 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const Texture* texture, int x0, 
 	for (int col = 0; col < w; col += xinc, desttop += colstep)
 	{
 		const palindex_t* col_data = texture->getColumn(col >> FRACBITS);
-		drawfunc(col_data, desttop, (texture->mHeight * ymul) >> FRACBITS, surface_pitch, yinc);
+		drawfunc(col_data, texture->getMaskColumn(col >> FRACBITS), desttop,
+		         (texture->mHeight * ymul) >> FRACBITS, surface_pitch, yinc);
 	}
 }
 
@@ -1230,8 +1259,9 @@ void DCanvas::DrawTextureFlippedStretched(const Texture* texture, int x0, int y0
 
 	for (int col = first_col; col >= 0 ; col -= xinc, desttop += colstep)
 	{
-		const palindex_t* col_data = texture->getColumn(std::min(col >> FRACBITS, max_col));
-		drawfunc(col_data, desttop, (texture->mHeight * ymul) >> FRACBITS, surface_pitch, yinc);
+		const int texcol = std::min(col >> FRACBITS, max_col);
+		drawfunc(texture->getColumn(texcol), texture->getMaskColumn(texcol), desttop,
+		         (texture->mHeight * ymul) >> FRACBITS, surface_pitch, yinc);
 	}
 }
 

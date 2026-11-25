@@ -601,11 +601,10 @@ void VX_ParseVoxelDefs()
 
 int VX_PaletteIndex(const byte* pal, int r, int g, int b)
 {
-	int best = 1;
+	int best = 0;
 	int best_dist = std::numeric_limits<int>::max();
 
-	pal += 3;
-	for (int i = 1; i < 256; i++)
+	for (int i = 0; i < 256; i++)
 	{
 		const int dr = r - static_cast<int>(*pal++);
 		const int dg = g - static_cast<int>(*pal++);
@@ -1500,12 +1499,13 @@ void VX_DrawVoxel(rendercontext_t& ctx, vissprite_t* spr)
 	const VoxelEye eye = {v->x_pivot + FixedMul(delta_x, c) + FixedMul(delta_y, s),
 	                      v->y_pivot + FixedMul(delta_x, s) - FixedMul(delta_y, c)};
 
-	// The slabs are palette indices with 0 transparent, and have no
-	// true-colour plane.
+	// The slabs are runs of palette indices, drawn whole, and have no mask
+	// or true-color plane.
 	drawcolumn_t& dcol = ctx.draw.dcol;
 	dcol.masked = true;
 	dcol.texturedata = nullptr;
 	dcol.argbtexturedata = nullptr;
+	dcol.masktexturedata = nullptr;
 
 	VX_RecursiveDraw(ctx, spr, eye, 0, 0, v->x_size, v->y_size);
 }

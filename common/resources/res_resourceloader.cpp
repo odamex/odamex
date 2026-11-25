@@ -54,15 +54,13 @@
 //
 static void Res_TransposeImage(palindex_t* dest, const palindex_t* source, int width, int height)
 {
-	const palindex_t* translation = V_GetDefaultPalette()->mask_translation;
-
 	for (int x = 0; x < width; x++)
 	{
 		const palindex_t* source_column = source + x;
 		
 		for (int y = 0; y < height; y++)
 		{
-			*dest = translation[*source_column];
+			*dest = *source_column;
 			source_column += width;
 			dest++;
 		}
@@ -73,8 +71,9 @@ static void Res_TransposeImage(palindex_t* dest, const palindex_t* source, int w
 //
 // Res_DrawPatchIntoTexture
 //
-// Draws a lump in patch_t format into a Texture at the given offset.
-// A texture with an ARGB plane gets the patch's palette colors there too.
+// Draws a lump in patch_t format into a Texture at the given offset, marking
+// the pixels its posts cover in the texture's mask plane. A texture with an
+// ARGB plane gets the patch's palette colors there too.
 //
 static void Res_DrawPatchIntoTexture(
 		Texture* texture,
@@ -85,7 +84,6 @@ static void Res_DrawPatchIntoTexture(
 		return;
 
 	const palette_t* palette = V_GetDefaultPalette();
-	const palindex_t* translation = palette->mask_translation;
 
 	int texwidth = texture->mWidth;
 	int texheight = texture->mHeight;
@@ -137,15 +135,10 @@ static void Res_DrawPatchIntoTexture(
 			{
 				palindex_t* dest = texture->mData + (texheight * x) + y1;
 				const palindex_t* source = post + 3;
-				if (translation)
-				{
-					for (int i = 0; i < y2 - y1 + 1; i++)
-						dest[i]	= translation[source[i]];
-				}
-				else
-				{
-					memcpy(dest, source, y2 - y1 + 1);
-				}
+				memcpy(dest, source, y2 - y1 + 1);
+
+				if (texture->mMask)
+					memset(texture->mMask + (texheight * x) + y1, 1, y2 - y1 + 1);
 
 				if (texture->mARGBData)
 				{
@@ -164,16 +157,30 @@ static void Res_DrawPatchIntoTexture(
 //
 // BaseTextureLoader::calculateTextureSize
 //
-uint32_t BaseTextureLoader::calculateTextureSize(uint16_t width, uint16_t height) const
+uint32_t BaseTextureLoader::calculateTextureSize(uint16_t width, uint16_t height, bool masked) const
 {
-	return Texture::calculateSize(width, height);
+	uint32_t size = Texture::calculateSize(width, height);
+	#if CLIENT_APP
+	if (masked)
+		size += Texture::calculateMaskPlaneSize(width, height);
+	#endif
+	return size;
 }
 
 
-Texture* BaseTextureLoader::createTexture(uint8_t* data, uint16_t width, uint16_t height) const
+//
+// BaseTextureLoader::createTexture
+//
+// A masked texture starts out transparent everywhere.
+//
+Texture* BaseTextureLoader::createTexture(uint8_t* data, uint16_t width, uint16_t height, bool masked) const
 {
 	Texture* texture = reinterpret_cast<Texture*>(data);
 	texture->init(width, height);
+	#if CLIENT_APP
+	if (masked)
+		texture->placeMaskPlane();
+	#endif
 	return texture;
 }
 
@@ -301,7 +308,7 @@ uint32_t PatchTextureLoader::size() const
 {
 	uint8_t raw_data[4];
 	if (mRawResourceAccessor->getResourceSize(mResId) < sizeof(raw_data))
-		return calculateTextureSize(0, 0);
+		return calculateTextureSize(0, 0, true);
 
 	// read the patch_t header to extract width & height
 	mRawResourceAccessor->loadResource(mResId, raw_data, 4);
@@ -311,9 +318,9 @@ uint32_t PatchTextureLoader::size() const
 	// nonsense dimensions mean load() will reject the patch data and create
 	// an empty texture, so don't let them inflate the allocation either
 	if (width < 0 or height < 0)
-		return calculateTextureSize(0, 0);
+		return calculateTextureSize(0, 0, true);
 
-	return calculateTextureSize(width, height);
+	return calculateTextureSize(width, height, true);
 }
 
 
@@ -335,7 +342,7 @@ void PatchTextureLoader::load(uint8_t* data) const
 		offsety = LESHORT(*reinterpret_cast<int16_t*>(patch_data + 6));
 	}
 
-	Texture* texture = createTexture(data, width, height);
+	Texture* texture = createTexture(data, width, height, true);
 	texture->mOffsetX = offsetx;
 	texture->mOffsetY = offsety;
 
@@ -367,8 +374,6 @@ void Res_DrawPngIntoTexture(
 	loader.load(buffer.get());
 	const Texture* patch = reinterpret_cast<const Texture*>(buffer.get());
 
-	const palindex_t mask_color = V_GetDefaultPalette()->mask_color;
-
 	const int x1 = std::max(xoffs, 0);
 	const int x2 = std::min(xoffs + patch->mWidth - 1, texture->mWidth - 1);
 	const int y1 = std::max(yoffs, 0);
@@ -376,13 +381,16 @@ void Res_DrawPngIntoTexture(
 
 	for (int x = x1; x <= x2; x++)
 	{
-		const palindex_t* source = patch->mData + (patch->mHeight * (x - xoffs)) + (y1 - yoffs);
-		palindex_t* dest = texture->mData + (texture->mHeight * x) + y1;
+		const int source_offset = (patch->mHeight * (x - xoffs)) + (y1 - yoffs);
+		const int dest_offset = (texture->mHeight * x) + y1;
 
-		for (int y = y1; y <= y2; y++, source++, dest++)
+		for (int y = 0; y <= y2 - y1; y++)
 		{
-			if (*source != mask_color)
-				*dest = *source;
+			if (patch->mMask[source_offset + y])
+			{
+				texture->mData[dest_offset + y] = patch->mData[source_offset + y];
+				texture->mMask[dest_offset + y] = 1;
+			}
 		}
 
 		if (texture->mARGBData and patch->mARGBData)
@@ -439,7 +447,7 @@ bool CompositeTextureLoader::hasPngPatch() const
 //
 uint32_t CompositeTextureLoader::size() const
 {
-	uint32_t total = calculateTextureSize(mTexDef.mWidth, mTexDef.mHeight);
+	uint32_t total = calculateTextureSize(mTexDef.mWidth, mTexDef.mHeight, true);
 	if (hasPngPatch())
 		total += Texture::calculateARGBPlaneSize(mTexDef.mWidth, mTexDef.mHeight);
 	return total;
@@ -453,7 +461,7 @@ uint32_t CompositeTextureLoader::size() const
 //
 void CompositeTextureLoader::load(uint8_t* data) const
 {
-	Texture* texture = createTexture(data, mTexDef.mWidth, mTexDef.mHeight);
+	Texture* texture = createTexture(data, mTexDef.mWidth, mTexDef.mHeight, true);
 
 	// Handle ZDoom scaling extensions
 	if (mTexDef.mScaleX > 0)
@@ -462,8 +470,8 @@ void CompositeTextureLoader::load(uint8_t* data) const
 		texture->mScaleY = mTexDef.mScaleY << (FRACBITS - 3);
 
 	#if CLIENT_APP
-	// Transparent until a patch covers it, as the palettized plane is mask
-	// color until drawn on.
+	// Transparent until a patch covers it, as the mask plane is until drawn
+	// on.
 	if (hasPngPatch())
 	{
 		texture->placeARGBPlane();
@@ -630,7 +638,7 @@ void PngTextureLoader::readHeader()
 //
 uint32_t PngTextureLoader::size() const
 {
-	uint32_t total = calculateTextureSize(mWidth, mHeight);
+	uint32_t total = calculateTextureSize(mWidth, mHeight, true);
 
 	#if defined(USE_PNG) && defined(CLIENT_APP)
 	// Every PNG carries its image natively in an additional ARGB plane
@@ -647,7 +655,7 @@ uint32_t PngTextureLoader::size() const
 // Res_DitherAlphaThreshold
 //
 // The 8bpp renderer cannot blend, so a texel's partial alpha is
-// knocked down to either opaque ortransparent with no in between.
+// knocked down to either opaque or transparent with no in between.
 // A flat threshold makes subtle translucency (alpha below the cutoff)
 // vanish entirely, so instead the cutoff is a 4x4 Bayer dithering
 // matrix over the texel position -- partial alpha get a screen door look,
@@ -679,7 +687,7 @@ static forceinline int Res_DitherAlphaThreshold(int x, int y)
 void PngTextureLoader::load(uint8_t* data) const
 {
 #if defined(USE_PNG) && defined(CLIENT_APP)
-	Texture* texture = createTexture(data, mWidth, mHeight);
+	Texture* texture = createTexture(data, mWidth, mHeight, true);
 	const palette_t* palette = V_GetDefaultPalette();
 
 	const char* resource_name = mRawResourceAccessor->getResourcePath(mResId).c_str();
@@ -798,9 +806,8 @@ void PngTextureLoader::load(uint8_t* data) const
 	{
 		// Build lookup tables translating the PNG's palette entries to
 		// their native color and to game palette indices. Entries with
-		// partial tRNS alpha are dithered between their matched color and
-		// the mask color in the 8bpp plane, while the ARGB plane keeps their
-		// true alpha.
+		// partial tRNS alpha are dithered in the mask plane for the 8bpp
+		// renderer, while the ARGB plane keeps their true alpha.
 		png_color* png_palette = nullptr;
 		int num_palette = 0;
 		png_get_PLTE(png_ptr, info_ptr, &png_palette, &num_palette);
@@ -823,8 +830,9 @@ void PngTextureLoader::load(uint8_t* data) const
 			}
 			else
 			{
+				// not in the palette, so never drawn
 				argb_lut[i] = argb_t(0, 0, 0, 0);
-				lut[i] = palette->mask_color;
+				lut[i] = 0;
 			}
 		}
 
@@ -832,17 +840,14 @@ void PngTextureLoader::load(uint8_t* data) const
 		for (uint16_t y = 0; y < mHeight; y++)
 		{
 			const png_byte* row = row_pointers[y];
-			uint8_t* dest = texture->mData + y;
 
 			for (int x = 0; x < mWidth; x++)
 			{
+				const int i = (mHeight * x) + y;
 				const argb_t color = argb_lut[row[x]];
-				if (color.geta() < Res_DitherAlphaThreshold(x, y))
-					*dest = palette->mask_color;
-				else
-					*dest = lut[row[x]];
-				dest += mHeight;
-				argb_plane[(mHeight * x) + y] = color;
+				texture->mData[i] = lut[row[x]];
+				texture->mMask[i] = color.geta() >= Res_DitherAlphaThreshold(x, y);
+				argb_plane[i] = color;
 			}
 		}
 	}
@@ -854,18 +859,20 @@ void PngTextureLoader::load(uint8_t* data) const
 		size_t cache_bits = 8;
 		while (cache_bits < 16 and (size_t(1) << cache_bits) < pixel_count)
 			cache_bits++;
-		std::vector<uint32_t> best_color_cache(size_t(1) << cache_bits, 0);
+		// Each entry holds a valid flag, the palette index and the color.
+		std::vector<uint64_t> best_color_cache(size_t(1) << cache_bits, 0);
+		static constexpr uint64_t CACHE_VALID = uint64_t(1) << 32;
 
 		const auto best_color = [&](const argb_t color) {
 			const uint32_t rgb = (static_cast<uint32_t>(color.getr()) << 16) |
 			                     (static_cast<uint32_t>(color.getg()) << 8) |
 			                     color.getb();
-			uint32_t& entry = best_color_cache[(rgb * 2654435761u) >> (32 - cache_bits)];
-			if ((entry >> 24) != 0 and (entry & 0xFFFFFF) == rgb)
-				return static_cast<palindex_t>(entry >> 24);
+			uint64_t& entry = best_color_cache[(rgb * 2654435761u) >> (32 - cache_bits)];
+			if ((entry & CACHE_VALID) and (entry & 0xFFFFFF) == rgb)
+				return static_cast<palindex_t>((entry >> 24) & 0xFF);
 
 			const palindex_t index = V_BestColor(palette->basecolors, color);
-			entry = (static_cast<uint32_t>(index) << 24) | rgb;
+			entry = CACHE_VALID | (static_cast<uint64_t>(index) << 24) | rgb;
 			return index;
 		};
 
@@ -874,19 +881,16 @@ void PngTextureLoader::load(uint8_t* data) const
 		for (uint16_t y = 0; y < mHeight; y++)
 		{
 			const png_byte* row = row_pointers[y];
-			uint8_t* dest = texture->mData + y;
 
 			for (int x = 0; x < mWidth; x++)
 			{
+				const int i = (mHeight * x) + y;
 				const png_byte* ptr = &(row[x << 2]);
-				argb_t color(ptr[3], ptr[0], ptr[1], ptr[2]);
-				if (color.geta() < Res_DitherAlphaThreshold(x, y))
-					*dest = palette->mask_color;
-				else
-					*dest = best_color(color);
-				dest += mHeight;
-
-				argb_plane[(mHeight * x) + y] = color;
+				const argb_t color(ptr[3], ptr[0], ptr[1], ptr[2]);
+				const bool drawn = color.geta() >= Res_DitherAlphaThreshold(x, y);
+				texture->mData[i] = drawn ? best_color(color) : 0;
+				texture->mMask[i] = drawn;
+				argb_plane[i] = color;
 			}
 		}
 	}

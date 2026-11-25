@@ -46,9 +46,6 @@ extern byte* Ranges;
 
 EXTERN_CVAR(developer)
 
-// The palette's transparency slot. Column drawers skip pixels holding it.
-static const palindex_t TRANSPARENT_INDEX		= 0;
-
 // Doom's font glyphs are recolored into the translation range so that
 // V_ColorMap can tint them to any text color at draw time.
 static const palindex_t TRANSLATION_RANGE_START	= 0xB0;
@@ -63,16 +60,16 @@ static const palindex_t DOOM_FONT_RANGE_END		= 0x5F;
 // V_FindDecorationColor
 //
 // Picks the darkest palette entry usable for an outline or drop shadow,
-// avoiding transparency or translation colors.
+// avoiding translation colors.
 //
 static palindex_t V_FindDecorationColor()
 {
 	const palette_t* palette = V_GetDefaultPalette();
 
-	int best_index = 1;
+	int best_index = 0;
 	int best_distance = (256 * 256 * 3) + 1;
 
-	for (int i = 1; i < 256; i++)
+	for (int i = 0; i < 256; i++)
 	{
 		if (i >= TRANSLATION_RANGE_START and i <= TRANSLATION_RANGE_END)
 			continue;
@@ -387,11 +384,14 @@ Texture* OFont::createGlyph(int width, int height,
 {
 	const bool with_planes = (coverage_plane != nullptr and fill_plane != nullptr);
 	const uint32_t pixels = width * height;
-	const uint32_t base_size = Texture::calculateSize(width, height);
+	const uint32_t base_size = Texture::calculateSize(width, height) +
+	                           Texture::calculateMaskPlaneSize(width, height);
 	const uint32_t size = base_size + (with_planes ? 2 * pixels : 0);
 
+	// transparent until drawn on
 	Texture* texture = static_cast<Texture*>(Z_Malloc(size, PU_STATIC, nullptr));
 	texture->init(width, height);
+	texture->placeMaskPlane();
 
 	if (with_planes)
 	{
@@ -986,10 +986,6 @@ void TrueTypeFont::buildGlyphs()
 	std::vector<byte> deco;
 	std::vector<byte> coverage;
 
-	// stand-in for a fill pixel that landed on the transparency slot
-	const palindex_t opaque_fill_fallback =
-			V_BestOpaqueColor(V_GetDefaultPalette()->basecolors, argb_t(0, 0, 0));
-
 	// how far the top of a capital rises above the baseline
 	int cap_bitmap_top = -1;
 
@@ -1084,14 +1080,11 @@ void TrueTypeFont::buildGlyphs()
 		texture->mOffsetY = face->glyph->bitmap_top + pad_top;
 
 
-		// Resolve the glyph into the color plane. Coverage is thresholded to
-		// a hard edge, the body keeps the fill laid down above, decoration
-		// gets a fixed dark color, and everything else becomes transparent.
-		//
-		// A fill is only allowed to contain the transparent index where the
-		// glyph isn't, so any opaque pixel that landed on it is nudged to the
-		// nearest opaque color instead -- otherwise a background graphic with
-		// transparency of its own would punch holes through the glyph.
+		// Resolve the glyph into the color and mask planes. Coverage is
+		// thresholded to a hard edge, the body keeps the fill laid down above,
+		// decoration gets a fixed dark color, and everything else becomes
+		// transparent. The body is drawn whatever a background graphic's own
+		// mask says, so its holes cannot punch through the glyph.
 		const byte* source = reinterpret_cast<const byte*>(face->glyph->bitmap.buffer);
 
 		if (fill_plane)
@@ -1165,6 +1158,7 @@ void TrueTypeFont::buildGlyphs()
 		}
 
 		palindex_t* dest = texture->mData;
+		uint8_t* mask = texture->mMask;
 
 		for (int x = 0; x < tex_width; x++)
 		{
@@ -1174,16 +1168,18 @@ void TrueTypeFont::buildGlyphs()
 
 				if (body[index])
 				{
-					if (*dest == TRANSPARENT_INDEX)
-						*dest = opaque_fill_fallback;
+					*mask = 1;
 				}
 				else if (decorated and deco[index])
 				{
 					*dest = decoration_color;
+					*mask = 1;
 				}
 				else
 				{
-					*dest = TRANSPARENT_INDEX;
+					// the fill may have come from a background graphic's drawn
+					// pixels
+					*mask = 0;
 				}
 
 				if (coverage_plane)
@@ -1191,9 +1187,6 @@ void TrueTypeFont::buildGlyphs()
 					if (coverage[index] > 0)
 					{
 						coverage_plane[index] = coverage[index];
-
-						if (fill_plane[index] == TRANSPARENT_INDEX)
-							fill_plane[index] = opaque_fill_fallback;
 					}
 					else if (decorated and deco[index])
 					{
@@ -1207,6 +1200,7 @@ void TrueTypeFont::buildGlyphs()
 				}
 
 				dest++;
+				mask++;
 			}
 		}
 	}
