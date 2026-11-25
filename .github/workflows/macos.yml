@@ -4,6 +4,7 @@ on:
   push:
     branches-ignore:
     - 'release/[0-9]+.[0-9]+.[0-9]+'
+    - 'gh-readonly-queue/**'
     paths-ignore:
     - "**/*.md"
     - README
@@ -15,6 +16,7 @@ on:
     - documentation/**
     - tools/**
   pull_request:
+  merge_group:
 
 jobs:
   pre_job:

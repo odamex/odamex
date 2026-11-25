@@ -61,6 +61,7 @@ END_DISABLE_WARNING_GNU
 #include "g_skill.h"
 #include "g_spree.h"
 #include "g_deathspot.h"
+#include "g_keepweapons.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
@@ -449,7 +450,6 @@ EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_maxplayers)
 
-void G_PlayerReborn (player_t &player);
 void SV_ServerSettingChange();
 
 void G_InitNew(const char *mapname)
@@ -686,14 +686,16 @@ void G_DoResetLevel(bool full_reset)
 		}
 	}
 
-	// Tell clients that a map reset is incoming.
+	// Tell clients that a map reset is incoming, and drop their requested mobj updates.
 	for (auto& player : players)
 	{
-		if (!(player.ingame()))
-			continue;
+		player.requestedNetIdUpdates.clear();
 
-		client_t* cl = &(player.client);
-		cl->messenger->Reliable().Write (odaproto::svc::ResetMap());
+		if (player.ingame())
+		{
+			client_t* cl = &(player.client);
+			cl->messenger->Reliable().Write (odaproto::svc::ResetMap());
+		}
 	}
 
 	// Unserialize saved snapshot
@@ -732,6 +734,7 @@ void G_DoResetLevel(bool full_reset)
 
 	// A reset puts everyone back on a player start.
 	DeathSpotManager::getInstance().clearDeathSpots();
+	KeepWeaponsManager::getInstance().clearLoadouts();
 
 	// Clear player information.
 	for (auto& player : players)
@@ -855,6 +858,7 @@ void G_DoLoadLevel (int position)
 
 	// Clear death spots as we're on a new map.
 	DeathSpotManager::getInstance().clearDeathSpots();
+	KeepWeaponsManager::getInstance().clearLoadouts();
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -865,6 +869,10 @@ void G_DoLoadLevel (int position)
 		P_ClearPlayerCards(*it);
 		P_ClearPlayerPowerups(*it);
 		P_ClearPlayerScores(*it, SCORES_CLEAR_ALL);
+
+		// Mobjs and their netids are ultimately wiped out later in this function.
+		// Ensure that players' pending requested netid updates don't become stale.
+		it->requestedNetIdUpdates.clear();
 
 		// [AM] Only touch ready state if warmup mode is enabled.
 		if (sv_warmup)

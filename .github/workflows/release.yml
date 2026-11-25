@@ -23,12 +23,12 @@ jobs:
         with:
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
       - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v4.5
+        uses: gittools/actions/gitversion/setup@v5.0
         with:
           versionSpec: '6.x'
       - name: Determine Version
         id:   gitversion
-        uses: gittools/actions/gitversion/execute@v4.5
+        uses: gittools/actions/gitversion/execute@v5.0
       - name: Display GitVersion outputs
         run: |
           echo "Major: ${{ steps.gitversion.outputs.major }}"
@@ -154,7 +154,7 @@ jobs:
     needs: pre_job
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-26.08
       options: --privileged
     env:
       new_version: ${{ needs.pre_job.outputs.new_version }}
@@ -190,7 +190,7 @@ jobs:
     needs: pre_job
     runs-on: ubuntu-26.04-arm
     container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-26.08
       options: --privileged
     env:
       new_version: ${{ needs.pre_job.outputs.new_version }}
