@@ -61,6 +61,7 @@ END_DISABLE_WARNING_GNU
 #include "g_skill.h"
 #include "g_spree.h"
 #include "g_deathspot.h"
+#include "g_keepweapons.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
@@ -449,7 +450,6 @@ EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_maxplayers)
 
-void G_PlayerReborn (player_t &player);
 void SV_ServerSettingChange();
 
 void G_InitNew(const char *mapname)
@@ -734,6 +734,7 @@ void G_DoResetLevel(bool full_reset)
 
 	// A reset puts everyone back on a player start.
 	DeathSpotManager::getInstance().clearDeathSpots();
+	KeepWeaponsManager::getInstance().clearLoadouts();
 
 	// Clear player information.
 	for (auto& player : players)
@@ -857,6 +858,7 @@ void G_DoLoadLevel (int position)
 
 	// Clear death spots as we're on a new map.
 	DeathSpotManager::getInstance().clearDeathSpots();
+	KeepWeaponsManager::getInstance().clearLoadouts();
 
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{

@@ -39,6 +39,7 @@
 #include "p_local.h"
 #include "p_mobj.h"
 #include "p_unlag.h"
+#include "g_keepweapons.h"
 
 /**
  * @brief Pack an array of booleans into a bitfield.
@@ -745,6 +746,8 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player)
 		const uint32_t packedcards = PackBoolArray(player.cards);
 		msg.set_cards(packedcards);
 	}
+
+	msg.set_keepweapons(KeepWeaponsManager::getInstance().keptLoadout(player.id));
 
 	return msg;
 }
