@@ -2286,7 +2286,10 @@ void CL_Say(const odaproto::svc::Say* msg)
 
 	player_t& player = idplayer(player_id);
 
-	if (!validplayer(player))
+	if (not validplayer(player))
+		return;
+
+	if (player.isExplicitlyMuted)
 		return;
 
 	bool spectator = player.spectator || player.playerstate == PST_DOWNLOAD;

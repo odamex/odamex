@@ -339,6 +339,10 @@ public:
 		std::string	Message;
 	} LastMessage;
 
+	// Server:  N/A         [todo: server-side voted mute]
+	// Client:  The local player explicitly muted this person.
+	bool isExplicitlyMuted;
+
 	// Server:  Queue of elevated-priority mobjs to spawn during the player message write operation.
 	// Client:  N/A
 	std::queue<AActor::AActorPtr>           mobjsToSpawn;   // std::queue because we may not pop everything off this tic.
