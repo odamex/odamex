@@ -545,7 +545,7 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	thing->SetOrigin (x, y, z);
 	thing->floorz = tmfloorz;
 	thing->ceilingz = tmceilingz;
-	thing->dropoffz = tmfloorz;
+	thing->dropoffz = tmdropoffz;
 	thing->floorsector = tmfloorsector;
 
 	return true;
