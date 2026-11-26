@@ -1205,16 +1205,66 @@ void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 	CL_CheckDisplayPlayer();
 }
 
-static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = nullptr)
+static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = nullptr, bool isTeleport = false)
 {
 	if (not mo)
 	{
-		mo = P_FindThingById(msg->actor().netid());
+		AActor* mo = P_FindThingById(msg->actor().netid());
+
 		if (not mo)
+			return;
+	}
+
+	// Special handling: If we get a best-effort / order-not-guaranteed UpdateMobj, make sure that
+	//                   we're not going backwards with it!  This avoids rare ghosts.
+	if (ThisMessageServerTic() < mo->updatedDuringServerTic)
+	{
+		return;
+	}
+
+	// Keep action-internal tic checks in sync, and +1 because mobjtic was already advanced on the server
+	// beyond gametic by the time the message was sent.
+	mo->mobjtic = ThisMessageServerTic() + 1;
+
+	const MobjModeEnum mode = static_cast<MobjModeEnum>(msg->mode());
+	if (mode != mo->mode)
+	{
+		switch (mode)
 		{
-			return mo;
+			case MobjModeEnum::SPAWN:
+				P_SetMobjState(mo, mo->info->spawnstate);
+				break;
+			case MobjModeEnum::SEE:
+				P_SetMobjState(mo, mo->info->seestate);
+				break;
+			case MobjModeEnum::PAIN:
+				P_SetMobjState(mo, mo->info->painstate);
+				break;
+			case MobjModeEnum::MELEE:
+				P_SetMobjState(mo, mo->info->meleestate);
+				break;
+			case MobjModeEnum::MISSILE:
+				P_SetMobjState(mo, mo->info->missilestate);
+				break;
+			case MobjModeEnum::DEATH:
+				P_SetMobjState(mo, mo->info->deathstate);
+				break;
+			case MobjModeEnum::XDEATH:
+				P_SetMobjState(mo, mo->info->xdeathstate);
+				break;
+			case MobjModeEnum::RAISE:
+				P_SetMobjState(mo, mo->info->raisestate);
+				break;
+			default:
+				break;
 		}
 	}
+
+	if (mo->state->statenum != msg->state())
+	{
+		P_SetMobjState(mo, msg->state());
+	}
+	mo->tics = msg->tics();
 
 	mo->updatedDuringServerTic = ThisMessageServerTic();
 	mo->updatedDuringLocalTic = gametic;
@@ -1317,71 +1367,14 @@ static AActor* CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = 
 		mo->tracer = tracer->ptr();
 	else
 		mo->tracer = AActor::AActorPtr();
-
-	return mo;
 }
 
-void CL_UpdateMobjWithMode(const odaproto::svc::UpdateMobjWithMode* msg)
+void CL_TeleportMobj(const odaproto::svc::TeleportMobj* msg)
 {
-	AActor* mo = P_FindThingById(msg->update().actor().netid());
-
-	if (not mo)
-		return;
-
-	// Special handling: If we get a best-effort / order-not-guaranteed UpdateMobj, make sure that
-	//                   we're not going backwards with it!  This avoids rare ghosts.
-	if (ThisMessageServerTic() < mo->updatedDuringServerTic)
+	if (AActor* mo = P_FindThingById(msg->update().actor().netid()))
 	{
-		return;
+		CL_UpdateMobj(& msg->update(), mo, true);
 	}
-
-	// Keep action-internal tic checks in sync, and +1 because mobjtic was already advanced on the server
-	// beyond gametic by the time the message was sent.
-	mo->mobjtic = ThisMessageServerTic() + 1;
-
-	const MobjModeEnum mode = static_cast<MobjModeEnum>(msg->mode());
-	if (mode != mo->mode)
-	{
-		switch (mode)
-		{
-			case MobjModeEnum::SPAWN:
-				P_SetMobjState(mo, mo->info->spawnstate);
-				break;
-			case MobjModeEnum::SEE:
-				P_SetMobjState(mo, mo->info->seestate);
-				break;
-			case MobjModeEnum::PAIN:
-				P_SetMobjState(mo, mo->info->painstate);
-				break;
-			case MobjModeEnum::MELEE:
-				P_SetMobjState(mo, mo->info->meleestate);
-				break;
-			case MobjModeEnum::MISSILE:
-				P_SetMobjState(mo, mo->info->missilestate);
-				break;
-			case MobjModeEnum::DEATH:
-				P_SetMobjState(mo, mo->info->deathstate);
-				break;
-			case MobjModeEnum::XDEATH:
-				P_SetMobjState(mo, mo->info->xdeathstate);
-				break;
-			case MobjModeEnum::RAISE:
-				P_SetMobjState(mo, mo->info->raisestate);
-				break;
-			default:
-				break;
-		}
-	}
-
-	if (mo->state->statenum != msg->state())
-	{
-		P_SetMobjState(mo, msg->state());
-	}
-	mo->tics = msg->tics();
-
-	// Now apply the update mobj, on the off chance that a mode change caused
-	// us to mispredict the fine-grained position, momentum, angle, etc.
-	CL_UpdateMobj(& msg->update(), mo);
 }
 
 //
@@ -3809,7 +3802,7 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_removemobj, CL_RemoveMobj, odaproto::svc::RemoveMobj);
 		SV_MSG(svc_userinfo, CL_UserInfo, odaproto::svc::UserInfo);
 		SV_MSG(svc_updatemobj, CL_UpdateMobj, odaproto::svc::UpdateMobj);
-		SV_MSG(svc_updatemobjwithmode, CL_UpdateMobjWithMode, odaproto::svc::UpdateMobjWithMode);
+		SV_MSG(svc_teleportmobj, CL_TeleportMobj, odaproto::svc::TeleportMobj);
 		SV_MSG(svc_spawnplayer, CL_SpawnPlayer, odaproto::svc::SpawnPlayer);
 		SV_MSG(svc_damageplayer, CL_DamagePlayer, odaproto::svc::DamagePlayer);
 		SV_MSG(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);

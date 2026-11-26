@@ -3175,7 +3175,7 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 
 	if (isHyperAware)
 	{
-		player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
+		player.client.messenger->BestEffort().Write( SVC_UpdateMobj(*mo));
 	}
 	else
 	{
@@ -3199,7 +3199,7 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 					break;
 
 				default:
-					player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
+					player.client.messenger->BestEffort().Write( SVC_UpdateMobj(*mo));
 					break;
 			}
 		}
@@ -3223,7 +3223,7 @@ enum class TransportEnum
 	RELIABLE
 };
 
-void WriteMobjMessageToPlayer(const odaproto::svc::UpdateMobjWithMode& message, player_t& player, AwarenessEnum awareness, TransportEnum transport)
+void WriteMobjMessageToPlayer(const google::protobuf::Message& message, player_t& player, AwarenessEnum awareness, TransportEnum transport)
 {
 	MessageQueue& fullAwareQueue = transport == TransportEnum::BEST_EFFORT ? player.client.messenger->BestEffort()
 	                                                                       : player.client.messenger->Reliable();
@@ -3252,7 +3252,7 @@ void ImmediateUpdateMobj(AActor& mobj, TransportEnum transport)
 	if (mobj.player)
 		return;
 
-	auto message = SVC_UpdateMobjWithMode(mobj);
+	auto message = SVC_UpdateMobj(mobj);
 
 	for (auto& player : players)
 	{
@@ -3382,7 +3382,7 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 					break;
 
 				default:
-					player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
+					player.client.messenger->BestEffort().Write( SVC_UpdateMobj(*mo));
 					break;
 			}
 		}
@@ -3395,7 +3395,7 @@ void SV_UpdateAvatars(player_t& player)
 	{
 		if (voodooInfo.mobj and ((voodooInfo.mobj->netid + gametic) % 7) == 0)
 		{
-			player.client.messenger->HighPriority().Write( SVC_UpdateMobjWithMode(*voodooInfo.mobj));
+			player.client.messenger->HighPriority().Write( SVC_UpdateMobj(*voodooInfo.mobj));
 		}
 	}
 }
@@ -3798,10 +3798,14 @@ void SV_WriteCommandsForPlayer(player_t& player)
 			{
 				if (mobjInfo.isTeleport)
 				{
+					WriteMobjMessageToPlayer(SVC_TeleportMobj(*mobjInfo.mobjPtr),
+					                         player,
+					                         mobjInfo.mobjPtr->playersAware.Get(player.id),
+					                         TransportEnum::AUTO);
 				}
 				else
 				{
-					WriteMobjMessageToPlayer(SVC_UpdateMobjWithMode(*mobjInfo.mobjPtr),
+					WriteMobjMessageToPlayer(SVC_UpdateMobj(*mobjInfo.mobjPtr),
 					                         player,
 					                         mobjInfo.mobjPtr->playersAware.Get(player.id),
 					                         TransportEnum::AUTO);
@@ -3820,7 +3824,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	{
 		// No need to check the actor pointer.  We add it to onDemandMobjs directly
 		// from the current thinker list.
-		auto message = SVC_UpdateMobjWithMode(*actor);
+		auto message = SVC_UpdateMobj(*actor);
 		WriteMobjMessageToPlayer(message,
 		                         player,
 		                         AwarenessEnum::FULLY_AWARE,    // A single blip of awareness for this on-demand mobj!
@@ -5353,12 +5357,12 @@ void SV_ExplodeMissile(AActor *mo)
 
 			case AwarenessEnum::ALWAYS_AWARE:  [[ fallthrough ]];      // See everything.
 			case AwarenessEnum::FULLY_AWARE:
-				player.client.messenger->Reliable().Write (SVC_UpdateMobjWithMode(*mo));
+				player.client.messenger->Reliable().Write (SVC_UpdateMobj(*mo));
 				player.client.messenger->Reliable().Write (SVC_ExplodeMissile(*mo));
 				break;
 
 			case AwarenessEnum::SEMI_AWARE:                            // See an explosion, maybe even in the correct position.
-				player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
+				player.client.messenger->BestEffort().Write( SVC_UpdateMobj(*mo));
 				player.client.messenger->Reliable().Write (SVC_ExplodeMissile(*mo));
 				break;
 
