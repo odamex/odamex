@@ -3209,6 +3209,13 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 namespace
 {
 
+	struct ArmedMobjInfoType
+	{
+		AActor* mobjPtr     { nullptr };
+		bool    isTeleport  { false };
+	};
+	std::unordered_map<uint32_t, ArmedMobjInfoType, std::identity> s_armedMobjs;
+
 enum class TransportEnum
 {
 	AUTO,
@@ -3266,13 +3273,23 @@ void SV_ArmMobj(AActor* mobj)
 
 	mobj->updatedDuringLocalTic = gametic;
 
-	for (auto& player : players)
-	{
-		if (player.ingame() and SV_IsPlayerAllowedToSee(player, mobj))
-		{
-			player.mobjsToUpdate.insert(mobj->ptr());
-		}
-	}
+	// Use .insert() because it won't overwrite any existing value.  This is because if the mobj is
+	// already indicated for teleport, that must take priority.
+	s_armedMobjs.insert({mobj->netid, ArmedMobjInfoType{ .mobjPtr    = mobj,
+	                                                     .isTeleport = false }});
+}
+
+void SV_ArmMobjForTeleport(AActor* mobj)
+{
+	// Don't use this function to update players.
+	if (not mobj or mobj->player)
+		return;
+
+	// Use .insert_or_assign() because it should overwrite any existing value.  This is because if
+	// the mobj is already indicated for simple update, it must instead be changed to a teleport,
+	// which is higher priority.
+	s_armedMobjs.insert_or_assign(mobj->netid, ArmedMobjInfoType{ .mobjPtr    = mobj,
+	                                                              .isTeleport = true });
 }
 
 // Update the given actors data immediately, using standard Reliable and Best-effort transports as appropriate.
@@ -3772,20 +3789,26 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	// Now that we've gotten through the basic "keep the game cycling" stuff, go through the
 	// additional mobj messages that can really blow out the bandwidth if we let them.
 
-	// Start with the mobjs that we already know the player is aware of and have on-demand equested
-	// updates due to things like state transitions, teleportations.
-	for (const auto& mobjPtr : player.mobjsToUpdate)
+	// Start with the mobjs that updates due to things like state transitions, teleportations.
+	if (player.ingame())
 	{
-		if (mobjPtr)    // Always double-check.  We otherwise don't know if it was somehow destroyed in the meantime.
+		for (const auto& [netid, mobjInfo] : s_armedMobjs)
 		{
-			auto message = SVC_UpdateMobjWithMode(*mobjPtr);
-			WriteMobjMessageToPlayer(message,
-			                         player,
-			                         mobjPtr->playersAware.Get(player.id),
-			                         TransportEnum::AUTO);
+			if (mobjInfo.mobjPtr and not mobjInfo.mobjPtr->WasDestroyed() and SV_IsPlayerAllowedToSee(player, mobjInfo.mobjPtr))
+			{
+				if (mobjInfo.isTeleport)
+				{
+				}
+				else
+				{
+					WriteMobjMessageToPlayer(SVC_UpdateMobjWithMode(*mobjInfo.mobjPtr),
+					                         player,
+					                         mobjInfo.mobjPtr->playersAware.Get(player.id),
+					                         TransportEnum::AUTO);
+				}
+			}
 		}
 	}
-	player.mobjsToUpdate.clear();
 
 	const bool throttleIsActive = player.client.messenger->GetReliableOverloadCount() > 1;
 
@@ -3919,6 +3942,11 @@ void SV_WriteCommands(void)
 	{
 		future.wait();
 	}
+
+	// Now that we're done with writing out the messages into the player's messenger queues, clear
+	// out the bookkeeping data that we only needed until then.
+	s_armedMobjs.clear();
+
 }
 
 }

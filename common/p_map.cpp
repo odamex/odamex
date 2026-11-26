@@ -469,6 +469,17 @@ bool PIT_StompThing (AActor& thing, const bool StompAlwaysFrags)
 
 namespace
 {
+	AActor* teleportedThing;
+}
+
+void P_ClearJustTeleported()
+{
+	teleportedThing = nullptr;
+}
+
+bool P_JustTeleported (AActor* thing)
+{
+	return teleportedThing != nullptr && teleportedThing == thing;
 }
 
 //
@@ -547,6 +558,8 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	thing->ceilingz = tmceilingz;
 	thing->dropoffz = tmdropoffz;
 	thing->floorsector = tmfloorsector;
+
+	teleportedThing = thing;
 
 	return true;
 }

@@ -343,7 +343,7 @@ public:
 	// Client:  N/A
 	std::queue<AActor::AActorPtr>           mobjsToSpawn;   // std::queue because we may not pop everything off this tic.
 
-	// Server:  The set of mobjs that need to be updated to the client during message write, due to mid-tic state changes.
+	// Server:  N/A
 	// Client:  The set of mobjs for which we need to request out-of-cycle "ghostbuster" updates.
 	std::unordered_set<AActor::AActorPtr>   mobjsToUpdate;
 
