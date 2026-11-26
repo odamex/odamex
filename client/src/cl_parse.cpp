@@ -1209,7 +1209,7 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = nul
 {
 	if (not mo)
 	{
-		AActor* mo = P_FindThingById(msg->actor().netid());
+		mo = P_FindThingById(msg->actor().netid());
 
 		if (not mo)
 			return;
@@ -1342,7 +1342,14 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = nul
 	}
 	else
 	{
-		CL_MoveThing(mo, update.pos.x, update.pos.y, update.pos.z);
+		if (isTeleport)
+		{
+			CL_TeleportThing(mo, update.pos.x, update.pos.y, update.pos.z);
+		}
+		else
+		{
+			CL_MoveThing(mo, update.pos.x, update.pos.y, update.pos.z);
+		}
 		if ((flags & baseline_t::POSZ) && (mo->flags2 & MF2_FLOATBOB))
 			mo->special1 = mo->z - mo->floorz;
 		mo->angle = update.angle;

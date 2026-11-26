@@ -1677,6 +1677,33 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 	mobj->LinkToWorld ();
 }
 
+/// Move a mobj as though it had teleported via P_TeleportMove.
+/// One major way this differs from plain old CL_MoveThing is that, like P_TeleportMove, it does
+/// not call P_CheckPosition, and instead uses a relatively simple assignment of position without
+/// doing things that would trigger dropoff, or trigger specials immediately.
+///
+/// Special knowledge:  It is assumed that the real P_TeleportMove is called as the result of a
+///                     an immediately preceding ActivateLine.  The server still sends us the
+///                     TeleportMobj message to ensure that mispredictions are corrected ASAP,
+///                     and we need to perform the lightweigh equivalent of that here.
+void CL_TeleportThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
+{
+	if (!mobj)
+		return;
+
+	// If a preceding ActivateLine put us in the right spot, there's no need to do anything more.
+	if (mobj->x == x && mobj->y == y && mobj->z == z)
+		return;
+
+	const subsector_t* newsubsec = P_PointInSubsector (x,y);
+
+	mobj->SetOrigin(x, y, z);
+	mobj->floorz       = P_FloorHeight(x, y, newsubsec->sector);
+	mobj->ceilingz     = P_CeilingHeight(x, y, newsubsec->sector);
+	mobj->dropoffz     = mobj->floorz;
+	mobj->floorsector  = newsubsec->sector;
+}
+
 //
 // CL_SendUserInfo
 //
