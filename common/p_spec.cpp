@@ -1924,6 +1924,7 @@ void OnChangedSwitchTexture (line_t *line, int useAgain);
 void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
                         const LineActivationType activationType, const bool bossaction);
 void SV_ArmMobj(AActor* mo);
+void SV_ArmMobjForTeleport(AActor* mo);
 
 //
 // EVENTS
@@ -1989,7 +1990,15 @@ void P_CrossSpecialLine(line_t* line, int side, AActor* thing, bool bossaction)
 		//
 		// We mitigate this risk by always arming the mobj for update.
 
-		SV_ArmMobj(thing);
+		if (P_JustTeleported(thing))
+		{
+			SV_ArmMobjForTeleport(thing);
+			P_ClearJustTeleported();
+		}
+		else
+		{
+			SV_ArmMobj(thing);
+		}
 
 		bool repeat;
 
@@ -2062,7 +2071,15 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 		//
 		// We mitigate this risk by always arming the mobj for update.
 
-		SV_ArmMobj(thing);
+		if (P_JustTeleported(thing))
+		{
+			SV_ArmMobjForTeleport(thing);
+			P_ClearJustTeleported();
+		}
+		else
+		{
+			SV_ArmMobj(thing);
+		}
 
 		if (lineresult)
 		{
@@ -2137,7 +2154,15 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 		//
 		// We mitigate this risk by always arming the mobj for update.
 
-		SV_ArmMobj(thing);
+		if (P_JustTeleported(thing))
+		{
+			SV_ArmMobjForTeleport(thing);
+			P_ClearJustTeleported();
+		}
+		else
+		{
+			SV_ArmMobj(thing);
+		}
 
 		if (map_format.getZDoom() && !bossaction)
 		{
@@ -2221,7 +2246,15 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 		//
 		// We mitigate this risk by always arming the mobj for update.
 
-		SV_ArmMobj(thing);
+		if (P_JustTeleported(thing))
+		{
+			SV_ArmMobjForTeleport(thing);
+			P_ClearJustTeleported();
+		}
+		else
+		{
+			SV_ArmMobj(thing);
+		}
 
 		if (serverside and not (thing and thing->player and (thing->player->spectator or
 		                                                     thing->player->playerstate != PST_LIVE)))

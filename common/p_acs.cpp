@@ -1242,7 +1242,15 @@ void DPlaneWatcher::RunThink ()
 			//
 			// We mitigate this risk by always arming the mobj for update.
 
-			SV_ArmMobj(Activator);
+			if (P_JustTeleported(Activator))
+			{
+				SV_ArmMobjForTeleport(Activator);
+				P_ClearJustTeleported();
+			}
+			else
+			{
+				SV_ArmMobj(Activator);
+			}
 		}
 		Destroy ();
 	}
@@ -1753,7 +1761,15 @@ void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activ
 		//
 		// We mitigate this risk by always arming the mobj for update.
 
-		SV_ArmMobj(activator);
+		if (P_JustTeleported(activator))
+		{
+			SV_ArmMobjForTeleport(activator);
+			P_ClearJustTeleported();
+		}
+		else
+		{
+			SV_ArmMobj(activator);
+		}
 	}
 }
 

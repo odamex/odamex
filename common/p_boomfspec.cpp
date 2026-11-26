@@ -37,6 +37,7 @@ EXTERN_CVAR(co_monstersclimbsteep)
 EXTERN_CVAR(co_mbfphys)
 
 void SV_ArmMobj(AActor* mo);
+void SV_ArmMobjForTeleport(AActor* mo);
 
 //
 // P_CrossCompatibleSpecialLine - Walkover Trigger Dispatcher
@@ -3377,7 +3378,15 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 			//
 			// We mitigate this risk by always arming the mobj for update.
 
-			SV_ArmMobj(thing);
+			if (P_JustTeleported(thing))
+			{
+				SV_ArmMobjForTeleport(thing);
+				P_ClearJustTeleported();
+			}
+			else
+			{
+				SV_ArmMobj(thing);
+			}
 
 			P_ChangeSwitchTexture(line, reuse, true);
 			OnChangedSwitchTexture(line, reuse);
