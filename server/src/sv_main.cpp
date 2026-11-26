@@ -3395,7 +3395,7 @@ void SV_UpdateAvatars(player_t& player)
 	{
 		if (voodooInfo.mobj and ((voodooInfo.mobj->netid + gametic) % 7) == 0)
 		{
-			player.client.messenger->HighPriority().Write( SVC_UpdateMobj(*voodooInfo.mobj));
+			player.client.messenger->HighPriority().Write( SVC_UpdateMobjWithMode(*voodooInfo.mobj));
 		}
 	}
 }
@@ -5353,12 +5353,12 @@ void SV_ExplodeMissile(AActor *mo)
 
 			case AwarenessEnum::ALWAYS_AWARE:  [[ fallthrough ]];      // See everything.
 			case AwarenessEnum::FULLY_AWARE:
-				player.client.messenger->Reliable().Write (SVC_UpdateMobj(*mo));
+				player.client.messenger->Reliable().Write (SVC_UpdateMobjWithMode(*mo));
 				player.client.messenger->Reliable().Write (SVC_ExplodeMissile(*mo));
 				break;
 
 			case AwarenessEnum::SEMI_AWARE:                            // See an explosion, maybe even in the correct position.
-				player.client.messenger->BestEffort().Write( SVC_UpdateMobj(*mo));
+				player.client.messenger->BestEffort().Write( SVC_UpdateMobjWithMode(*mo));
 				player.client.messenger->Reliable().Write (SVC_ExplodeMissile(*mo));
 				break;
 
