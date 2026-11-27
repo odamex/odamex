@@ -248,12 +248,15 @@ class OdaMessenger
 
 		void SetMaxRate(int i_maxRate)
 		{
-			m_maxRate      = i_maxRate;
-			m_perTicBudget = (m_maxRate * 1000) / TICRATE;
-			m_byteBudget   = m_perTicBudget;
+			if (i_maxRate > 0)
+			{
+				m_maxRate      = i_maxRate;
+				m_perTicBudget = (m_maxRate * 1000) / TICRATE;
+				m_byteBudget   = m_perTicBudget;
 
-			// Track when reliable exceeds a certain percentage of the budget.  This could be configurable...
-			m_reliableOverloadThreshold = 9 * (m_perTicBudget / 10);
+				// Track when reliable exceeds a certain percentage of the budget.  This could be configurable...
+				m_reliableOverloadThreshold = 9 * (static_cast<size_t>(m_perTicBudget) / 10);
+			}
 		}
 		void SetPacketsPerRetransmit    (int i_maxPackets)   { m_maxPacketsPerRetransmission = i_maxPackets; }
 		void SetRetransmitDelay         (int i_delayInTics)  { m_retransmitDelayInTics = i_delayInTics; }
@@ -292,7 +295,7 @@ class OdaMessenger
 		Packet m_highPacket;
 
 		PacketHeaderType        m_receivedHeader;
-		MovingAverage<int, 5>   m_averageHeaderRoundTripTics;   // 32 samples.. approx 1 sec assuming 35 TICRATE.
+		MovingAverage<int, 5>   m_averageHeaderRoundTripTics;   // NOLINT (readability-magic-numbers):  32 samples.. approx 1 sec assuming 35 TICRATE.
 
 		// Send buffers
 		MessageQueue        m_outgoingReliableQueue;
@@ -318,8 +321,8 @@ class OdaMessenger
 		int m_destinationTic            { -1 };     ///< The remote tic that we're supposed to echo back to the other end.
 		int m_mostRecentEchoedTic       { -1 };     ///< The highest-numbered tic we've seen echoed back to us as a received destinationTic.
 
-		int m_reliableOverloadThreshold { 0 };
-		int m_reliableOverloadCount     { 0 };
+		size_t m_reliableOverloadThreshold { 0 };
+		int    m_reliableOverloadCount     { 0 };
 
 		std::basic_string<byte> m_recordingBuffer;
 		bool                    m_recordingIsEnabled { false };

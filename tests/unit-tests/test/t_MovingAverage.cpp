@@ -21,7 +21,7 @@ TEST_F(ThirtyTwoInts, NullOptUntilFull)
     auto value = average.Update(32);
 
     EXPECT_EQ(value.has_value(), true);
-    EXPECT_EQ(*value,            16);
+    EXPECT_EQ(value.value(),     16);
 }
 
 TEST_F(ThirtyTwoInts, AllOnes)
