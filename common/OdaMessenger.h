@@ -246,17 +246,20 @@ class OdaMessenger
 		bool MustThrottleTransmission() const { return m_sender.GetMode() == SequenceSender::RECOVERY; }
 		fixed_t ThrottleFraction() const { return FixedDiv( m_unackedGrowth << FRACBITS, m_unackedGrowthThreshold << FRACBITS); }
 
-		void SetMaxRate(int i_maxRate)
+		void SetMaxRate(int i_maxRateKiBps)
 		{
-			if (i_maxRate > 0)
+			// NOLINTBEGIN (readability-magic-numbers)
+			if (i_maxRateKiBps > 0)
 			{
-				m_maxRate      = i_maxRate;
+				m_maxRate      = i_maxRateKiBps;
 				m_perTicBudget = (m_maxRate * 1000) / TICRATE;
 				m_byteBudget   = m_perTicBudget;
 
 				// Track when reliable exceeds a certain percentage of the budget.  This could be configurable...
 				m_reliableOverloadThreshold = 9 * (static_cast<size_t>(m_perTicBudget) / 10);
+
 			}
+			// NOLINTEND (readability-magic-numbers)
 		}
 		void SetPacketsPerRetransmit    (int i_maxPackets)   { m_maxPacketsPerRetransmission = i_maxPackets; }
 		void SetRetransmitDelay         (int i_delayInTics)  { m_retransmitDelayInTics = i_delayInTics; }
