@@ -1929,6 +1929,8 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	if (side) // jff 6/1/98 fix inadvertent deletion of side test
 		return false;
 
+	P_ClearJustTeleported();
+
 	// jff 02/04/98 add check here for generalized floor/ceil mover
 
 	// pointer to line function is NULL by default, set non-null if

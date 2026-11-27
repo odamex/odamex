@@ -1973,6 +1973,7 @@ void P_CrossSpecialLine(line_t* line, int side, AActor* thing, bool bossaction)
 
 	if (thing)
 	{
+		P_ClearJustTeleported();
 		result = map_format.cross_special_line(line, side, thing, bossaction);
 	}
 
@@ -2046,6 +2047,8 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 	//TeleportSide = side;
 
 	bool lineresult;
+
+	P_ClearJustTeleported();
 
 	if (map_format.getZDoom()) // All zdoom specials can be impact activated
 	{
@@ -2134,12 +2137,14 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 
 	TeleportSide = side;
 
+	P_ClearJustTeleported();
+
 	if (map_format.getZDoom())
 		result = P_ActivateZDoomLine(line, thing, side, ML_SPAC_USE);
 	else
 		result = P_UseCompatibleSpecialLine(thing, line, side, bossaction);
 
- 	if (result)
+	if (result)
 	{
 		// May need to move this higher as the special is gone in Boom by this point.
 		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
@@ -2225,6 +2230,7 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 		}
 	}
 
+	P_ClearJustTeleported();
 	TeleportSide = side;
 
 	if (LineSpecials[line->special] (line, thing,
