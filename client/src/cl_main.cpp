@@ -1689,11 +1689,11 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 ///                     and we need to perform the lightweight equivalent of that here.
 void CL_TeleportThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 {
-	if (!mobj)
+	if (not mobj)
 		return;
 
 	// If a preceding ActivateLine put us in the right spot, there's no need to do anything more.
-	if (mobj->x == x && mobj->y == y && mobj->z == z)
+	if (mobj->x == x and mobj->y == y and mobj->z == z)
 		return;
 
 	// The remainder of this function is modeled after the key parts of P_TeleportMove that directly

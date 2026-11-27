@@ -1205,7 +1205,7 @@ void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 	CL_CheckDisplayPlayer();
 }
 
-static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = nullptr, bool isTeleport = false)
+void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = nullptr, bool isTeleport = false)
 {
 	if (not mo)
 	{
@@ -1226,7 +1226,7 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg, AActor* mo = nul
 	// beyond gametic by the time the message was sent.
 	mo->mobjtic = ThisMessageServerTic() + 1;
 
-	const MobjModeEnum mode = static_cast<MobjModeEnum>(msg->mode());
+	const auto mode = static_cast<MobjModeEnum>(msg->mode());
 	if (mode != mo->mode)
 	{
 		switch (mode)
