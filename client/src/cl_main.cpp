@@ -1678,6 +1678,7 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 }
 
 /// Move a mobj as though it had teleported via P_TeleportMove.
+///
 /// One major way this differs from plain old CL_MoveThing is that, like P_TeleportMove, it does
 /// not call P_CheckPosition, and instead uses a relatively simple assignment of position without
 /// doing things that would trigger dropoff, or trigger specials immediately.
@@ -1685,7 +1686,7 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 /// Special knowledge:  It is assumed that the real P_TeleportMove is called as the result of a
 ///                     an immediately preceding ActivateLine.  The server still sends us the
 ///                     TeleportMobj message to ensure that mispredictions are corrected ASAP,
-///                     and we need to perform the lightweigh equivalent of that here.
+///                     and we need to perform the lightweight equivalent of that here.
 void CL_TeleportThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 {
 	if (!mobj)
@@ -1694,6 +1695,10 @@ void CL_TeleportThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 	// If a preceding ActivateLine put us in the right spot, there's no need to do anything more.
 	if (mobj->x == x && mobj->y == y && mobj->z == z)
 		return;
+
+	// The remainder of this function is modeled after the key parts of P_TeleportMove that directly
+	// influence the client and its predictions, minus the parts that the server MUST decide.
+	spechit.clear();
 
 	const subsector_t* newsubsec = P_PointInSubsector (x,y);
 
