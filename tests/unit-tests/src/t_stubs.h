@@ -22,3 +22,4 @@
 class AActor;
 
 void SV_ArmMobj(AActor* mo);
+void SV_ArmMobjForTeleport(AActor* mo);

@@ -694,6 +694,10 @@ static void FillUpdateMobj(odaproto::svc::UpdateMobj& msg, const AActor& mobj)
 	{
 		mom->set_z(mobj.momz);
 	}
+
+	msg.set_mode(static_cast<odaproto::svc::MobjModeEnum>(mobj.mode));
+	msg.set_state(mobj.state->statenum);
+	msg.set_tics (mobj.tics);
 }
 
 odaproto::svc::UpdateMobj SVC_UpdateMobj(const AActor& mobj)
@@ -703,16 +707,10 @@ odaproto::svc::UpdateMobj SVC_UpdateMobj(const AActor& mobj)
 	return msg;
 }
 
-odaproto::svc::UpdateMobjWithMode SVC_UpdateMobjWithMode(const AActor& mobj)
+odaproto::svc::TeleportMobj SVC_TeleportMobj(const AActor& mobj)
 {
-	odaproto::svc::UpdateMobjWithMode msg;
-
+	odaproto::svc::TeleportMobj msg;
 	FillUpdateMobj(* msg.mutable_update(), mobj);
-
-	msg.set_mode(static_cast<odaproto::svc::MobjModeEnum>(mobj.mode));
-	msg.set_state(mobj.state->statenum);
-	msg.set_tics (mobj.tics);
-
 	return msg;
 }
 

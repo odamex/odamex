@@ -154,18 +154,18 @@ enum MobjModeEnum
 // svc_updatemobj
 message UpdateMobj
 {
-	uint32 flags     = 1;
-	Actor  actor     = 2;
-	uint32 threshold = 3;
+	uint32       flags       = 1;
+	Actor        actor       = 2;
+	uint32       threshold   = 3;
+	MobjModeEnum mode        = 4;
+	int32        state       = 5;
+	int32        tics        = 6;
 }
 
-// svc_updatemobjwithmode
-message UpdateMobjWithMode
+// svc_teleportmobj
+message TeleportMobj
 {
-	UpdateMobj   update = 1;
-	MobjModeEnum mode   = 2;
-	int32        state  = 3;
-	uint32       tics   = 4;
+	UpdateMobj update = 1;
 }
 
 // svc_spawnplayer

@@ -99,6 +99,7 @@ void SV_SpawnMobj(AActor *mobj) {}
 void SV_TouchSpecial(AActor& special, player_t& player) {}
 void SV_UpdateFrags(player_t &player) {}
 void SV_ArmMobj(AActor* mo) {}
+void SV_ArmMobjForTeleport(AActor* mo) {}
 void SV_UpdateMobj(AActor* mo) {}
 void SV_UpdateMobjState(const AActor* mo) {}
 void SV_UpdateMonsterRespawnCount() {}

@@ -1233,10 +1233,24 @@ void DPlaneWatcher::RunThink ()
 		{
 			SV_SendExecuteLineSpecial(Special, Line, Activator, Arg0, Arg1, Arg2, Arg3, Arg4);
 
+			// Arm the mobj so that its final state goes out to the clients at the end of this
+			// tic.  We do this because of the possibility that an attempt was made to teleport
+			// the mobj.  Regardless of whether or not the teleport was successful, the client
+			// may have predicted the opposite outcome (i.e. the mobj teleported successfully on
+			// the server, but not the client.  Also possible that the server failed the teleport
+			// due to other mobjs/monsters overlapping the current mobj's endpoint, but the client
+			// has a slight misprediction on that other mobj, allowing the teleport to succeed.)
+			//
+			// We mitigate this risk by always arming the mobj for update.
+
 			if (P_JustTeleported(Activator))
 			{
-				SV_ArmMobj(Activator);
+				SV_ArmMobjForTeleport(Activator);
 				P_ClearJustTeleported();
+			}
+			else
+			{
+				SV_ArmMobj(Activator);
 			}
 		}
 		Destroy ();
@@ -1738,10 +1752,25 @@ void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activ
 		LineSpecials[special](line, activator, arg0, arg1, arg2, arg3, arg4);
 
 		SV_SendExecuteLineSpecial(special, line, activator, arg0, arg1, arg2, arg3, arg4);
+
+		// Arm the mobj so that its final state goes out to the clients at the end of this
+		// tic.  We do this because of the possibility that an attempt was made to teleport
+		// the mobj.  Regardless of whether or not the teleport was successful, the client
+		// may have predicted the opposite outcome (i.e. the mobj teleported successfully on
+		// the server, but not the client.  Also possible that the server failed the teleport
+		// due to other mobjs/monsters overlapping the current mobj's endpoint, but the client
+		// has a slight misprediction on that other mobj, allowing the teleport to succeed.)
+		//
+		// We mitigate this risk by always arming the mobj for update.
+
 		if (P_JustTeleported(activator))
 		{
-			SV_ArmMobj(activator);
+			SV_ArmMobjForTeleport(activator);
 			P_ClearJustTeleported();
+		}
+		else
+		{
+			SV_ArmMobj(activator);
 		}
 	}
 }

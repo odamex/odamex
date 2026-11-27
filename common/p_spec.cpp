@@ -1924,6 +1924,7 @@ void OnChangedSwitchTexture (line_t *line, int useAgain);
 void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
                         const LineActivationType activationType, const bool bossaction);
 void SV_ArmMobj(AActor* mo);
+void SV_ArmMobjForTeleport(AActor* mo);
 
 //
 // EVENTS
@@ -1980,14 +1981,24 @@ void P_CrossSpecialLine(line_t* line, int side, AActor* thing, bool bossaction)
 	{
 		SV_OnActivatedLine(line, thing, side, LineCross, bossaction);
 
-		// Send an UpdateMobj immediately after the ActivatedLine if a teleport happened,
-		// because client-side prediction immediately followed by the ActivateLine _may_
-		// result in a wildly inaccurate position, depending on a variety of factors, and
-		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
+		// Arm the mobj so that its final state goes out to the clients at the end of this
+		// tic.  We do this because of the possibility that an attempt was made to teleport
+		// the mobj.  Regardless of whether or not the teleport was successful, the client
+		// may have predicted the opposite outcome (i.e. the mobj teleported successfully on
+		// the server, but not the client.  Also possible that the server failed the teleport
+		// due to other mobjs/monsters overlapping the current mobj's endpoint, but the client
+		// has a slight misprediction on that other mobj, allowing the teleport to succeed.)
+		//
+		// We mitigate this risk by always arming the mobj for update.
+
 		if (P_JustTeleported(thing))
 		{
-			SV_ArmMobj(thing);
+			SV_ArmMobjForTeleport(thing);
 			P_ClearJustTeleported();
+		}
+		else
+		{
+			SV_ArmMobj(thing);
 		}
 
 		bool repeat;
@@ -2053,14 +2064,24 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 	{
 		SV_OnActivatedLine(line, thing, 0, LineShoot, false);
 
-		// Send an UpdateMobj immediately after the ActivatedLine if a teleport happened,
-		// because client-side prediction immediately followed by the ActivateLine _may_
-		// result in a wildly inaccurate position, depending on a variety of factors, and
-		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
+		// Arm the mobj so that its final state goes out to the clients at the end of this
+		// tic.  We do this because of the possibility that an attempt was made to teleport
+		// the mobj.  Regardless of whether or not the teleport was successful, the client
+		// may have predicted the opposite outcome (i.e. the mobj teleported successfully on
+		// the server, but not the client.  Also possible that the server failed the teleport
+		// due to other mobjs/monsters overlapping the current mobj's endpoint, but the client
+		// has a slight misprediction on that other mobj, allowing the teleport to succeed.)
+		//
+		// We mitigate this risk by always arming the mobj for update.
+
 		if (P_JustTeleported(thing))
 		{
-			SV_ArmMobj(thing);
+			SV_ArmMobjForTeleport(thing);
 			P_ClearJustTeleported();
+		}
+		else
+		{
+			SV_ArmMobj(thing);
 		}
 
 		if (lineresult)
@@ -2123,19 +2144,29 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 	else
 		result = P_UseCompatibleSpecialLine(thing, line, side, bossaction);
 
- 	if (result)
+	if (result)
 	{
 		// May need to move this higher as the special is gone in Boom by this point.
 		SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
 
-		// Send an UpdateMobj immediately after the ActivatedLine if a teleport happened,
-		// because client-side prediction immediately followed by the ActivateLine _may_
-		// result in a wildly inaccurate position, depending on a variety of factors, and
-		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
+		// Arm the mobj so that its final state goes out to the clients at the end of this
+		// tic.  We do this because of the possibility that an attempt was made to teleport
+		// the mobj.  Regardless of whether or not the teleport was successful, the client
+		// may have predicted the opposite outcome (i.e. the mobj teleported successfully on
+		// the server, but not the client.  Also possible that the server failed the teleport
+		// due to other mobjs/monsters overlapping the current mobj's endpoint, but the client
+		// has a slight misprediction on that other mobj, allowing the teleport to succeed.)
+		//
+		// We mitigate this risk by always arming the mobj for update.
+
 		if (P_JustTeleported(thing))
 		{
-			SV_ArmMobj(thing);
+			SV_ArmMobjForTeleport(thing);
 			P_ClearJustTeleported();
+		}
+		else
+		{
+			SV_ArmMobj(thing);
 		}
 
 		if (map_format.getZDoom() && !bossaction)
@@ -2199,27 +2230,40 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 		}
 	}
 
-    TeleportSide = side;
 	P_ClearJustTeleported();
+	TeleportSide = side;
 
-	if(LineSpecials[line->special] (line, thing, line->args[0],
-					line->args[1], line->args[2],
-					line->args[3], line->args[4]))
+	if (LineSpecials[line->special] (line, thing,
+	                line->args[0],
+	                line->args[1],
+	                line->args[2],
+	                line->args[3],
+	                line->args[4]))
 	{
 		SV_OnActivatedLine(line, thing, side, LinePush, false);
 
-		// Send an UpdateMobj immediately after the ActivatedLine if a teleport happened,
-		// because client-side prediction immediately followed by the ActivateLine _may_
-		// result in a wildly inaccurate position, depending on a variety of factors, and
-		// the only way to be certain we wind up in the correct spot is to do an UpdateMobj.
+		// Arm the mobj so that its final state goes out to the clients at the end of this
+		// tic.  We do this because of the possibility that an attempt was made to teleport
+		// the mobj.  Regardless of whether or not the teleport was successful, the client
+		// may have predicted the opposite outcome (i.e. the mobj teleported successfully on
+		// the server, but not the client.  Also possible that the server failed the teleport
+		// due to other mobjs/monsters overlapping the current mobj's endpoint, but the client
+		// has a slight misprediction on that other mobj, allowing the teleport to succeed.)
+		//
+		// We mitigate this risk by always arming the mobj for update.
+
 		if (P_JustTeleported(thing))
 		{
-			SV_ArmMobj(thing);
+			SV_ArmMobjForTeleport(thing);
 			P_ClearJustTeleported();
 		}
+		else
+		{
+			SV_ArmMobj(thing);
+		}
 
-		if (serverside && !(thing->player && (thing->player->spectator ||
-		                                      thing->player->playerstate != PST_LIVE)))
+		if (serverside and not (thing and thing->player and (thing->player->spectator or
+		                                                     thing->player->playerstate != PST_LIVE)))
 		{
 			bool repeat;
 
