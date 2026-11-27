@@ -1697,8 +1697,10 @@ void CL_TeleportThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 		return;
 
 	// The remainder of this function is modeled after the key parts of P_TeleportMove that directly
-	// influence the client and its predictions, minus the parts that the server MUST decide.
-	spechit.clear();
+	// influence the client and its predictions, minus the parts that the server MUST decide and the
+	// parts that the assumed preceding CL_ActivateLine + real P_TeleportMove would've already done.
+	// Reminder - we're doing this to clear up any potential mispredictions based on the thing's
+	// potentially mispredicted starting state.
 
 	const subsector_t* newsubsec = P_PointInSubsector (x,y);
 
