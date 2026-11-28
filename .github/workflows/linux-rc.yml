@@ -24,12 +24,12 @@ jobs:
           persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
       - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v4.5
+        uses: gittools/actions/gitversion/setup@v5.0
         with:
           versionSpec: '6.x'
       - name: Determine Version
         id:   gitversion
-        uses: gittools/actions/gitversion/execute@v4.5
+        uses: gittools/actions/gitversion/execute@v5.0
       - name: Get Commits From Source
         id:   revlist
         shell: bash
@@ -115,7 +115,7 @@ jobs:
   build-arm:
     name: Build (ARM64)
     needs: pre_job
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     steps:
     - name: Checkout source
       uses: actions/checkout@v7
@@ -154,7 +154,7 @@ jobs:
     needs: pre_job
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-26.08
       options: --privileged
     env:
       build_number: ${{ needs.pre_job.outputs.build_number }}
@@ -199,9 +199,9 @@ jobs:
   build-flatpak-arm:
     name: Build Flatpak (arm64)
     needs: pre_job
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-26.08
       options: --privileged
     env:
       build_number: ${{ needs.pre_job.outputs.build_number }}

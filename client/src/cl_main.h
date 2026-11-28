@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -58,6 +56,7 @@ enum netQuitReason_e
 	NQ_ABORT,           // Connection attempt was aborted
 	NQ_PROTO,           // Encountered something unexpected in the protocol
 	NQ_SERVER_DROP,     // Server dropped us on the floor, so just ack and drop our side of the connection.
+	NQ_SERVER_ABORT,    // Server aborted.  We know it won't talk to us anymore, just bail out.
 };
 
 struct PlayerItemDataType;
@@ -78,6 +77,7 @@ void CL_SimulatePlayers(int serverTic);
 bool CL_PredictWorld();
 void CL_ResetWorldPrediction();
 void CL_AdvanceWorldPredictionTic(int serverTic);
+void CL_SelectPotentialDesynchedMobjs(player_t& player);
 void CL_SendUserInfo(buf_t& netBuf);
 bool CL_Connect();
 

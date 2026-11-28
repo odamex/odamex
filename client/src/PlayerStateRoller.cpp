@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2026 by Jim Thoenen.
 //
 // This program is free software; you can redistribute it and/or
@@ -571,6 +569,17 @@ bool PlayerStateRoller::ResolveArmorpoints(int i_oldTic, int i_armorpoints, play
 {
 	auto historyIter = ObtainHistory(i_oldTic, io_player);
 	if (historyIter and RollbackArmorpoints(*historyIter, i_armorpoints))
+	{
+		ApplyMostRecentToPlayer(io_player);
+		return true;
+	}
+	return false;
+}
+
+bool PlayerStateRoller::ResolveCards(int i_oldTic, const std::array<bool, NUMCARDS>& i_cards, player_t& io_player)
+{
+	auto historyIter = ObtainHistory(i_oldTic, io_player);
+	if (historyIter and RollbackCards(*historyIter, i_cards))
 	{
 		ApplyMostRecentToPlayer(io_player);
 		return true;

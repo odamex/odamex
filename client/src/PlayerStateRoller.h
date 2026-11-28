@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2026 by Jim Thoenen.
 //
 // This program is free software; you can redistribute it and/or
@@ -100,6 +98,9 @@ class PlayerStateRoller
 
 		/// Similar to ResolveAmmo:  delta adjustment of armorpoints
 		bool ResolveArmorpoints(int i_oldTic, int i_armorpoints, player_t& io_player);
+
+		/// Similar to ResolveAmmoMax: absolute adjustment of keycards.
+		bool ResolveCards(int i_oldTic, const std::array<bool, NUMCARDS>& i_cards, player_t& io_player);
 
 		/// Generic stream-in operator.
 		template <typename StreamType>

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2021 by Alex Mayfield.
 //
 // This program is free software; you can redistribute it and/or
@@ -167,3 +165,5 @@ odaproto::svc::PlayerWeaponSelection SVC_PlayerWeaponSelection(const player_t& p
 odaproto::svc::PlayerPowers SVC_PlayerPowers(const player_t& player);
 odaproto::svc::PlayerPsprites SVC_PlayerPsprites(const player_t& player);
 odaproto::svc::ConfigureAvatar SVC_ConfigureAvatar(const MapThing& mapthing, uint32_t netid);
+odaproto::svc::ShareKeys SVC_ShareKeys(const std::vector<uint32_t>&         playerIds,
+                                       const std::array<bool, NUMCARDS>&    cards);

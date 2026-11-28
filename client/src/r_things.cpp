@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -1170,8 +1168,6 @@ void R_DrawSprite (vissprite_t *spr)
 }
 
 
-vissprite_t* closestNonCredibleVisSprite;
-
 //
 // R_DrawMasked
 //
@@ -1181,16 +1177,9 @@ void R_DrawMasked (void)
 
 	R_SortVisSprites ();
 
-	closestNonCredibleVisSprite = nullptr;
-
 	for (auto& vis : std::views::reverse(spritesorter))
 	{
 		R_DrawSprite(vis);
-
-        if (vis->mo and vis->mo->credibility.Get() == CredibilityEnum::NOT_CREDIBLE and not (vis->mo->flags & MF_CORPSE))
-        {
-            closestNonCredibleVisSprite = vis;
-        }
 	}
 
 	// render any remaining masked mid textures
@@ -1357,5 +1346,3 @@ void R_DrawParticle(vissprite_t* vis)
 	for (dspan.y = y1; dspan.y <= y2; dspan.y++)
 		R_FillTranslucentSpan();
 }
-
-VERSION_CONTROL (r_things_cpp, "$Id$")

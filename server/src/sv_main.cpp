@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -85,6 +83,9 @@
 
 #include "clc_message.h"
 #include "svc_message.h"
+#include "g_deathspot.h"
+#include "g_keepweapons.h"
+#include "msg_pack.h"
 #include "msg_parse.h"
 
 extern void G_DeferedInitNew (const OLumpName& mapname);
@@ -108,7 +109,7 @@ bool step_mode = false;
 
 std::set<byte> free_player_ids;
 
-bool keysfound[NUMCARDS];		// Ch0wW : Found keys
+std::array<bool, NUMCARDS> keysfound;   // Ch0wW
 
 // General server settings
 EXTERN_CVAR(sv_motd)
@@ -137,7 +138,8 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_t* player);
 bool P_LineSpecialMovesSector(short special);
 
-void SV_UpdateShareKeys(player_t& player);
+void SV_UpdateShareKeys(std::optional<uint32_t> optionalPickupPlayerId = std::nullopt);
+
 std::string SV_BuildKillsDeathsStatusString(const player_t& player);
 std::string V_GetTeamColor(UserInfo userinfo);
 
@@ -291,10 +293,8 @@ CVAR_FUNC_IMPL(sv_sharekeys)
 {
 	if (var)
 	{
-		// Refresh it to everyone
-		for (auto& player : players) {
-			SV_UpdateShareKeys(player);
-		}
+		// Refresh all keys to everyone
+		SV_UpdateShareKeys();
 	}
 }
 
@@ -958,6 +958,8 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 	free_player_ids.insert(player_id);
 
 	Unlag::getInstance().unregisterPlayer(player_id);
+	DeathSpotManager::getInstance().eraseDeathSpot(player_id);
+	KeepWeaponsManager::getInstance().eraseLoadout(player_id);
 
 	// update tracking cvar
 	sv_clientcount.ForceSet(players.size());
@@ -3339,12 +3341,8 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 	if (mo->flags & MF_CORPSE)
 		return;
 
-	const bool isAMonster = mo->oflags & MFO_MOVESLIKEAMONSTER
-	                        or mo->flags & MF_COUNTKILL
-	                        or mo->type == MT_SKULL;
-
 	// We don't handle updating non-monsters here.
-	if (not isAMonster)
+	if (not mo->IsMonster())
 		return;
 
 	constexpr int MONSTER_UPDATE_RATE_HZ       =  5;
@@ -3540,19 +3538,32 @@ void SV_SendPackets()
 	}
 }
 
-void SV_SendPlayerStateUpdate(client_t* client, player_t* player)
+//
+// SendPlayerState - Send information about a player to another client.
+//
+void SV_SendPlayerState(MessageQueue& outgoingQueue, client_t& client, player_t& player)
 {
-	if (!client || !player || !player->mo)
+	if (not player.mo)
 		return;
 
-	if (client != &player->client)
+	if (&client != &player.client)
 	{
-		client->messenger->HighPriority().Write( SVC_PlayerState(*player));
+		outgoingQueue.Write( SVC_PlayerState(player));
 	}
 	else
 	{
-		client->messenger->Reliable().Write (SVC_PlayerInfo(*player));
+		outgoingQueue.Write (SVC_PlayerInfo(player));
 	}
+}
+
+void SV_SendPlayerStateHighPriority(client_t& client, player_t& player)
+{
+	SV_SendPlayerState(client.messenger->HighPriority(), client, player);
+}
+
+void SV_SendPlayerStateReliable(client_t& client, player_t& player)
+{
+	SV_SendPlayerState(client.messenger->Reliable(), client, player);
 }
 
 void SV_SpyPlayer(player_t& viewer, const odaproto::clc::Spy& msg)
@@ -3564,7 +3575,7 @@ void SV_SpyPlayer(player_t& viewer, const odaproto::clc::Spy& msg)
 		return;
 
 	viewer.spying = id;
-	SV_SendPlayerStateUpdate(&viewer.client, &other);
+	SV_SendPlayerStateHighPriority(viewer.client, other);
 }
 
 // When we break up the mobjs into 3 groups based on relative distance, there are two boundaries:
@@ -3610,9 +3621,18 @@ static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player, int part
 	{
 		if (thinker->IsKindOf(RUNTIME_CLASS(AActor)))
 		{
-			player.sortedMobjs.emplace_back(static_cast<AActor*>(thinker), 0);
+			auto* actor = static_cast<AActor*>(thinker);            // NOLINT (misc-const-correctness) - sortedMobjs and its subsequent uses demand it be non-const.
+			if (player.requestedNetIdUpdates.contains(actor->netid))
+			{
+				player.onDemandMobjs.push_back(actor);
+			}
+			else
+			{
+				player.sortedMobjs.emplace_back(actor, 0);
+			}
 		}
 	}
+	player.requestedNetIdUpdates.clear();
 
 	// In testing a 22000 mobj firefight (No Time To Freeze map32) on a Ryzen 9800x3d,
 	// Windows 11, MSVC 2019, looking at JUST the core sort operation itself:
@@ -3644,8 +3664,8 @@ static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player, int part
 		// P_AproxDistance2 (~200 usec) when looking at 22k mobjs, and we don't need "real"
 		// distance - just comparable values that correlate with distance.
 
-		const int dx = playerMostSignificantX - (mobjInfo.actorPtr->x >> FRACBITS);
-		const int dy = playerMostSignificantY - (mobjInfo.actorPtr->y >> FRACBITS);
+		const int64_t dx = playerMostSignificantX - (mobjInfo.actorPtr->x >> FRACBITS);
+		const int64_t dy = playerMostSignificantY - (mobjInfo.actorPtr->y >> FRACBITS);
 		mobjInfo.distanceSquared = dx*dx + dy*dy;
 	}
 	auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1.distanceSquared < mo2.distanceSquared; };
@@ -3746,7 +3766,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	player_t& target = idplayer(player.spying);
 	if (validplayer(target) && &player != &target && P_CanSpy(player, target))
 	{
-		SV_SendPlayerStateUpdate(&(player.client), &target);
+		SV_SendPlayerStateHighPriority(player.client, target);
 	}
 
 	SV_UpdateConsolePlayer(player);
@@ -3785,6 +3805,19 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	const size_t previousSortedMobjCount = player.sortedMobjs.size();
 	const auto sortedMobjPartitions = SV_SortMobjsForPlayer(player, player.client.messenger->GetReliableOverloadCount());
 
+	// Start off with the mobjs that the player specifically requested.
+	for (const auto& actor : player.onDemandMobjs)
+	{
+		// No need to check the actor pointer.  We add it to onDemandMobjs directly
+		// from the current thinker list.
+		auto message = SVC_UpdateMobjWithMode(*actor);
+		WriteMobjMessageToPlayer(message,
+		                         player,
+		                         AwarenessEnum::FULLY_AWARE,    // A single blip of awareness for this on-demand mobj!
+		                         TransportEnum::BEST_EFFORT);
+	}
+	player.onDemandMobjs.clear();
+
 	// We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
 	// Combined with the high-priority mobjsToSpawn queue being directly limited in SV_UpdateHiddenMobj,
 	// we can be sure that both high-priority things like new missiles and deferred map-defined mobjs
@@ -3818,22 +3851,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 		{
 			// We're overbudget.  We don't even update awareness beyond this point so as to not load things on the queue
 			// that will be out-of-date by next tic anyway.
-			//
-			// The only thing we consider doing at this point is putting a specific mobj's update in the high-priority
-			// data on client demand, if there is such a demand.  Otherwise, we're done for this go-around.
-			if (player.requestedNetIdUpdate == 0)
-			{
-				break;
-			}
-		}
-
-		if (player.requestedNetIdUpdate == sortedMobjIter->actorPtr->netid)
-		{
-			// Now in this case we're okay with *potentially* going overbudget or behind-by-one tic,
-			// because the player has a mobj that's multiple seconds out of date.  Being a even little
-			// late is better than that.
-			player.client.messenger->Reliable().Write (SVC_UpdateMobjWithMode(*sortedMobjIter->actorPtr));
-			player.requestedNetIdUpdate = 0;
+			break;
 		}
 	}
 }
@@ -4511,7 +4529,7 @@ void SV_Cheat(player_t &player, const odaproto::clc::Cheat& msg)
 		{
 			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 			{
-				SV_SendPlayerStateUpdate(&it->client, &player);
+				SV_SendPlayerStateReliable(it->client, player);
 			}
 		}
 	}
@@ -4525,7 +4543,7 @@ void SV_CheatGive(player_t &player, const odaproto::clc::CheatGive& msg)
 
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
-			SV_SendPlayerStateUpdate(&it->client, &player);
+			SV_SendPlayerStateReliable(it->client, player);
 		}
 
 	}
@@ -4570,7 +4588,10 @@ void SV_HandlePlayerInput(odaproto::clc::PlayerInput& msg, player_t &player)
 
 void SV_SendRequestedMobjUpdate(player_t& player, const odaproto::clc::SendMobjUpdate& msg)
 {
-    player.requestedNetIdUpdate = msg.netid();
+	for (const uint32_t id : msg.netid())
+	{
+		player.requestedNetIdUpdates.insert(id);
+	}
 }
 
 //
@@ -5563,30 +5584,69 @@ void SV_ACSExecuteSpecial(byte special, const AActor* activator, const char* pri
 	}
 }
 
-void SV_UpdateShareKeys(player_t& player)
+void SV_UpdateShareKeys(std::optional<uint32_t> optionalPickupPlayerId)
 {
-	// Player needs to be valid.
-	if (!validplayer(player))
-		return;
+	static std::vector<uint32_t> s_playerIds;
 
-	// Disallow to spectators
-	if (player.spectator)
-		return;
+	s_playerIds.reserve(players.size());
+	s_playerIds.clear();
 
-	// Don't send to dead players... Yet, since they'll get it upon respawning
-	if (player.health <= 0)
-		return;
+	player_t* pickupPlayer = nullptr;
 
-	// Update their keys informations
-	for (int i = 0; i < NUMCARDS; i++) {
-		player.cards[i] = keysfound[i];
+	// First pass, build the collection of IDs of players getting the cards.
+	for (auto& player : players)
+	{
+		// Player needs to be valid to get a card.
+		if (not validplayer(player))
+			continue;
+
+		// Spectators don't get cards.
+		if (player.spectator)
+			continue;
+
+		// Dead players don't get cards... Yet, since they'll get it upon respawning.
+		if (player.health <= 0)
+			continue;
+
+		// If we have a pickup player, exclude them initially so that we can send them a ShareKeys that
+		// does NOT list them as a cardholder.  This is because we know we're following up this message
+		// with a TouchSpecial that will take them through the soup-to-nuts of the clientside pickup.
+		if (optionalPickupPlayerId and player.id == * optionalPickupPlayerId)
+		{
+			pickupPlayer = &player;
+			continue;
+		}
+
+		player.cards = keysfound;
+		s_playerIds.push_back(player.id);
 	}
 
-	// Refresh that new data to the client
-	SV_SendPlayerInfo(player);
+	// If we have a pickup player, we also have a collection of IDs that has everyone but them in it.
+	// Send that to them.
+	if (pickupPlayer)
+	{
+		pickupPlayer->client.messenger->Reliable().Write(SVC_ShareKeys(s_playerIds, keysfound));
+
+		// Now add them to the collection of players with the card, we'll be sending that to everyone else.
+		s_playerIds.push_back(pickupPlayer->id);
+	}
+
+	// Finally, send the complete picture to everyone else.
+	const auto msg = SVC_ShareKeys(s_playerIds, keysfound);
+	for (auto& player : players)
+	{
+		if (not player.ingame())
+			continue;
+
+		// We already sent the pickupPlayer's message.
+		if (&player == pickupPlayer)
+			continue;
+
+		player.client.messenger->Reliable().Write(msg);
+	}
 }
 
-void SV_ShareKeys(card_t card, const player_t &player)
+void SV_PickupShareableKey(card_t card, const player_t& player)
 {
 	// Add it to the KeysCheck array
 	keysfound[card] = true;
@@ -5626,12 +5686,9 @@ void SV_ShareKeys(card_t card, const player_t &player)
 		SV_BroadcastPrintFmt("{} found a key!\n", player.userinfo.netname);
 	}
 
-	// Refresh the inventory to everyone
-	// ToDo: If we're the player who picked it, don't refresh our own inventory
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		SV_UpdateShareKeys(*it);
-	}
-}
+	// Refresh the inventory to everyone, but don't let the player who did the pickup do a
+	// premature inventory rollback on themselves.  We want them to get the subsequent
+	// TouchSpecial and do the pickup for real.
 
-VERSION_CONTROL (sv_main_cpp, "$Id$")
+	SV_UpdateShareKeys(player.id);
+}

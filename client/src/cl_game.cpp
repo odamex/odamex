@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -66,13 +64,11 @@ END_DISABLE_WARNING_GNU
 #include "cl_netgraph.h"
 #include "gi.h"
 #include "hu_mousegraph.h"
-#include "g_spawninv.h"
 #include "g_gametype.h"
 #include "p_horde.h"
 #include "g_musinfo.h"
 #include "g_spree.h"
 #include "g_multikill.h"
-#include "g_deathspot.h"
 #include "cl_freecam.h"
 
 #include <math.h> // for pow()
@@ -84,7 +80,6 @@ END_DISABLE_WARNING_GNU
 bool	G_CheckDemoStatus (void);
 void	G_ReadDemoTiccmd ();
 void	G_WriteDemoTiccmd ();
-void	G_PlayerReborn (player_t &player);
 
 void	G_DoNewGame (void);
 void	G_DoLoadGame (void);
@@ -107,8 +102,6 @@ EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_respawnsuper)
 EXTERN_CVAR (sv_respawnbarrels)
 EXTERN_CVAR (sv_weaponstay)
-EXTERN_CVAR (sv_keepkeys)
-EXTERN_CVAR (sv_sharekeys)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (in_autosr50)
 
@@ -766,24 +759,27 @@ bool G_Responder (const event_t& ev)
 	if (gameaction == ga_nothing &&
 		(demoplayback || gamestate == GS_DEMOSCREEN))
 	{
-		const char *cmd = Bindings.GetBind(ev.data1).c_str();
+		const IStringView cmd = Bindings.GetBind(ev.data1);
 
 		if (ev.type == ev_keydown)
 		{
 
-			if (!cmd || (
-				strnicmp (cmd, "menu_", 5) &&
-				stricmp (cmd, "toggleconsole") &&
-				stricmp (cmd, "sizeup") &&
-				stricmp (cmd, "sizedown") &&
-				stricmp (cmd, "togglemap") &&
-				stricmp (cmd, "spynext") &&
-				stricmp (cmd, "chase") &&
-				stricmp (cmd, "+showscores") &&
-				stricmp (cmd, "bumpgamma") &&
-				stricmp (cmd, "screenshot") &&
-                stricmp (cmd, "stepmode") &&
-                stricmp (cmd, "step")))
+			static constexpr std::array idk {
+				"toggleconsole",
+				"sizeup",
+				"sizedown",
+				"togglemap",
+				"spynext",
+				"chase",
+				"+showscores",
+				"bumpgamma",
+				"screenshot",
+				"stepmode",
+				"step",
+			};
+			if (cmd.empty() or
+			    (not cmd.starts_with("menu_") and
+				 std::ranges::none_of(idk, [&cmd](const auto& str){ return cmd == str; })))
 			{
 				M_StartControlPanel ();
 				return true;
@@ -793,13 +789,13 @@ bool G_Responder (const event_t& ev)
 				return C_DoKey(ev, &Bindings, &DoubleBindings);
 			}
 		}
-		if (cmd && cmd[0] == '+')
+		if (not cmd.empty() and cmd[0] == '+')
 			return C_DoKey(ev, &Bindings, &DoubleBindings);
 
 		return false;
 	}
 
-	if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
+	if (gamestate == GS_LEVEL or gamestate == GS_INTERMISSION)
 	{
 		if (C_DoNetDemoKey(ev))	// netdemo playback ate the event
 			return true;
@@ -1060,7 +1056,7 @@ void G_Ticker (void)
 
 	netgraph.start(I_GetTime());
 
-	if (connected && !simulated_connection)
+	if (connected and not simulated_connection)
 	{
 		while ((packet_size = NET_GetPacket()) )
 		{
@@ -1222,30 +1218,42 @@ void G_Ticker (void)
 	{
 	case GS_LEVEL:
 		{
+			player_t& player = consoleplayer();
+
 			const bool isClientSideOnly    = clientside and not serverside;
 			const bool isActuallyConnected = connected  and not simulated_connection;
 
 			// We're about to locally tick the client-side sim - aka predict.
 			//
-			// Make sure that the server gives us a canonical inventory statement about any pickups we
-			// believe we get as a result of this.
-			consoleplayer().inventoryCheckRequestsAreEnabled = isClientSideOnly and isActuallyConnected;
+			// Enable the generation of inventory and mobj refresh requests to the server if
+			// we're actually connected to a live server.  This is required for player inventory
+			// rollbacks and forcing suspected-ghost mobjs to be updated.
+
+			player.serverRefreshRequestsAreEnabled = isClientSideOnly and isActuallyConnected;
+
+			// The client populates sortedMobjs in the main mobj thinker routine.
+			// Make sure we start off with a clean slate every tic.  Note: the contained objects
+			// are intentionally trivially-destructible thus the clear operation is constant-time.
+			player.sortedMobjs.clear();
 
 			bool thinkersHaveRun = false;
 
 			if (isClientSideOnly)
 			{
-				if (!consoleplayer().mo)
+				if (not player.mo)
 				{
 					// [SL] 2011-12-14 - Spawn message from server has not arrived
 					// yet.  Fake it and hope it arrives soon.
 					AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
-					mobj->flags &= ~MF_SOLID;
+
+					// Clear all flags that need to be cleared to trigger the "can't hit thing"
+					// case in PIT_CheckThing.
+					mobj->flags &= ~(MF_SOLID | MF_SPECIAL | MF_SHOOTABLE | MF_TOUCHY | MF_PICKUP);
 					mobj->flags2 |= MF2_DONTDRAW;
 					mobj->oflags |= MFO_ISAWAITINGSPAWN;
-					consoleplayer().mo = consoleplayer().camera = mobj->ptr();
-					consoleplayer().mo->player = &consoleplayer();
-					G_PlayerReborn(consoleplayer());
+					player.mo = player.camera = mobj->ptr();
+					player.mo->player = & player;
+					G_PlayerReborn(player);
 					DPrintFmt("Did not receive spawn for consoleplayer.\n");
 				}
 
@@ -1265,11 +1273,13 @@ void G_Ticker (void)
 			ST_Ticker ();
 			AM_Ticker ();
 
-			consoleplayer().inventoryCheckRequestsAreEnabled = false;
+			CL_SelectPotentialDesynchedMobjs(player);
+
+			player.serverRefreshRequestsAreEnabled = false;
 
 			if (not netdemo.isPaused())
 			{
-				const RollerRecordResultEnum recordResult = rollerState.Record(gametic, consoleplayer());
+				const RollerRecordResultEnum recordResult = rollerState.Record(gametic, player);
 				switch (recordResult)
 				{
 					case RollerRecordResultEnum::CURRENT_REPLACED:
@@ -1334,44 +1344,6 @@ void G_PlayerFinishLevel (player_t& player)
 	player.bonuscount = 0;
 }
 
-
-//
-// G_PlayerReborn
-// Called after a player dies
-// almost everything is cleared and initialized
-//
-void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
-{
-	size_t i;
-	for (i = 0; i < NUMAMMO; i++)
-	{
-		p.maxammo[i] = maxammo[i];
-		p.ammo[i] = 0;
-	}
-	for (i = 0; i < NUMWEAPONS; i++)
-		p.weaponowned[i] = false;
-
-	if (!sv_keepkeys && !sv_sharekeys)
-		P_ClearPlayerCards(p);
-
-	P_ClearPlayerPowerups(p);
-
-	for (i = 0; i < NUMTEAMS; i++)
-		p.flags[i] = false;
-	p.backpack = false;
-
-	G_GiveSpawnInventory(p);
-
-	p.usedown = p.attackdown = true;	// don't do anything immediately
-	p.playerstate = PST_LIVE;
-	p.weaponowned[wp_none] = true;
-
-	if (!p.spectator)
-		p.cheats = 0; // Reset cheat flags
-
-	p.death_time = 0;
-	DeathSpotManager::getInstance().eraseDeathSpot(p.id);
-}
 
 //
 // G_CheckSpot
@@ -2304,5 +2276,3 @@ bool G_CheckDemoStatus (void)
 	return false;
 }
 
-
-VERSION_CONTROL (g_game_cpp, "$Id$")

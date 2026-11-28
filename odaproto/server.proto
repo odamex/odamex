@@ -176,6 +176,7 @@ message SpawnPlayer
 	int32  pid = 1;
 	Actor  actor = 2;
 	uint32 cards = 3;
+	bool   keepweapons = 4;
 }
 
 // svc_damageplayer
@@ -289,6 +290,13 @@ message PlayerMembers
 
 	int32 readyweapon = 16;
 	int32 pendingweapon = 17;
+}
+
+// svc_sharekeys
+message ShareKeys
+{
+	repeated uint32 pids  = 1;
+	         uint32 cards = 2;
 }
 
 // svc_teammembers

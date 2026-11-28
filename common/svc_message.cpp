@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2021 by Alex Mayfield.
 //
 // This program is free software; you can redistribute it and/or
@@ -41,6 +39,7 @@
 #include "p_local.h"
 #include "p_mobj.h"
 #include "p_unlag.h"
+#include "g_keepweapons.h"
 
 /**
  * @brief Pack an array of booleans into a bitfield.
@@ -248,7 +247,7 @@ odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player)
 	// Send all available powers information to show the clients
 	msg.mutable_powers()->Resize(NUMPOWERS + 1, 0);
 	msg.set_powers(pw_invulnerability,  player.powers[pw_invulnerability]);
-	msg.set_powers(pw_strength,         player.powers[pw_strength] > 0 ? 1 : 0);
+	msg.set_powers(pw_strength,         player.powers[pw_strength]);
 	msg.set_powers(pw_invisibility,     player.powers[pw_invisibility]);
 	msg.set_powers(pw_ironfeet,         player.powers[pw_ironfeet]);
 	msg.set_powers(pw_allmap,           player.powers[pw_allmap]);
@@ -753,6 +752,8 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player)
 		const uint32_t packedcards = PackBoolArray(player.cards);
 		msg.set_cards(packedcards);
 	}
+
+	msg.set_keepweapons(KeepWeaponsManager::getInstance().keptLoadout(player.id));
 
 	return msg;
 }
@@ -1833,4 +1834,15 @@ odaproto::svc::ConfigureAvatar SVC_ConfigureAvatar(const MapThing& mapthing, uin
 
 	return msg;
 }
-VERSION_CONTROL(svc_message, "$Id$")
+
+odaproto::svc::ShareKeys SVC_ShareKeys(const std::vector<uint32_t>&         playerIds,
+                                       const std::array<bool, NUMCARDS>&    cards)
+{
+	odaproto::svc::ShareKeys msg;
+
+	msg.mutable_pids()->Assign(playerIds.begin(), playerIds.end());
+	msg.set_cards(PackBoolArray(cards));
+
+	return msg;
+}
+

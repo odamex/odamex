@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -376,7 +374,7 @@ void D_DoomLoop()
 		{
 			D_RunTics(CL_RunTics, CL_DisplayTics);
 		}
-		catch (CRecoverableError &error)
+		catch (const CRecoverableError& error)
 		{
 			PrintFmt(PRINT_ERROR, "\nERROR: {}\n", error.GetMsg());
 
@@ -1169,5 +1167,3 @@ void D_DoomMain()
 
 	D_DoomLoop();		// never returns
 }
-
-VERSION_CONTROL (d_main_cpp, "$Id$")

@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -31,7 +29,7 @@
 
 #include <json/json.h>
 
-extern bool keysfound[NUMCARDS];
+extern std::array<bool, NUMCARDS> keysfound;
 
 // The server tracks ping up until 999 msec.  This is the most that we record into
 // the player structure and the point at which we turn off reliable message

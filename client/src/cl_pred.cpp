@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -285,8 +283,8 @@ void CL_PredictRemotePlayers()
 {
 	for (auto& player : players)
 	{
-		if (player.ingame() 
-			&& player.mo 
+		if (player.ingame()
+			&& player.mo
 			&& player.id != consoleplayer_id   // handled in CL_PredictWorld
 			&& player.id != displayplayer_id)  // handled in CL_PredictSpying
 		{
@@ -704,5 +702,3 @@ bool CL_PredictWorld()
 
 	return mobjsHaveBeenPredicted;
 }
-
-VERSION_CONTROL (cl_pred_cpp, "$Id$")

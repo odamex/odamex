@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -134,19 +132,31 @@ public:
 	}
 
 	// use as raw pointer
+	// NOLINTNEXTLINE(misc-explicit-constructor)
 	operator T*() noexcept
 	{
 		return get();
 	}
 
 	// use as raw pointer
+	// NOLINTNEXTLINE(misc-explicit-constructor)
 	operator const T*() const noexcept
 	{
 		return get();
 	}
 
-	static constexpr auto POINTER_ALIGNMENT = alignof(std::atomic<T*>);
-	static constexpr auto POINTER_ALIGNMENT_BITS = std::countr_zero(POINTER_ALIGNMENT);
+	// Use __STDCPP_DEFAULT_NEW_ALIGNMENT__ because the heap implementation is free to use a broader/
+	// stricter alignment than the type being allocated, ala alignof(std::atomic<...>).
+	//
+	// e.g. on MSVC 2026 x64, *anything* allocated via default-`new` is aligned to 16 bytes, not 8,
+	//      which is what alignof(std::atomic<T*>) was returning.
+	//      Likewise, on 32-bit x86, all default-`new` pointers are aligned to 8 bytes, not 4.
+	//
+	// That said, we still check alignof the atomized pointer, because, in pure theory, it is still
+	// allowed to exceed __STDCPP_DEFAULT_NEW_ALIGNMENT__.  We just know that it won't be less than that.
+
+	static constexpr size_t POINTER_ALIGNMENT      = std::max(static_cast<size_t>(__STDCPP_DEFAULT_NEW_ALIGNMENT__), alignof(std::atomic<T*>));
+	static constexpr auto   POINTER_ALIGNMENT_BITS = std::countr_zero(POINTER_ALIGNMENT);
 };
 
 // The specializations of std::hash for szp shift off the known-zero LSBs of the naive pointer

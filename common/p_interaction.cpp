@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -101,7 +99,7 @@ void PickupMessage(const AActor *toucher, const char *message);
 void WeaponPickupMessage(const AActor *toucher, const weapontype_t &Weapon);
 
 #ifdef SERVER_APP
-void SV_ShareKeys(card_t card, const player_t& player);
+void SV_PickupShareableKey(card_t card, const player_t& player);
 #endif
 
 static void PersistPlayerDamage(const player_t& p)
@@ -567,7 +565,7 @@ ItemEquipVal P_GiveCard(player_t& player, card_t card)
 	{
 #ifdef SERVER_APP
 		// Register the key
-		SV_ShareKeys(card, player);
+		SV_PickupShareableKey(card, player);
 #endif
 
 
@@ -2696,5 +2694,3 @@ void P_HealMobj(AActor* mo, int num)
 			mo->health = max;
 	}
 }
-
-VERSION_CONTROL (p_interaction_cpp, "$Id$")

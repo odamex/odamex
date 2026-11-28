@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
@@ -64,6 +62,7 @@ END_DISABLE_WARNING_GNU
 #include "m_wdlstats.h"
 #include "g_spree.h"
 #include "g_deathspot.h"
+#include "g_keepweapons.h"
 #include "g_gametype.h"
 #include "cl_freecam.h"
 
@@ -569,6 +568,7 @@ void G_DoLoadLevel (int position)
 	G_ClearRoundKillStats();
 
 	DeathSpotManager::getInstance().clearDeathSpots();
+	KeepWeaponsManager::getInstance().clearLoadouts();
 
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,
@@ -828,5 +828,3 @@ void G_WorldDone()
 		}
 	}
 }
-
-VERSION_CONTROL (g_level_cpp, "$Id$")

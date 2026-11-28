@@ -1,8 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id$
-//
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
@@ -340,64 +338,70 @@ void MapThing::Serialize (FArchive &arc)
 
 inline void CredibilityState::Update(const AActor& mobj)
 {
-    // On the server, just leave the FULLY_CREDIBLE default in place forever and make this
-    // an empty function so that the compiler has the opportunity to no-op any calls to it.
-    //
+	// On the server, just leave the FULLY_CREDIBLE default in place forever and make this
+	// an empty function so that the compiler has the opportunity to no-op any calls to it.
+	//
 #ifdef CLIENT_APP
-    if (not serverside)     // But we still need to check in case we're in single-player.
-    {
-        if (mobj.updatedDuringLocalTic >= 0 and m_credibility != CredibilityEnum::ALWAYS_CREDIBLE)
-        {
-            const int ticsSinceAuthoritativeUpdate = gametic - mobj.updatedDuringLocalTic;
+	if (not serverside)     // But we still need to check in case we're in single-player.
+	{
+		if (mobj.updatedDuringLocalTic >= 0 and m_credibility != CredibilityEnum::ALWAYS_CREDIBLE)
+		{
+			// Wild-ass guess.  10 seconds...?
+			constexpr int NON_CREDIBILITY_THRESHOLD_SEC  = 10;
+			constexpr int NON_CREDIBILITY_THRESHOLD_TICS = NON_CREDIBILITY_THRESHOLD_SEC * TICRATE;
 
-            if (ticsSinceAuthoritativeUpdate == 0)
-            {
-                m_crediblePosition.x = mobj.x;
-                m_crediblePosition.y = mobj.y;
-                m_crediblePosition.z = mobj.z;
+			// In sv_main, we nominally update mobjs every 7 tics.
+			// Allow up to 10 before we stop fully believing it, to allow for jitter plus
+			// some "real world slop" margin.
+			constexpr int OVERDUE_UPDATE_THRESHOLD_TICS = 10;
 
-                m_credibility             = CredibilityEnum::FULLY_CREDIBLE;
-                m_predictedMotionTicCount = 0;
-            }
-            // In sv_main, we nominally update mobjs every 7 tics.
-            // Allow up to 10 before we stop fully believing it, to allow for jitter plus
-            // some "real world slop" margin.
-            else if (ticsSinceAuthoritativeUpdate < 10)
-            {
-                m_credibility = CredibilityEnum::FULLY_CREDIBLE;
-            }
-            else
-            {
-                if (m_predictedMotionTicCount > 0 or
-                       m_crediblePosition.x != mobj.x ||
-                            m_crediblePosition.y != mobj.y ||
-                            m_crediblePosition.z != mobj.z)
-                {
-                    ++m_predictedMotionTicCount;
-                }
+			const int  ticsSinceAuthoritativeUpdate = gametic - mobj.updatedDuringLocalTic;
+			const bool updateIsOverdue              = ticsSinceAuthoritativeUpdate >= OVERDUE_UPDATE_THRESHOLD_TICS;
 
-                // Possible weakness to this algorithm:  Suppose the client predicts that
-                // the mobj is dead-still but the server says it's in motion yet it's SEMI_AWARE
-                // or just a lower-priority SEMI_AWARE?  We just have to hope that the server
-                // decides to naturally send an UpdateMobj for it at some point.
+			if (ticsSinceAuthoritativeUpdate == 0)
+			{
+				m_crediblePosition.x = mobj.x;
+				m_crediblePosition.y = mobj.y;
+				m_crediblePosition.z = mobj.z;
+				m_credibility        = m_hasKnownMisprediction ? CredibilityEnum::SEMI_CREDIBLE
+				                                               : CredibilityEnum::FULLY_CREDIBLE;
 
-                if (m_predictedMotionTicCount < 10 * TICRATE)       // wild-ass guess.  10 seconds okay?
-                {
-                    // In this mode, the client is letting the mobj wander about via dead reckoning.
-                    // We guess that the mobj hasn't wandered TOO far from where the server says it
-                    // should be.
-                    m_credibility = CredibilityEnum::SEMI_CREDIBLE;
-                }
-                else
-                {
-                    if (m_credibility != CredibilityEnum::CHALLENGED_CREDIBILITY)
-                    {
-                        m_credibility = CredibilityEnum::NOT_CREDIBLE;
-                    }
-                }
-            }
-        }
-    }
+				m_predictedMotionTicCount = m_hasKnownMisprediction ? 1 : 0;
+				m_challengeInterval       = 0;
+				m_hasKnownMisprediction   = false;
+			}
+			// Note that we still check m_hasKnownMisprediction because it could still have been
+			// set on a mobj after its authoritative update but before it naturally goes semi-credible.
+			else if (updateIsOverdue or m_hasKnownMisprediction)
+			{
+				if (   m_predictedMotionTicCount > 0
+				    or m_crediblePosition.x != mobj.x
+				    or m_crediblePosition.y != mobj.y
+				    or m_crediblePosition.z != mobj.z
+				    or m_hasKnownMisprediction)
+				{
+					m_hasKnownMisprediction = not updateIsOverdue;  // Keep the short-circuit active until we naturally go overdue.
+					++m_predictedMotionTicCount;
+				}
+
+				if (m_credibility == CredibilityEnum::CHALLENGED_CREDIBILITY)
+				{
+					m_challengeInterval = std::max(0, m_challengeInterval - 1);
+				}
+				else if (m_predictedMotionTicCount < NON_CREDIBILITY_THRESHOLD_TICS)
+				{
+					// In this mode, the client is letting the mobj wander about via dead reckoning.
+					// We guess that the mobj hasn't wandered TOO far from where the server says it
+					// should be.
+					m_credibility = CredibilityEnum::SEMI_CREDIBLE;
+				}
+				else
+				{
+					m_credibility = CredibilityEnum::NOT_CREDIBLE;
+				}
+			}
+		}
+	}
 #endif
 }
 
@@ -1226,14 +1230,29 @@ void AActor::RunThink ()
 		HU_AddPlayerSpeed(start, end);
 	}
 	else
-#endif
 	{
-		credibility.Update(*this);
 		P_MoveActor(this);
 	}
+#else
+	P_MoveActor(this);
+#endif
 
-	if(predicting)
+	if (predicting)
 		return;
+
+	// Do we think this mobj is at risk of being a ghost?
+	if (not serverside)
+	{
+		credibility.Update(*this);
+
+		if ((    (    IsMonster() and not (flags & MF_CORPSE))
+		     or  (not IsMonster() and credibility.Get() == CredibilityEnum::NOT_CREDIBLE))
+		    and credibility.IsEligibleForChallenge()
+		    and credibility.GetMotionAge() > 0)
+		{
+			consoleplayer().sortedMobjs.emplace_back(this, 0);
+		}
+	}
 
 	if (flags2 & MF2_DORMANT)
 		return;
@@ -3610,17 +3629,8 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	const bool isMusicChanger = (mthing.type >= 14100 && mthing.type <= 14165);
 	const bool isSpringPad = inSpawnMap && spawn_map[mthing.type]->type == MT_SPRINGPAD;
 
-	// only servers control spawning of items
-	// EXCEPT the client must spawn Type 14 (teleport exit) and player spawn points for avatars.
-	// otherwise teleporters or avatars won't work well.
-	// Also spawn sector special things, fixes some other teleport issues.
-	if (!serverside && !(isPlayerCoopSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger || isSpringPad))
-	{
-		return;
-	}
-
 	//
-	// Clients also exclusively handle spawning of ambient sounds and music changers
+	// Clients exclusively handle spawning of ambient sounds and music changers
 	//
 	if (!clientside && (isSoundSource || isMusicChanger))
 	{
@@ -3652,6 +3662,22 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 				return;
 			}
 		}
+	}
+
+	// only servers control spawning of items
+	// EXCEPT the client must spawn Type 14 (teleport exit) and player spawn points for avatars.
+	// otherwise teleporters or avatars won't work well.
+	// Also spawn sector special things, fixes some other teleport issues.
+	if (not serverside and
+		not (isPlayerCoopSpawnPoint or
+			 isTeleportDest or
+			 isSecAct or
+			 isSoundSource or
+			 isMusicChanger or
+			 isSpringPad)
+		)
+	{
+		return;
 	}
 
 	// [RH] Record polyobject-related things
@@ -4294,5 +4320,3 @@ BEGIN_COMMAND(cheat_mobjs)
 	}
 }
 END_COMMAND(cheat_mobjs)
-
-VERSION_CONTROL (p_mobj_cpp, "$Id$")
