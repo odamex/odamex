@@ -1069,7 +1069,6 @@ void G_Ticker (void)
 
 			realrate += packet_size;
 			last_received = gametic;
-			noservermsgs = false;
 
 			const MessageResultEnum initialReadResult = CL_ReadPacketHeader();
 
@@ -1104,7 +1103,7 @@ void G_Ticker (void)
 		}
 
 		CL_SaveCmd();      // save player commands
-		if (!noservermsgs)
+		if (not CL_PacketLossHaltIsInEffect())
 			CL_SendCmd();  // send player commands to the server
 
 		if (!(gametic%TICRATE))
@@ -1112,9 +1111,6 @@ void G_Ticker (void)
 			netout = outrate;
 			outrate = 0;
 		}
-
-		if (gametic - last_received > 65)
-			noservermsgs = true;
 	}
 	else if (NET_GetPacket() && !simulated_connection)
 	{
