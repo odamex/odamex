@@ -19,10 +19,10 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
+#include <deque>
 #include <functional>
 #include <memory_resource>
 #include <unordered_map>
-#include <vector>
 
 #include "SequenceQueueEntryType.h"
 
@@ -45,8 +45,8 @@ class SequenceSender
 				SequenceQueueEntryType* Next();
 
 			protected:
-				SequenceSender*            m_sequencer;   // non-owning pointer.
-				std::vector<int>::iterator m_iter;
+				SequenceSender*           m_sequencer;  // non-owning pointer.
+				std::deque<int>::iterator m_iter;
 		};
 
 		enum SenderModeEnum
@@ -100,7 +100,7 @@ class SequenceSender
 
 	protected:
 
-		std::vector<int> m_unackedSequences;
+		std::deque<int> m_unackedSequences;
 
 		std::pmr::unordered_map<int, SequenceQueueEntryType, std::identity> m_sendTable;
 

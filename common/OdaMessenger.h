@@ -25,7 +25,7 @@
 
 #include "LargeMessageQueue.h"
 #include "MessageQueue.h"
-
+#include "MovingAverage.h"
 #include "Packet.h"
 #include "SequenceReceiver.h"
 #include "SequenceSender.h"
@@ -147,7 +147,7 @@ class OdaMessenger
 
 	protected:
 		void StartTicSend(int i_currentTic);
-		void EndTicSend();
+		void EndTicSend  (int i_currentTic);
 
 		size_t            SendHighPriority   (int i_currentTic, const netadr_t& i_dest);
 		size_t            SendRetransmissions(int i_currentTic, const netadr_t& i_dest);
@@ -166,7 +166,7 @@ class OdaMessenger
 				}
 				~Sender()
 				{
-					m_messengerRef.EndTicSend();
+					m_messengerRef.EndTicSend(m_currentTic);
 				}
 
 				// Non-copyable.
@@ -246,14 +246,20 @@ class OdaMessenger
 		bool MustThrottleTransmission() const { return m_sender.GetMode() == SequenceSender::RECOVERY; }
 		fixed_t ThrottleFraction() const { return FixedDiv( m_unackedGrowth << FRACBITS, m_unackedGrowthThreshold << FRACBITS); }
 
-		void SetMaxRate(int i_maxRate)
+		void SetMaxRate(int i_maxRateKiBps)
 		{
-			m_maxRate      = i_maxRate;
-			m_perTicBudget = (m_maxRate * 1000) / TICRATE;
-			m_byteBudget   = m_perTicBudget;
+			// NOLINTBEGIN (readability-magic-numbers)
+			if (i_maxRateKiBps > 0)
+			{
+				m_maxRate      = i_maxRateKiBps;
+				m_perTicBudget = (m_maxRate * 1000) / TICRATE;
+				m_byteBudget   = m_perTicBudget;
 
-			// Track when reliable exceeds a certain percentage of the budget.  This could be configurable...
-			m_reliableOverloadThreshold = 9 * (m_perTicBudget / 10);
+				// Track when reliable exceeds a certain percentage of the budget.  This could be configurable...
+				m_reliableOverloadThreshold = 9 * (static_cast<size_t>(m_perTicBudget) / 10);
+
+			}
+			// NOLINTEND (readability-magic-numbers)
 		}
 		void SetPacketsPerRetransmit    (int i_maxPackets)   { m_maxPacketsPerRetransmission = i_maxPackets; }
 		void SetRetransmitDelay         (int i_delayInTics)  { m_retransmitDelayInTics = i_delayInTics; }
@@ -291,7 +297,8 @@ class OdaMessenger
 		Packet m_packet;
 		Packet m_highPacket;
 
-		PacketHeaderType m_receivedHeader;
+		PacketHeaderType        m_receivedHeader;
+		MovingAverage<int, 5>   m_averageHeaderRoundTripTics;   // NOLINT (readability-magic-numbers):  32 samples.. approx 1 sec assuming 35 TICRATE.
 
 		// Send buffers
 		MessageQueue        m_outgoingReliableQueue;
@@ -315,9 +322,10 @@ class OdaMessenger
 		int m_currentTicStartingBudget  {  0 };     ///< The budget available at the time we started sending this tic.
 		int m_latchedTic                { -1 };     ///< Used for detecting new tics and resetting the budget.
 		int m_destinationTic            { -1 };     ///< The remote tic that we're supposed to echo back to the other end.
+		int m_mostRecentEchoedTic       { -1 };     ///< The highest-numbered tic we've seen echoed back to us as a received destinationTic.
 
-		int m_reliableOverloadThreshold { 0 };
-		int m_reliableOverloadCount     { 0 };
+		size_t m_reliableOverloadThreshold { 0 };
+		int    m_reliableOverloadCount     { 0 };
 
 		std::basic_string<byte> m_recordingBuffer;
 		bool                    m_recordingIsEnabled { false };
