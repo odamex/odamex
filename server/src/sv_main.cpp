@@ -85,6 +85,7 @@
 #include "svc_message.h"
 #include "g_deathspot.h"
 #include "g_keepweapons.h"
+#include "msg_pack.h"
 #include "msg_parse.h"
 
 extern void G_DeferedInitNew (const OLumpName& mapname);
@@ -108,7 +109,7 @@ bool step_mode = false;
 
 std::set<byte> free_player_ids;
 
-bool keysfound[NUMCARDS];		// Ch0wW : Found keys
+std::array<bool, NUMCARDS> keysfound;   // Ch0wW
 
 // General server settings
 EXTERN_CVAR(sv_motd)
@@ -137,7 +138,8 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_t* player);
 bool P_LineSpecialMovesSector(short special);
 
-void SV_UpdateShareKeys(player_t& player);
+void SV_UpdateShareKeys(std::optional<uint32_t> optionalPickupPlayerId = std::nullopt);
+
 std::string SV_BuildKillsDeathsStatusString(const player_t& player);
 std::string V_GetTeamColor(UserInfo userinfo);
 
@@ -291,10 +293,8 @@ CVAR_FUNC_IMPL(sv_sharekeys)
 {
 	if (var)
 	{
-		// Refresh it to everyone
-		for (auto& player : players) {
-			SV_UpdateShareKeys(player);
-		}
+		// Refresh all keys to everyone
+		SV_UpdateShareKeys();
 	}
 }
 
@@ -3538,19 +3538,32 @@ void SV_SendPackets()
 	}
 }
 
-void SV_SendPlayerStateUpdate(client_t* client, player_t* player)
+//
+// SendPlayerState - Send information about a player to another client.
+//
+void SV_SendPlayerState(MessageQueue& outgoingQueue, client_t& client, player_t& player)
 {
-	if (!client || !player || !player->mo)
+	if (not player.mo)
 		return;
 
-	if (client != &player->client)
+	if (&client != &player.client)
 	{
-		client->messenger->HighPriority().Write( SVC_PlayerState(*player));
+		outgoingQueue.Write( SVC_PlayerState(player));
 	}
 	else
 	{
-		client->messenger->Reliable().Write (SVC_PlayerInfo(*player));
+		outgoingQueue.Write (SVC_PlayerInfo(player));
 	}
+}
+
+void SV_SendPlayerStateHighPriority(client_t& client, player_t& player)
+{
+	SV_SendPlayerState(client.messenger->HighPriority(), client, player);
+}
+
+void SV_SendPlayerStateReliable(client_t& client, player_t& player)
+{
+	SV_SendPlayerState(client.messenger->Reliable(), client, player);
 }
 
 void SV_SpyPlayer(player_t& viewer, const odaproto::clc::Spy& msg)
@@ -3562,7 +3575,7 @@ void SV_SpyPlayer(player_t& viewer, const odaproto::clc::Spy& msg)
 		return;
 
 	viewer.spying = id;
-	SV_SendPlayerStateUpdate(&viewer.client, &other);
+	SV_SendPlayerStateHighPriority(viewer.client, other);
 }
 
 // When we break up the mobjs into 3 groups based on relative distance, there are two boundaries:
@@ -3753,7 +3766,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	player_t& target = idplayer(player.spying);
 	if (validplayer(target) && &player != &target && P_CanSpy(player, target))
 	{
-		SV_SendPlayerStateUpdate(&(player.client), &target);
+		SV_SendPlayerStateHighPriority(player.client, target);
 	}
 
 	SV_UpdateConsolePlayer(player);
@@ -4516,7 +4529,7 @@ void SV_Cheat(player_t &player, const odaproto::clc::Cheat& msg)
 		{
 			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 			{
-				SV_SendPlayerStateUpdate(&it->client, &player);
+				SV_SendPlayerStateReliable(it->client, player);
 			}
 		}
 	}
@@ -4530,7 +4543,7 @@ void SV_CheatGive(player_t &player, const odaproto::clc::CheatGive& msg)
 
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
-			SV_SendPlayerStateUpdate(&it->client, &player);
+			SV_SendPlayerStateReliable(it->client, player);
 		}
 
 	}
@@ -5571,30 +5584,69 @@ void SV_ACSExecuteSpecial(byte special, const AActor* activator, const char* pri
 	}
 }
 
-void SV_UpdateShareKeys(player_t& player)
+void SV_UpdateShareKeys(std::optional<uint32_t> optionalPickupPlayerId)
 {
-	// Player needs to be valid.
-	if (!validplayer(player))
-		return;
+	static std::vector<uint32_t> s_playerIds;
 
-	// Disallow to spectators
-	if (player.spectator)
-		return;
+	s_playerIds.reserve(players.size());
+	s_playerIds.clear();
 
-	// Don't send to dead players... Yet, since they'll get it upon respawning
-	if (player.health <= 0)
-		return;
+	player_t* pickupPlayer = nullptr;
 
-	// Update their keys informations
-	for (int i = 0; i < NUMCARDS; i++) {
-		player.cards[i] = keysfound[i];
+	// First pass, build the collection of IDs of players getting the cards.
+	for (auto& player : players)
+	{
+		// Player needs to be valid to get a card.
+		if (not validplayer(player))
+			continue;
+
+		// Spectators don't get cards.
+		if (player.spectator)
+			continue;
+
+		// Dead players don't get cards... Yet, since they'll get it upon respawning.
+		if (player.health <= 0)
+			continue;
+
+		// If we have a pickup player, exclude them initially so that we can send them a ShareKeys that
+		// does NOT list them as a cardholder.  This is because we know we're following up this message
+		// with a TouchSpecial that will take them through the soup-to-nuts of the clientside pickup.
+		if (optionalPickupPlayerId and player.id == * optionalPickupPlayerId)
+		{
+			pickupPlayer = &player;
+			continue;
+		}
+
+		player.cards = keysfound;
+		s_playerIds.push_back(player.id);
 	}
 
-	// Refresh that new data to the client
-	SV_SendPlayerInfo(player);
+	// If we have a pickup player, we also have a collection of IDs that has everyone but them in it.
+	// Send that to them.
+	if (pickupPlayer)
+	{
+		pickupPlayer->client.messenger->Reliable().Write(SVC_ShareKeys(s_playerIds, keysfound));
+
+		// Now add them to the collection of players with the card, we'll be sending that to everyone else.
+		s_playerIds.push_back(pickupPlayer->id);
+	}
+
+	// Finally, send the complete picture to everyone else.
+	const auto msg = SVC_ShareKeys(s_playerIds, keysfound);
+	for (auto& player : players)
+	{
+		if (not player.ingame())
+			continue;
+
+		// We already sent the pickupPlayer's message.
+		if (&player == pickupPlayer)
+			continue;
+
+		player.client.messenger->Reliable().Write(msg);
+	}
 }
 
-void SV_ShareKeys(card_t card, const player_t &player)
+void SV_PickupShareableKey(card_t card, const player_t& player)
 {
 	// Add it to the KeysCheck array
 	keysfound[card] = true;
@@ -5634,10 +5686,9 @@ void SV_ShareKeys(card_t card, const player_t &player)
 		SV_BroadcastPrintFmt("{} found a key!\n", player.userinfo.netname);
 	}
 
-	// Refresh the inventory to everyone
-	// ToDo: If we're the player who picked it, don't refresh our own inventory
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-	{
-		SV_UpdateShareKeys(*it);
-	}
+	// Refresh the inventory to everyone, but don't let the player who did the pickup do a
+	// premature inventory rollback on themselves.  We want them to get the subsequent
+	// TouchSpecial and do the pickup for real.
+
+	SV_UpdateShareKeys(player.id);
 }
