@@ -83,6 +83,8 @@ message SpawnMobj
 	uint32          target_netid    = 5;
 	repeated int32  args            = 6;
 	bool            is_spawn_tic    = 7;    // Indicates that the client must perform a spawn animation tic immediately.
+	optional uint32 corpse_color    = 8;
+	optional int32  corpse_team     = 9;
 }
 
 // svc_disconnectclient
@@ -288,6 +290,13 @@ message PlayerMembers
 
 	int32 readyweapon = 16;
 	int32 pendingweapon = 17;
+}
+
+// svc_sharekeys
+message ShareKeys
+{
+	repeated uint32 pids  = 1;
+	         uint32 cards = 2;
 }
 
 // svc_teammembers

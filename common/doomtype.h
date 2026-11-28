@@ -352,18 +352,26 @@ class translationref_t
 {
 	const palindex_t *m_table;
 	int               m_player_id;
+	const argb_t     *m_rgb;
 
 public:
 	translationref_t();
 	translationref_t(const palindex_t *table);
 	translationref_t(const palindex_t *table, const int player_id);
+	translationref_t(const palindex_t *table, const argb_t *rgb);
 
 	[[nodiscard]] palindex_t tlate(const byte c) const;
 	[[nodiscard]] int getPlayerID() const;
 	[[nodiscard]] const palindex_t *getTable() const;
+	[[nodiscard]] const argb_t* getRGB() const;
 
 	explicit operator bool() const;
 };
+
+forceinline translationref_t::translationref_t(const palindex_t *table, const argb_t *rgb)
+	: m_table(table), m_player_id(-1), m_rgb(rgb)
+{
+}
 
 forceinline palindex_t translationref_t::tlate(const byte c) const
 {
@@ -382,6 +390,11 @@ forceinline int translationref_t::getPlayerID() const
 forceinline const byte *translationref_t::getTable() const
 {
 	return m_table;
+}
+
+forceinline const argb_t *translationref_t::getRGB() const
+{
+	return m_rgb;
 }
 
 forceinline translationref_t::operator bool() const

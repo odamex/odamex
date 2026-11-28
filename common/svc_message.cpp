@@ -532,6 +532,12 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		cur->set_tics(mo->tics);
 	}
 
+	if ((mo->flags & MF_CORPSE) and mo->corpse_color != 0)
+	{
+		msg.set_corpse_color(mo->corpse_color);
+		msg.set_corpse_team(mo->corpse_team);
+	}
+
 	msg.set_spawn_flags(spawnFlags);
 
 	return msg;
@@ -1828,3 +1834,15 @@ odaproto::svc::ConfigureAvatar SVC_ConfigureAvatar(const MapThing& mapthing, uin
 
 	return msg;
 }
+
+odaproto::svc::ShareKeys SVC_ShareKeys(const std::vector<uint32_t>&         playerIds,
+                                       const std::array<bool, NUMCARDS>&    cards)
+{
+	odaproto::svc::ShareKeys msg;
+
+	msg.mutable_pids()->Assign(playerIds.begin(), playerIds.end());
+	msg.set_cards(PackBoolArray(cards));
+
+	return msg;
+}
+
